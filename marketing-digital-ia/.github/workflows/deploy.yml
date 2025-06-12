@@ -1,0 +1,41 @@
+name: Deploy Automático da Sara
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy para a VPS da Radha
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clonar o repositório
+        uses: actions/checkout@v3
+
+      - name: Configurar acesso SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SARA_DEPLOY_KEY }}
+
+      - name: Executar script de deploy na VPS
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SARA_DEPLOY_USER }}@${{ secrets.SARA_DEPLOY_HOST }} << 'EOF'
+            cd /opt/radha/assistente-radha
+            git pull origin main
+            source backend/venv/bin/activate
+            pip install -r backend/requirements.txt
+
+            # 🔁 Atualizar a base vetorial (com caminho correto)
+            cd backend
+            python -c "from services.embedding_service import criar_index; criar_index()"
+            cd ..
+
+            sudo systemctl restart radha-backend.service
+
+            cd frontend
+            npm install
+            npm run build
+            sudo systemctl restart radha-frontend.service
+          EOF

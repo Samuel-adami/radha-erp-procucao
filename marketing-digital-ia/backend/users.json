@@ -1,0 +1,50 @@
+[
+  {
+    "username": "Caroline",
+    "password": "Carol@123",
+    "email": "atendimento3@radhamoveis.com.br",
+    "nome": "Caroline Pinto",
+    "cargo": "Marketing",
+    "permissoes": ["chat"]
+  },
+  {
+    "username": "Daniela",
+    "password": "Dani@123",
+    "email": "gerenciacomercial@radhamoveis.com.br",
+    "nome": "Daniela Pozzebon",
+    "cargo": "Marketing",
+    "permissoes": ["chat"]
+  },
+  {
+    "username": "Luisa",
+    "password": "Lu@123",
+    "email": "comercial@radhamoveis.com.br",
+    "nome": "Ana Luísa",
+    "cargo": "Marketing",
+    "permissoes": ["chat", "campanhas", "publicacoes"]
+  },
+  {
+    "username": "Samuel",
+    "password": "Sma@1984",
+    "email": "radha@radhamoveis.com.br",
+    "nome": "Samuel Adami",
+    "cargo": "Diretoria",
+    "permissoes": ["chat", "campanhas", "publicacoes", "publico"]
+  },
+  {
+    "username": "Marcos",
+    "password": "Mar@123",
+    "email": "r@radhamoveis.com.br",
+    "nome": "Marcos Marques",
+    "cargo": "Marketing",
+    "permissoes": ["chat"]
+  },
+  {
+    "username": "Andreia",
+    "password": "Deia@1984",
+    "email": "financeiro@radhamoveis.com.br",
+    "nome": "Andreia Bourscheid",
+    "cargo": "Diretoria",
+    "permissoes": ["chat", "campanhas", "publicacoes", "publico"]
+    }
+]

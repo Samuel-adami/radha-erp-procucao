@@ -1,0 +1,12 @@
+[Unit]
+Description=Radha Backend Service
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/opt/radha/assistente-radha/backend
+ExecStart=/opt/radha/assistente-radha/backend/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8005
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
