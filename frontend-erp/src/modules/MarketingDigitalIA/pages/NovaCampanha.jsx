@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchComAuth } from '../utils/fetchComAuth';
+import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 function NovaCampanha() {
   const [tema, setTema] = useState('');

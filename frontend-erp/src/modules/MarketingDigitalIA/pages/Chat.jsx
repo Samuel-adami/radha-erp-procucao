@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { fetchComAuth } from '../utils/fetchComAuth';
+import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 function Chat({ usuarioLogado }) {
   const [mensagem, setMensagem] = useState('');

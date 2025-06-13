@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+// Importar fetchComAuth do diretório utils do frontend-erp
+import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 const ImportarXML = ({ onImportarPacote }) => {
   const [carregando, setCarregando] = useState(false);
@@ -15,16 +17,20 @@ const ImportarXML = ({ onImportarPacote }) => {
     setCarregando(true);
 
     try {
-      const response = await fetch("http://localhost:8009/importar-xml", {
+      // Usando fetchComAuth e a URL correta do Gateway para o módulo de Produção
+      const response = await fetchComAuth("http://localhost:8010/producao/importar-xml", {
         method: "POST",
         body: formData,
+        // fetchComAuth já cuida dos headers e token, não precisamos passar aqui
+        headers: {
+          // 'Content-Type': 'multipart/form-data' não é necessário com FormData
+          // Ele é definido automaticamente pelo navegador
+        },
       });
 
-      if (!response.ok) {
-        throw new Error(`Erro ${response.status}: ${response.statusText}`);
-      }
+      // fetchComAuth já verifica response.ok, então não precisamos de if (!response.ok)
+      const data = response; // fetchComAuth já retorna o JSON parseado
 
-      const data = await response.json();
       const pacotes = data.pacotes || [];
 
       if (onImportarPacote && pacotes.length) {
@@ -34,7 +40,7 @@ const ImportarXML = ({ onImportarPacote }) => {
       }
     } catch (error) {
       console.error("Erro ao importar XML:", error);
-      alert("Erro ao importar XML. Verifique se o backend está rodando corretamente.");
+      alert(`Erro ao importar XML. Detalhes: ${error.message}. Verifique se o backend está rodando corretamente.`);
     } finally {
       setCarregando(false);
     }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchComAuth } from '../utils/fetchComAuth';
+import { fetchComAuth } from '../../../utils/fetchComAuth';
 
 function PublicosAlvo() {
   const [publicos, setPublicos] = useState([]);
