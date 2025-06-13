@@ -1,7 +1,5 @@
-// radha-erp/frontend-erp/src/modules/Producao/AppProducao.jsx
 import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useParams, Outlet } from "react-router-dom";
-// Caminho corrigido: de '@/components/ui/button' para './components/ui/button'
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "./components/ui/button"; 
 import ImportarXML from "./components/ImportarXML"; 
 import VisualizacaoPeca from "./components/VisualizacaoPeca"; 
@@ -27,6 +25,7 @@ const HomeProducao = () => {
   };
 
   const excluirLote = (nome) => {
+    if (!window.confirm(`Tem certeza que deseja excluir o lote "${nome}"?`)) return;
     const atualizados = lotes.filter(l => l.nome !== nome);
     setLotes(atualizados);
     localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
@@ -38,7 +37,7 @@ const HomeProducao = () => {
       <Button onClick={criarLote}>+ Novo Lote</Button>
       <ul className="mt-4 space-y-2">
         {lotes.map((l, i) => (
-          <li key={i} className="flex justify-between items-center border p-2 rounded">
+          <li key={l.nome || i} className="flex justify-between items-center border p-2 rounded">
             <span>{l.nome}</span>
             <div className="space-x-2">
               <Button onClick={() => navigate(`lote/${l.nome}`)}>Editar</Button>
@@ -82,6 +81,7 @@ const LoteProducao = () => {
   };
 
   const excluirPacote = (index) => {
+    if (!window.confirm(`Tem certeza que deseja excluir este pacote?`)) return;
     const novos = pacotes.filter((_, i) => i !== index);
     const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     const atualizados = lotes.map(l =>
@@ -96,8 +96,7 @@ const LoteProducao = () => {
       ...pc,
       operacoes: JSON.parse(localStorage.getItem("op_producao_" + pc.id) || "[]")
     })));
-    // Requisição para o backend-gateway, que roteará para o backend de produção
-    const resposta = await fetch("http://localhost:8010/producao/gerar-lote-final", { // Porta do Gateway atualizada
+    const resposta = await fetch("http://localhost:8010/producao/gerar-lote-final", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lote: nome, pecas })
@@ -117,11 +116,11 @@ const LoteProducao = () => {
 
       <ul className="space-y-2 mt-4">
         {pacotes.map((p, i) => (
-          <li key={i} className="border p-2 rounded">
+          <li key={p.id || i} className="border p-2 rounded">
             <div className="flex justify-between">
-              <div className="font-semibold">{p.titulo}</div>
+              <div className="font-semibold">{p.nome_pacote || `Pacote ${i + 1}`}</div>
               <div className="space-x-2">
-                <Button onClick={() => navigate(`lote/<span class="math-inline">\{nome\}/pacote/</span>{i}`)}>Editar</Button>
+                <Button onClick={() => navigate(`pacote/${i}`)}>Editar</Button>
                 <Button variant="destructive" onClick={() => excluirPacote(i)}>Excluir</Button>
               </div>
             </div>
@@ -146,23 +145,24 @@ const EditarPecaProducao = () => {
   useEffect(() => {
     const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     let pecaEncontrada = null;
+    
     for (const l of lotes) {
-        if (l.nome === nome) {
-            for (const pacote of l.pecas || []) { // Verifique se pacote.pecas é o correto
-                const p = pacote.pecas.find(p => p.id === parseInt(pecaId));
-                if (p) {
-                    pecaEncontrada = p;
-                    break;
-                }
-            }
+      if (l.nome === nome) {
+        for (const pacote of l.pacotes || []) {
+          const p = pacote.pecas.find(p => p.id === parseInt(pecaId));
+          if (p) {
+            pecaEncontrada = p;
+            break;
+          }
         }
-        if (pecaEncontrada) break;
+      }
+      if (pecaEncontrada) break;
     }
 
     if (pecaEncontrada) {
-        setDadosPeca(pecaEncontrada);
-        const operacoesSalvas = JSON.parse(localStorage.getItem("op_producao_" + pecaId) || "[]");
-        setOperacoes(operacoesSalvas);
+      setDadosPeca(pecaEncontrada);
+      const operacoesSalvas = JSON.parse(localStorage.getItem("op_producao_" + pecaId) || "[]");
+      setOperacoes(operacoesSalvas);
     }
   }, [pecaId, nome]);
 

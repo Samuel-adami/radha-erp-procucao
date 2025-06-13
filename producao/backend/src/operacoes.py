@@ -89,7 +89,7 @@ def processar_dxf_producao(caminho_dxf, dimensoes_xml, is_porta=False):
                     "largura": round(rect_largura, 2),
                     "profundidade": rasgo_profundidade, 
                     "estrategia": "Desbaste",
-                    "face": "Face (F0)" # <-- NOME DA FACE PADRONIZADO
+                    "face": "Face (F0)"
                 })
                 continue
             except Exception as e:
@@ -117,16 +117,12 @@ def processar_dxf_producao(caminho_dxf, dimensoes_xml, is_porta=False):
                 operacoes.append({
                     "tipo": "Furo", "x": round(x_rel, 2), "y": round(y_final, 2),
                     "diametro": diametro_op, "profundidade": profundidade_op, 
-                    "face": "Face (F0)" # <-- NOME DA FACE PADRONIZADO
+                    "face": "Face (F0)" 
                 })
             except: pass
 
     return operacoes
 
-# --- Funções MOVIDAS para operacoes.py ---
-# As funções abaixo foram movidas para cá para serem importadas por api.py
-
-# Funções auxiliares (materiais e classificar_item)
 materiais = {
     ("18", "700"): "Branco TX 18mm",
     ("18", "999"): "Nogal Terracota 18mm",
@@ -217,8 +213,7 @@ def parse_bpp_furos_topo(file_path, peca_largura):
     for hole in face1_holes_raw:
         y_rel, x_rel = hole['x_bpp'], hole['y_bpp']
         y_final = peca_largura - y_rel
-
-        # NOMES DAS FACES ATUALIZADOS AQUI
+        
         operacoes_finais.append({
             "tipo": "Furo", "x": round(x_rel, 2), "y": round(y_final, 2),
             "profundidade": hole['profundidade'], "diametro": hole['diametro'], "face": "Topo (L1)"
@@ -242,7 +237,7 @@ def parse_dxt_producao(root, dxt_path):
     primeira_peca_info = all_parts_data[0]
     nome_do_cliente = primeira_peca_info.get("Client", "Cliente não encontrado")
     nome_do_projeto = primeira_peca_info.get("Project", "Projeto não encontrado")
-    titulo_pacote = f"{nome_do_cliente} - {nome_do_projeto}"
+    nome_pacote = f"{nome_do_cliente} - {nome_do_projeto}"
     pecas_importadas = []
     pasta_base_dxf = dxt_path.parent
     print(f"📦 Itens <Part> encontrados no DXT: {len(all_parts_data)}")
@@ -267,8 +262,8 @@ def parse_dxt_producao(root, dxt_path):
                 operacoes_bpp = parse_bpp_furos_topo(caminho_bpp, largura)
                 if operacoes_bpp: print(f"          -> {len(operacoes_bpp)} furos de topo (faces 1 e 3) criados simetricamente.")
 
-            material_node = item_data.get("Material") # Ajustado para item_data.get
-            material = material_node if material_node is not None else "Desconhecido" # Ajustado
+            material_node = item_data.get("Material")
+            material = material_node if material_node is not None else "Desconhecido"
 
             pecas_importadas.append({
                 "nome": descricao_item, "codigo_peca": Path(dxf_da_peca).stem,
@@ -283,14 +278,14 @@ def parse_dxt_producao(root, dxt_path):
 
     if not pecas_importadas: return []
     print(f"✅ Sucesso! Peças importadas: {len(pecas_importadas)}")
-    return [{"titulo": titulo_pacote, "pecas": pecas_importadas}]
+    return [{"nome_pacote": nome_pacote, "pecas": pecas_importadas}]
 
 def parse_xml_orcamento(root):
     pacotes, cliente_node = [], root.find(".//DATA[@ID='nomecliente']")
     nome_cliente = cliente_node.attrib.get("VALUE", "") if cliente_node is not None else "SemCliente"
     ambiente_node = root.find(".//AMBIENT")
     nome_ambiente = ambiente_node.attrib.get("DESCRIPTION", "") if ambiente_node is not None else "SemDescricao"
-    titulo, pecas = f"{nome_cliente} - {nome_ambiente}", []
+    nome_pacote, pecas = f"{nome_cliente} - {nome_ambiente}", []
     for item in root.findall(".//ITEM"):
         nome, nome_item = item.attrib.get("DESCRICAO", "").lower(), item.attrib.get("DESCRIPTION", "").upper()
         if any(p in nome for p in ["fita", "dobradiça", "parafuso", "puxador", "suporte", "batente"]) or classificar_item(item.attrib) != "mdf": continue
@@ -305,7 +300,7 @@ def parse_xml_orcamento(root):
         peca = {"nome": nome_item, "largura": largura, "comprimento": comprimento, "espessura": espessura, "material": materiais.get((espessura, cor), f"Desconhecido ({espessura}/{cor})"), "cliente": nome_cliente, "ambiente": nome_ambiente, "observacoes": item.attrib.get("OBSERVATIONS", ""), "orientacao": "horizontal" if comprimento > largura else "vertical"}
         peca["operacoes"] = inferir_operacoes_por_nome(peca["nome"], largura, comprimento)
         pecas.append(peca)
-    if pecas: pacotes.append({"titulo": titulo, "pecas": pecas})
+    if pecas: pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
     return pacotes
 
 def parse_xml_producao(root, xml_path):
@@ -315,9 +310,18 @@ def parse_xml_producao(root, xml_path):
         nome_cliente = root.find(".//CLIENTE_LOJA").attrib["NOME"]
     except:
         nome_cliente = "SemCliente"
-    project_node = root.find(".//UNIQUE_ID[@PROJECTNAME]")
-    nome_ambiente = project_node.attrib.get("PROJECTNAME", "SemProjeto") if project_node is not None else "SemProjeto"
-    titulo, pasta_base = f"{nome_cliente} - Projeto - {nome_ambiente}", Path(os.path.abspath(xml_path)).parent
+    
+    # --- LÓGICA CORRIGIDA CONFORME SUA SUGESTÃO ---
+    nome_ambiente = "Projeto"  # Valor padrão
+    primeiro_item = root.find(".//ITENS_PEDIDO/ITEM")
+    if primeiro_item is not None:
+        unique_id_node = primeiro_item.find("UNIQUE_ID")
+        if unique_id_node is not None:
+            nome_ambiente = unique_id_node.attrib.get("AMBIENTNAME", "Projeto")
+    # ----------------------------------------------
+
+    nome_pacote, pasta_base = f"{nome_cliente} - {nome_ambiente}", Path(os.path.abspath(xml_path)).parent
+    
     itens = root.findall(".//ITEM")
     print(f"📦 Total de itens encontrados no XML: {len(itens)}")
     for item in itens:
@@ -359,6 +363,6 @@ def parse_xml_producao(root, xml_path):
 
     if pecas:
         print(f"📦 Total de peças válidas importadas: {len(pecas)}")
-        pacotes.append({"titulo": titulo, "pecas": pecas})
+        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
     print("✅ Finalizado parse_xml_producao")
     return pacotes

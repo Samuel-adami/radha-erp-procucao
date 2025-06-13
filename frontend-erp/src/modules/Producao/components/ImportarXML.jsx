@@ -1,62 +1,74 @@
 import React, { useState } from "react";
-// Importar fetchComAuth do diretório utils do frontend-erp
-import { fetchComAuth } from "../../../utils/fetchComAuth";
+import { fetchComAuth } from "../../../utils/fetchComAuth"; // Usando o utilitário corrigido
 
 const ImportarXML = ({ onImportarPacote }) => {
   const [carregando, setCarregando] = useState(false);
+  const [arquivosSelecionados, setArquivosSelecionados] = useState(0);
 
-  const handleUpload = async (event) => {
-    const files = event.target.files;
+  const handleFileChange = (event) => {
+    setArquivosSelecionados(event.target.files.length);
+    handleUpload(event.target.files);
+  };
+
+  const handleUpload = async (files) => {
     if (!files.length) return;
 
     const formData = new FormData();
     for (let i = 0; i < files.length; i++) {
-      formData.append("files", files[i]); // Nome do campo deve bater com o backend
+      // O nome "files" deve corresponder ao que o backend espera
+      formData.append("files", files[i]);
     }
 
     setCarregando(true);
 
     try {
-      // Usando fetchComAuth e a URL correta do Gateway para o módulo de Produção
-      const response = await fetchComAuth("http://localhost:8010/producao/importar-xml", {
+      // URL completa apontando para o gateway, que redirecionará para o backend de produção
+      const data = await fetchComAuth("http://localhost:8010/producao/importar-xml", {
         method: "POST",
         body: formData,
-        // fetchComAuth já cuida dos headers e token, não precisamos passar aqui
-        headers: {
-          // 'Content-Type': 'multipart/form-data' não é necessário com FormData
-          // Ele é definido automaticamente pelo navegador
-        },
+        // Não é mais necessário definir headers aqui, fetchComAuth cuidará disso.
       });
 
-      // fetchComAuth já verifica response.ok, então não precisamos de if (!response.ok)
-      const data = response; // fetchComAuth já retorna o JSON parseado
-
-      const pacotes = data.pacotes || [];
+      const pacotes = data?.pacotes || [];
 
       if (onImportarPacote && pacotes.length) {
         pacotes.forEach((p) => onImportarPacote(p));
+      } else if (data?.erro) {
+        alert(`Erro retornado pelo servidor: ${data.erro}`);
       } else {
-        alert("Nenhum pacote encontrado no XML importado.");
+        alert("Nenhum pacote válido encontrado nos arquivos importados.");
       }
     } catch (error) {
-      console.error("Erro ao importar XML:", error);
-      alert(`Erro ao importar XML. Detalhes: ${error.message}. Verifique se o backend está rodando corretamente.`);
+      console.error("Erro ao importar arquivos:", error);
+      alert(`Erro na comunicação com o servidor: ${error.message}`);
     } finally {
       setCarregando(false);
+      setArquivosSelecionados(0); // Limpa o contador após o upload
     }
   };
 
   return (
-    <div className="my-4">
-      <label className="block font-medium mb-2">Importar XML do Promob:</label>
-      <input
-        type="file"
-        accept=".xml,.dxf,.dxt,.bpp,.txt"
-        multiple
-        onChange={handleUpload}
-        className="border p-2"
-      />
-      {carregando && <p className="mt-2 text-sm text-gray-500">Carregando...</p>}
+    <div className="my-4 p-4 border rounded-lg bg-gray-50">
+      <label className="block font-semibold mb-2 text-gray-700">
+        Importar Arquivos do Lote (XML, DXT, DXF, BPP)
+      </label>
+      <div className="flex items-center gap-4">
+        <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+          <span>Escolher arquivos</span>
+          <input
+            type="file"
+            accept=".xml,.dxt,.dxf,.bpp,.txt"
+            multiple
+            onChange={handleFileChange}
+            className="hidden" // Esconde o input padrão
+            disabled={carregando}
+          />
+        </label>
+        <span className="text-sm text-gray-600">
+          {arquivosSelecionados > 0 ? `${arquivosSelecionados} arquivo(s) selecionado(s)` : "Nenhum arquivo selecionado"}
+        </span>
+      </div>
+      {carregando && <p className="mt-2 text-sm text-blue-600">Carregando e processando arquivos...</p>}
     </div>
   );
 };

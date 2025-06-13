@@ -1,0 +1,166 @@
+<?xml version="1.0"?>
+<ListInformation>
+   <ApplicationData>
+     <Name />
+     <Version>1.0</Version>
+     <Date>13/06/2025 22:51:08</Date>
+   </ApplicationData>
+   <PartData>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>13.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PAINEL</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>1000.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>500.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Pau Ferro 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00011238</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>14.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PAINEL</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>500.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>1000.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Pau Ferro 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00011237</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>15.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PAINEL</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>500.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>1000.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Roble Catedral 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00011236</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>16.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PAINEL</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>1000.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>500.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Roble Catedral 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00011235</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>17.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PAINEL PORTA INFERIOR DOB TOTAL - CAVA</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>673.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>269.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00011234</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>18.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PRATELEIRA MÓVEL</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>263.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>563.5</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00001401</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>19.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>TRAVESSA</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>263.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>70.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00001348</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>20.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>TRAVESSA FRONTAL</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>263.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>70.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00001347</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>21.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>FUNDO</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>287.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>667.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 6.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00001093</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>22.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>LATERAL DIREITA</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>680.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>580.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00003164</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>23.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>LATERAL ESQUERDA</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>680.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>580.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00003163</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>24.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>BASE INFERIOR</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>263.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>580.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.5mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00002732</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value></Value></Field>
+     </Part>
+     <Part>
+       <Field><Name>Filename</Name><Type>Text</Type><Value>25.DXF</Value></Field>
+       <Field><Name>PartName</Name><Type>Text</Type><Value>PAINEL PUXADOR P/ PAINEL PORTA INFERIOR DOB TOTAL - CAVA</Value></Field>
+       <Field><Name>Length</Name><Type>Real</Type><Value>80.0</Value></Field>
+       <Field><Name>Width</Name><Type>Real</Type><Value>673.0</Value></Field>
+       <Field><Name>Thickness</Name><Type>Real</Type><Value>18</Value></Field>
+       <Field><Name>Material</Name><Type>Text</Type><Value>Branco TX 18.6mm</Value></Field>
+       <Field><Name>Client</Name><Type>Text</Type><Value>SAMUEL MEDEIROS ADAMI</Value></Field>
+       <Field><Name>Project</Name><Type>Text</Type><Value>Projeto</Value></Field>
+       <Field><Name>Program1</Name><Type>Text</Type><Value>00011234</Value></Field>
+       <Field><Name>Comment</Name><Type>Text</Type><Value>Painel complementar para puxador cava da peça ID 17</Value></Field>
+     </Part>
+   </PartData>
+</ListInformation>
