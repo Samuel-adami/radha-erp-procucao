@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-# GARANTA que esta linha NÃO esteja comentada e esteja no início do arquivo:
-from routes import auth # Importar o módulo de autenticação
+from routes import auth
 from routes import chat, campanha, publicacao, publicos, conhecimento
 import os
 import uvicorn
 
-app = FastAPI()
+# CORRIGIDO: Adicionado redirect_slashes=False
+app = FastAPI(redirect_slashes=False)
 
 # Removido: Configuração de CORS, pois será gerenciada pelo Gateway API
 
@@ -16,7 +16,6 @@ app.include_router(campanha.router, prefix="/nova-campanha")
 app.include_router(publicacao.router, prefix="/nova-publicacao")
 app.include_router(publicos.router, prefix="/publicos")
 app.include_router(conhecimento.router, prefix="/conhecimento")
-# Esta linha deve estar presente e não comentada
 app.include_router(auth.router, prefix="/auth")
 
 

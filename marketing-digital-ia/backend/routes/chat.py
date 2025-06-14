@@ -4,7 +4,8 @@ from services.openai_service import gerar_resposta
 from services.embedding_service import buscar_contexto
 from security import verificar_autenticacao
 
-router = APIRouter(prefix="/chat", tags=["Chat"])
+# CORRIGIDO: Removido prefix="/chat" daqui. Ele já é adicionado em main.py
+router = APIRouter(tags=["Chat"]) 
 
 class ChatInput(BaseModel):
     mensagem: str

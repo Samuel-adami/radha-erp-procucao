@@ -3,12 +3,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 import httpx
 
-app = FastAPI(title="Radha ERP Gateway API", version="1.0")
+# CORRIGIDO: Adicionado redirect_slashes=False
+app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
 
-# Configuração de CORS - Ajuste allow_origins conforme seus domínios em produção
+# Configuração de CORS - ATENÇÃO: SUBSTITUA SEU_IP_DO_VPS PELO IP REAL DO SEU VPS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3005", "https://seu-dominio-erp.com.br", "http://212.85.13.74:3005"], # Porta do frontend atualizada para 3005
+    allow_origins=[
+        "http://localhost:3005",
+        "http://127.0.0.1:3005",
+        "http://212.85.13.74:3005", # <--- SEU_IP_DO_VPS REAL
+        "https://seu-dominio-erp.com.br"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -16,8 +22,8 @@ app.add_middleware(
 
 # Cliente HTTP para fazer requisições para os módulos de backend
 # Ajuste as URLs conforme onde seus módulos de backend rodarão
-MARKETING_IA_BACKEND_URL = "http://localhost:8015"  # Porta do Marketing Digital IA atualizada para 8015
-PRODUCAO_BACKEND_URL = "http://localhost:8020"      # Porta da Produção atualizada para 8020
+MARKETING_IA_BACKEND_URL = "http://localhost:8015"
+PRODUCAO_BACKEND_URL = "http://localhost:8020"
 
 @app.get("/")
 async def read_root():
@@ -30,9 +36,9 @@ async def call_marketing_ia_backend(path: str, request: Request):
         url = f"{MARKETING_IA_BACKEND_URL}/{path}"
         try:
             # Reenvia headers, query params e body
-            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host", "authorization"]} # Exclui headers que podem causar problemas
+            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host", "authorization"]}
             if "authorization" in request.headers:
-                headers["Authorization"] = request.headers["Authorization"] # Passa o token de autenticação
+                headers["Authorization"] = request.headers["Authorization"]
 
             response = await client.request(
                 method=request.method,

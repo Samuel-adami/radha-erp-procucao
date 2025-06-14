@@ -1,0 +1,44 @@
+# =============================================================
+# COMANDOS PARA INICIAR OS SERVIÇOS DO RADHA ERP SEPARADAMENTE
+# Execute cada bloco em um TERMINAL SSH DIFERENTE
+# =============================================================
+
+# --- TERMINAL 1: Backend de Marketing Digital IA (Porta 8015) ---
+# Navegue para a pasta do backend de Marketing Digital IA
+cd /opt/radha/radha-erp/marketing-digital-ia/backend/
+# Ative o ambiente virtual
+source venv/bin/activate
+# Inicie o servidor FastAPI (deixe rodando)
+uvicorn main:app --host 0.0.0.0 --port 8015 --reload
+
+# --- TERMINAL 2: Backend de Produção (Porta 8020) ---
+# Navegue para a pasta do backend de Produção
+cd /opt/radha/radha-erp/producao/backend/src/
+# Ative o ambiente virtual
+source venv/bin/activate
+# Inicie o servidor FastAPI (deixe rodando)
+uvicorn api:app --host 0.0.0.0 --port 8020 --reload
+
+# --- TERMINAL 3: Backend Gateway (Porta 8010) ---
+# Navegue para a pasta do Backend Gateway
+cd /opt/radha/radha-erp/backend-gateway/
+# Ative o ambiente virtual
+source venv/bin/activate
+# Inicie o servidor FastAPI (deixe rodando)
+uvicorn main:app --host 0.0.0.0 --port 8010 --reload
+
+# --- TERMINAL 4: Frontend Principal (Porta 3005) ---
+# Navegue para a pasta do Frontend Principal
+cd /opt/radha/radha-erp/frontend-erp/
+# Se algum ambiente virtual Python estiver ativo (mostrar "(venv)"), desative:
+# deactivate
+# Inicie a aplicação React (deixe rodando)
+npm run dev
+
+
+####COMANDOS PARA PARAR DE RODAR UMA Porta
+
+  °  °                                                                      n°°°°°   °                                                       n                  °°
+kill -9 12345 <===PID que apareceu com o comando acima
+
+kill -9 827938

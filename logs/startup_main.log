@@ -1,0 +1,13 @@
+=== Iniciando serviços do Radha ERP ===
+Data de início: Sat Jun 14 13:06:40 UTC 2025
+Logs detalhados de cada serviço serão encontrados em /opt/radha/radha-erp/logs
+Iniciando Marketing_IA_Backend (porta 8015)...
+Marketing_IA_Backend iniciado com PID 827932.
+Iniciando Producao_Backend (porta 8020)...
+Producao_Backend iniciado com PID 827993.
+Iniciando Backend_Gateway (porta 8010)...
+Backend_Gateway iniciado com PID 828039.
+Iniciando Frontend_ERP (porta 3005)...
+Frontend_ERP iniciado com PID 828091.
+=== Todos os serviços do Radha ERP foram iniciados em segundo plano ===
+Verifique os arquivos de log em /opt/radha/radha-erp/logs para detalhes e erros.

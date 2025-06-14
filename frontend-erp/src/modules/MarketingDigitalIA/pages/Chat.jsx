@@ -1,97 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 function Chat({ usuarioLogado }) {
-  const [mensagem, setMensagem] = useState('');
-  const [conversas, setConversas] = useState([]);
-  const [erro, setErro] = useState('');
+  const [mensagens, setMensagens] = useState([]);
+  const [inputMensagem, setInputMensagem] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  const id_assistant = "asst_OuBtdCCByhjfqPFPZwMK6d9y";
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
-  const enviarMensagem = async () => {
-    if (!mensagem.trim()) return;
+  useEffect(scrollToBottom, [mensagens]);
 
-    const novaConversa = { pergunta: mensagem, resposta: '...' };
-    setConversas([...conversas, novaConversa]);
-    setMensagem('');
-    setErro('');
+  const enviarMensagem = async (e) => {
+    e.preventDefault();
+    if (!inputMensagem.trim()) return;
+
+    const novaMensagem = { remetente: "user", texto: inputMensagem };
+    setMensagens((prevMensagens) => [...prevMensagens, novaMensagem]);
+    setInputMensagem("");
+    setCarregando(true);
 
     try {
-      const resultado = await fetchComAuth('/chat', {
+      // CORRIGIDO: Removido usuarioLogado.token da chamada, fetchComAuth já cuida disso
+      const respostaBackend = await fetchComAuth('/chat', {
         method: 'POST',
-        body: JSON.stringify({ mensagem, id_assistant })
-      }, usuarioLogado.token);
+        body: JSON.stringify({ prompt: inputMensagem }),
+      });
 
-      setConversas((prev) => {
-        const atualizadas = [...prev];
-        atualizadas[atualizadas.length - 1].resposta = resultado.resposta || 'Sem resposta';
-        return atualizadas;
-      });
-    } catch (err) {
-      setConversas((prev) => {
-        const atualizadas = [...prev];
-        atualizadas[atualizadas.length - 1].resposta = `Erro: ${err.message}`;
-        return atualizadas;
-      });
+      const respostaAI = { remetente: "ai", texto: respostaBackend.resposta };
+      setMensagens((prevMensagens) => [...prevMensagens, respostaAI]);
+    } catch (error) {
+      console.error("Erro ao enviar mensagem:", error);
+      setMensagens((prevMensagens) => [
+        ...prevMensagens,
+        { remetente: "ai", texto: "Desculpe, houve um erro ao processar sua solicitação." },
+      ]);
+    } finally {
+      setCarregando(false);
     }
   };
 
-  const baixarConversa = () => {
-    const conteudo = conversas
-      .map((c, i) => `🔹 Pergunta ${i + 1}: ${c.pergunta}\n🔸 Resposta ${i + 1}: ${c.resposta}\n`)
-      .join('\n');
-
-    const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'conversa_radha.txt';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Pergunte algo à Sara</h1>
-
-      <div className="space-y-4 mb-4">
-        {conversas.map((c, index) => (
-          <div key={index} className="bg-gray-100 p-4 rounded">
-            <p><strong>Pergunta:</strong> {c.pergunta}</p>
-            <p className="mt-2 text-purple-700"><strong>Resposta:</strong> {c.resposta}</p>
+    <div className="flex flex-col h-[70vh] bg-white rounded shadow-md">
+      <div className="flex-grow overflow-y-auto p-4 space-y-4">
+        {mensagens.length === 0 && (
+          <p className="text-center text-gray-500 mt-10">
+            Olá! Como posso ajudar hoje com sua estratégia de marketing?
+          </p>
+        )}
+        {mensagens.map((msg, index) => (
+          <div
+            key={index}
+            className={`flex ${
+              msg.remetente === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
+            <div
+              className={`max-w-[70%] p-3 rounded-lg ${
+                msg.remetente === "user"
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-gray-800"
+              }`}
+            >
+              <p className="whitespace-pre-wrap">{msg.texto}</p>
+            </div>
           </div>
         ))}
+        {carregando && (
+          <div className="flex justify-start">
+            <div className="max-w-[70%] p-3 rounded-lg bg-gray-200 text-gray-800">
+              <p>Digitando...</p>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
-      <textarea
-        className="w-full border rounded p-2 mb-2"
-        rows="4"
-        value={mensagem}
-        onChange={(e) => setMensagem(e.target.value)}
-        placeholder="Digite sua mensagem"
-      />
-
-      <div className="flex items-center gap-4">
+      <form onSubmit={enviarMensagem} className="p-4 border-t flex items-center">
+        <input
+          type="text"
+          value={inputMensagem}
+          onChange={(e) => setInputMensagem(e.target.value)}
+          className="flex-grow input mr-2"
+          placeholder="Digite sua mensagem..."
+          disabled={carregando}
+        />
         <button
-          onClick={enviarMensagem}
-          className="bg-purple-900 text-white px-4 py-2 rounded hover:bg-blue-700"
+          type="submit"
+          className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          disabled={carregando}
         >
           Enviar
         </button>
-
-        <button
-          onClick={baixarConversa}
-          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-        >
-          Baixar conversa
-        </button>
-      </div>
-
-      {erro && (
-        <div className="mt-4 p-4 bg-red-100 text-red-700 rounded">
-          <strong>Erro:</strong> {erro}
-        </div>
-      )}
+      </form>
     </div>
   );
 }
