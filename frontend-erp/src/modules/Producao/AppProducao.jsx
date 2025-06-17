@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "./components/ui/button"; 
 import ImportarXML from "./components/ImportarXML"; 
 import VisualizacaoPeca from "./components/VisualizacaoPeca"; 
-import Pacote from "./components/Pacote"; 
+import Pacote from "./components/Pacote";
+import Apontamento from "./components/Apontamento";
 import "./Producao.css";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -388,4 +389,4 @@ const EditarPecaProducao = () => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, ImportarXML, VisualizacaoPeca };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ImportarXML, VisualizacaoPeca };
