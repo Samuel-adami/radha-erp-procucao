@@ -8,6 +8,7 @@
 cd /opt/radha/radha-erp/marketing-digital-ia/backend/
 # Ative o ambiente virtual
 source venv/bin/activate
+export SECRET_KEY=radha-super-secreto
 # Inicie o servidor FastAPI (deixe rodando)
 uvicorn main:app --host 0.0.0.0 --port 8015 --reload
 
@@ -16,6 +17,7 @@ uvicorn main:app --host 0.0.0.0 --port 8015 --reload
 cd /opt/radha/radha-erp/producao/backend/src/
 # Ative o ambiente virtual
 source venv/bin/activate
+export SECRET_KEY=radha-super-secreto
 # Inicie o servidor FastAPI (deixe rodando)
 uvicorn api:app --host 0.0.0.0 --port 8020 --reload
 
@@ -24,6 +26,7 @@ uvicorn api:app --host 0.0.0.0 --port 8020 --reload
 cd /opt/radha/radha-erp/backend-gateway/
 # Ative o ambiente virtual
 source venv/bin/activate
+export SECRET_KEY=radha-super-secreto
 # Inicie o servidor FastAPI (deixe rodando)
 uvicorn main:app --host 0.0.0.0 --port 8010 --reload
 
