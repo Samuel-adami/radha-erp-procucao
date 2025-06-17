@@ -5,7 +5,7 @@ from jose import jwt
 from datetime import datetime, timedelta
 
 # ⚙️ Configuração do JWT
-SECRET_KEY = "radha-super-secreto"  # Substitua por algo seguro em produção
+SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")  # Use variável de ambiente
 ALGORITHM = "HS256"
 EXPIRATION_MINUTES = 60
 
