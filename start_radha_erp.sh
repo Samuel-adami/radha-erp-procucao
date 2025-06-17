@@ -9,6 +9,7 @@ RADHA_ERP_ROOT="${RADHA_ERP_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null ||
 LOG_DIR="$RADHA_ERP_ROOT/logs"
 mkdir -p "$LOG_DIR" # Cria o diretório de logs se não existir
 
+export SECRET_KEY="${SECRET_KEY:-radha-super-secreto}"
 echo "=== Iniciando serviços do Radha ERP ===" | tee -a "$LOG_DIR/startup_main.log"
 echo "Data de início: $(date)" | tee -a "$LOG_DIR/startup_main.log"
 echo "Logs detalhados de cada serviço serão encontrados em $LOG_DIR" | tee -a "$LOG_DIR/startup_main.log"
