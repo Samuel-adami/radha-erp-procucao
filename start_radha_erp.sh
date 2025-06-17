@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Diretório base do seu monorepo
-RADHA_ERP_ROOT="/opt/radha/radha-erp"
+# Diretório base do monorepo
+# Use a variável RADHA_ERP_ROOT se definida; caso contrário, detecta o diretório
+# do repositório Git (ou o diretório atual como fallback)
+RADHA_ERP_ROOT="${RADHA_ERP_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 # Diretório para armazenar os logs de inicialização de cada serviço e PIDs
 LOG_DIR="$RADHA_ERP_ROOT/logs"

@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Define o diretório raiz do seu monorepo
-RADHA_ERP_ROOT="/opt/radha/radha-erp"
+# Diretório raiz do monorepo
+# Use RADHA_ERP_ROOT se definido; caso contrário, tenta detectar o repositório
+# Git atual (ou usa o diretório corrente)
+RADHA_ERP_ROOT="${RADHA_ERP_ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 echo "--- Sincronizando o monorepo Radha ERP com o GitHub ---"
 echo "Navegando para $RADHA_ERP_ROOT"
