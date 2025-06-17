@@ -2,13 +2,14 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento } from './AppProducao';
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
   const matchHome = useMatch(`${resolved.pathname}`); // Matches /producao exactly
   // Para o link "Início Produção" ser ativo quando estiver na raiz do módulo
   const matchLote = useMatch(`${resolved.pathname}/lote/*`); // Matches /producao/lote/qualquer_nome
+  const matchApontamento = useMatch(`${resolved.pathname}/apontamento`);
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
@@ -19,6 +20,12 @@ function ProducaoLayout() {
           className={`px-3 py-1 rounded ${matchHome ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
         >
           Início Produção
+        </Link>
+        <Link
+          to="apontamento"
+          className={`px-3 py-1 rounded ${matchApontamento ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Apontamento
         </Link>
         {/* Adicionar mais links de navegação interna do módulo, se necessário */}
       </nav>
@@ -35,6 +42,7 @@ function Producao() {
         <Route path="lote/:nome" element={<LoteProducao />} />
         <Route path="lote/:nome/pacote/:indice" element={<Pacote />} />
         <Route path="lote/:nome/peca/:peca" element={<EditarPecaProducao />} />
+        <Route path="apontamento" element={<Apontamento />} />
       </Route>
     </Routes>
   );
