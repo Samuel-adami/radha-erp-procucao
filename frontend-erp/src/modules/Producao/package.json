@@ -1,5 +1,6 @@
 {
   "name": "painel-radha",
+  "main": "index.jsx",
   "version": "1.0.0",
   "scripts": {
     "dev": "vite",
