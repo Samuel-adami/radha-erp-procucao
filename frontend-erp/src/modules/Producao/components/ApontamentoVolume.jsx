@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button } from "./ui/button";
+import JsBarcode from "jsbarcode";
 
 const CODE_FECHA_VOLUME = "999999";
 
@@ -36,8 +36,21 @@ const ApontamentoVolume = () => {
     }
   };
 
-  const gerarCodigoBarra = (num) => {
-    return `VOL-${Date.now()}-${num}`;
+const gerarCodigoBarra = (num) => {
+  return `VOL-${Date.now()}-${num}`;
+};
+
+  const imprimirEtiqueta = (codigo) => {
+    const printWindow = window.open('', '_blank', 'width=400,height=200');
+    if (!printWindow) return;
+    printWindow.document.write(`<html><body style="margin:0;display:flex;align-items:center;justify-content:center;">`);
+    printWindow.document.write(`<svg id="barcode"></svg>`);
+    printWindow.document.write('</body></html>');
+    printWindow.document.close();
+    JsBarcode(printWindow.document.getElementById('barcode'), codigo, { format: 'CODE128', displayValue: true });
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
   };
 
   const registrarCodigo = (e) => {
@@ -57,6 +70,7 @@ const ApontamentoVolume = () => {
         setVolumes(atualizados);
         salvarVolumes(atualizados);
         setApontados([]);
+        imprimirEtiqueta(novoVolume.barcode);
       }
     } else {
       const peca = pacote.pecas.find(p => String(p.codigo_peca) === cod);
