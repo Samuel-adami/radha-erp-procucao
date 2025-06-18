@@ -4,7 +4,7 @@ This repository contains the services and utilities that compose Radha ERP.
 
 ## Scripts
 
-- **start_radha_erp.sh** – starts all backend and frontend services.
+- **start_radha_erp.sh** – starts all backend and frontend services. When executed for the first time it will create the required Python virtual environments and install dependencies automatically if they are missing.
 - **update_github.sh** – commits and pushes local changes to GitHub.
 
 Both scripts use the environment variable `RADHA_ERP_ROOT` to locate the
