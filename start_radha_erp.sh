@@ -27,16 +27,25 @@ start_python_service() {
 
     cd "$service_path" || { echo "Erro ao entrar no diretório de $service_name. Abortando." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
 
-    # Ativa o ambiente virtual
+    if [ ! -f venv/bin/activate ]; then
+        echo "Criando ambiente virtual para $service_name..." | tee -a "$LOG_DIR/startup_main.log"
+        python3 -m venv venv >> "$log_file" 2>&1 || { echo "Erro ao criar venv para $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
+        source venv/bin/activate
+        if [ -f requirements.txt ]; then
+            pip install --upgrade pip >> "$log_file" 2>&1
+            pip install -r requirements.txt >> "$log_file" 2>&1 || { echo "Erro ao instalar dependências para $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
+        fi
+        deactivate
+    fi
+
     source venv/bin/activate || { echo "Erro ao ativar venv para $service_name. Abortando." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
 
-    # Inicia o Uvicorn em segundo plano, redirecionando stdout/stderr para o log
     nohup uvicorn "$app_module" --host 0.0.0.0 --port "$port" --reload > "$log_file" 2>&1 &
-    echo $! > "$pid_file" # Salva o PID do processo
-    deactivate # Desativa o ambiente virtual
+    echo $! > "$pid_file"
+    deactivate
 
     echo "$service_name iniciado com PID $(cat "$pid_file")." | tee -a "$LOG_DIR/startup_main.log"
-    sleep 5 # Espera 5 segundos para o serviço Python iniciar
+    sleep 5
 }
 
 # Função para iniciar o serviço Node.js (Frontend)
@@ -52,9 +61,13 @@ start_node_service() {
 
     cd "$service_path" || { echo "Erro ao entrar no diretório de $service_name. Abortando." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
 
-    # Inicia o comando npm em segundo plano
+    if [ ! -d node_modules ]; then
+        echo "Instalando dependências Node para $service_name..." | tee -a "$LOG_DIR/startup_main.log"
+        npm install >> "$log_file" 2>&1 || { echo "Erro ao instalar dependências do $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
+    fi
+
     nohup $command > "$log_file" 2>&1 &
-    echo $! > "$pid_file" # Salva o PID do processo
+    echo $! > "$pid_file"
 
     echo "$service_name iniciado com PID $(cat "$pid_file")." | tee -a "$LOG_DIR/startup_main.log"
     sleep 10 # Espera um pouco mais para o Frontend estar pronto
