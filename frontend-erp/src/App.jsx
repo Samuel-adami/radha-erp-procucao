@@ -55,7 +55,7 @@ function App() {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const dados = await fetchComAuth("http://localhost:8010/auth/validate");
+          const dados = await fetchComAuth("/auth/validate");
           setUsuarioLogado(dados.usuario);
         } catch (error) {
           console.error("Token inválido ou expirado, fazendo logout.", error);
