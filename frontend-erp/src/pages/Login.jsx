@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { fetchComAuth } from "../utils/fetchComAuth";
 
 // Recebe a função `onLoginSuccess` como propriedade
 function Login({ onLoginSuccess }) {
@@ -16,18 +17,10 @@ function Login({ onLoginSuccess }) {
     }
 
     try {
-      const response = await fetch("http://localhost:8010/auth/login", {
+      const data = await fetchComAuth("/auth/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
-
-      if (!response.ok) {
-        const erroData = await response.json();
-        throw new Error(erroData.detail || "Falha no login");
-      }
-
-      const data = await response.json();
       localStorage.setItem("token", data.access_token);
       
       // Chama a função do componente pai (App.jsx) para atualizar o estado e navegar

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "./components/ui/button"; 
-import ImportarXML from "./components/ImportarXML"; 
-import VisualizacaoPeca from "./components/VisualizacaoPeca"; 
+import ImportarXML from "./components/ImportarXML";
+import VisualizacaoPeca from "./components/VisualizacaoPeca";
+import { fetchComAuth } from "../../utils/fetchComAuth";
 import Pacote from "./components/Pacote";
 import Apontamento from "./components/Apontamento";
 import ApontamentoVolume from "./components/ApontamentoVolume";
@@ -98,12 +99,10 @@ const LoteProducao = () => {
       ...pc,
       operacoes: JSON.parse(localStorage.getItem("op_producao_" + pc.id) || "[]")
     })));
-    const resposta = await fetch("http://localhost:8010/producao/gerar-lote-final", {
+    const json = await fetchComAuth("/producao/gerar-lote-final", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lote: nome, pecas })
     });
-    const json = await resposta.json();
     alert(json.mensagem);
   };
 
