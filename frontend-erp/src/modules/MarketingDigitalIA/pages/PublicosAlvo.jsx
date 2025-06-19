@@ -10,7 +10,7 @@ function PublicosAlvo() {
 
   const carregarPublicos = async () => {
     try {
-      const resultado = await fetchComAuth('/publicos');
+      const resultado = await fetchComAuth('/publicos/');
       setPublicos(resultado);
     } catch (err) {
       setErro(err.message);
@@ -23,7 +23,7 @@ function PublicosAlvo() {
 
   const adicionarPublico = async () => {
     try {
-      await fetchComAuth('/publicos', {
+      await fetchComAuth('/publicos/', {
         method: 'POST',
         body: JSON.stringify({ nome, descricao })
       });
