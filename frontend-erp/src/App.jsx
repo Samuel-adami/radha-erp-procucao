@@ -9,7 +9,6 @@ import {
   Outlet,
 } from "react-router-dom";
 
-import Login from "./pages/Login";
 import MarketingDigitalIA from "./modules/MarketingDigitalIA";
 import Producao from "./modules/Producao";
 import { fetchComAuth } from "./utils/fetchComAuth";
@@ -49,34 +48,45 @@ function App() {
   const [carregando, setCarregando] = useState(true);
   const navigate = useNavigate();
 
-  // Efeito para validar o token na inicialização da aplicação
+  // Efeito para autenticação automática na inicialização da aplicação
   useEffect(() => {
-    const validarToken = async () => {
+    const autenticar = async () => {
       const token = localStorage.getItem("token");
       if (token) {
         try {
           const dados = await fetchComAuth("/auth/validate");
           setUsuarioLogado(dados.usuario);
+          setCarregando(false);
+          return;
         } catch (error) {
-          console.error("Token inválido ou expirado, fazendo logout.", error);
+          console.error("Token inválido ou expirado, tentando novo login.", error);
           localStorage.removeItem("token");
         }
       }
-      setCarregando(false);
+
+      try {
+        const login = await fetchComAuth("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ username: "Samuel", password: "Sma@1984" }),
+        });
+        localStorage.setItem("token", login.access_token);
+        setUsuarioLogado(login.usuario);
+      } catch (error) {
+        console.error("Falha no login automático:", error);
+      } finally {
+        setCarregando(false);
+      }
     };
-    validarToken();
+
+    autenticar();
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     setUsuarioLogado(null);
-    navigate("/login");
+    navigate("/");
   };
   
-  const handleLoginSuccess = (usuario) => {
-    setUsuarioLogado(usuario);
-    navigate("/"); // Navega para a home do ERP após o login
-  };
 
   // Enquanto a validação inicial do token está acontecendo, exibe uma mensagem
   if (carregando) {
@@ -85,18 +95,13 @@ function App() {
   
   return (
       <Routes>
-        {/* Rota pública para o Login */}
-        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
-
-        {/* Grupo de Rotas Protegidas */}
-        <Route 
+        {/* Rotas principais do ERP */}
+        <Route
           element={
-            // Se o usuário estiver logado, renderiza o Layout, que por sua vez renderizará as rotas filhas.
-            // Se não, redireciona para a página de login.
             usuarioLogado ? (
               <Layout usuario={usuarioLogado} onLogout={handleLogout} />
             ) : (
-              <Navigate to="/login" replace />
+              <p className="p-4">Falha na autenticação.</p>
             )
           }
         >
@@ -107,7 +112,7 @@ function App() {
         </Route>
 
         {/* Rota para qualquer outro caminho não encontrado */}
-        <Route path="*" element={<Navigate to={usuarioLogado ? "/" : "/login"} replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   );
 }
