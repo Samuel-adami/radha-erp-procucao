@@ -6,10 +6,15 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from typing import List
 from sentence_transformers import SentenceTransformer
+import logging
 
 load_dotenv()
 
-model = SentenceTransformer('all-MiniLM-L6-v2')  # substituto leve se não usar OpenAI
+try:
+    model = SentenceTransformer('all-MiniLM-L6-v2')  # substituto leve se não usar OpenAI
+except Exception as e:
+    logging.error(f"Erro ao carregar modelo de embeddings: {e}")
+    model = None
 
 INDEX_PATH = "embeddings/faiss_index/index.faiss"
 DOCS_PATH = "embeddings/faiss_index/docs.pkl"
@@ -35,6 +40,9 @@ def criar_index():
     faiss.write_index(index, INDEX_PATH)
 
 def buscar_contexto(pergunta: str, top_k=3):
+    if model is None:
+        return ""
+
     index = faiss.read_index(INDEX_PATH)
     with open(DOCS_PATH, "rb") as f:
         docs = pickle.load(f)
