@@ -54,7 +54,7 @@ export async function fetchComAuth(url, options = {}) {
 
     if (response.status === 401 || response.status === 403) {
       localStorage.removeItem("token");
-      window.location.href = "/login";
+      window.location.reload();
     }
 
     throw new Error(`Erro ${response.status}: ${errorMessage}`);
