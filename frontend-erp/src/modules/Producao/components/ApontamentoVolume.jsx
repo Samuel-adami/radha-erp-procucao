@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import JsBarcode from "jsbarcode";
+import FiltroPacote from "./FiltroPacote";
 
 const CODE_FECHA_VOLUME = "999999";
 
@@ -88,30 +89,14 @@ const gerarCodigoBarra = (num) => {
   return (
     <div className="p-6">
       <h2 className="text-lg font-semibold mb-4">Apontamento de Volumes</h2>
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
-        <select
-          className="input sm:w-48"
-          value={lote}
-          onChange={e => { setLote(e.target.value); setPacoteIndex(""); }}
-        >
-          <option value="">Selecione o Lote</option>
-          {lotes.map(l => (
-            <option key={l.nome} value={l.nome}>{l.nome}</option>
-          ))}
-        </select>
-        {pacotes.length > 0 && (
-          <select
-            className="input sm:w-48"
-            value={pacoteIndex}
-            onChange={e => setPacoteIndex(e.target.value)}
-          >
-            <option value="">Selecione o Pacote</option>
-            {pacotes.map((p, i) => (
-              <option key={i} value={i}>{p.nome_pacote || `Pacote ${i + 1}`}</option>
-            ))}
-          </select>
-        )}
-      </div>
+      <FiltroPacote
+        lotes={lotes}
+        lote={lote}
+        onChangeLote={(v) => { setLote(v); setPacoteIndex(""); }}
+        pacotes={pacotes}
+        pacoteIndex={pacoteIndex}
+        onChangePacote={(v) => setPacoteIndex(v)}
+      />
       {pacote && (
         <>
           <form onSubmit={registrarCodigo} className="mb-4">
