@@ -24,9 +24,9 @@ function Chat({ usuarioLogado }) {
 
     try {
       // CORRIGIDO: Removido usuarioLogado.token da chamada, fetchComAuth já cuida disso
-      const respostaBackend = await fetchComAuth('/chat', {
+      const respostaBackend = await fetchComAuth('/chat/', {
         method: 'POST',
-        body: JSON.stringify({ prompt: inputMensagem }),
+        body: JSON.stringify({ mensagem: inputMensagem, id_assistant: 'asst_OuBtdCCByhjfqPFPZwMK6d9y' }),
       });
 
       const respostaAI = { remetente: "ai", texto: respostaBackend.resposta };
