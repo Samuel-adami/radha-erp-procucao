@@ -15,8 +15,8 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
-# 🔧 Cliente OpenAI assíncrono
-client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE)
+# 🔧 Cliente OpenAI assíncrono (pode ser None se API_KEY não estiver configurada)
+client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE) if API_KEY else None
 
 # 🧠 Hashtags temáticas
 HASHTAGS_TEMATICAS = {
@@ -36,6 +36,9 @@ async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
     logging.info("🟢 Entrando em gerar_resposta")
     logging.info(f"Prompt: {prompt}")
     logging.info(f"Assistant ID: {id_assistant}")
+    if client is None:
+        logging.warning("OPENAI_API_KEY não configurada. Respondendo com mensagem padrão.")
+        return "Serviço de IA indisponível no momento."
     conhecimento = consultar_conhecimento(prompt)
     if conhecimento:
         prompt = f"{conhecimento}\n\nUsuário: {prompt}"
@@ -72,9 +75,15 @@ async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
     except OpenAIError as e:
         logging.error(f"Erro na API da OpenAI: {e}")
         return "Estamos passando por instabilidades técnicas no momento. Por favor, tente novamente mais tarde."
+    except Exception as e:
+        logging.exception(f"Falha inesperada ao gerar resposta: {e}")
+        return "Não foi possível obter uma resposta no momento."
 
 # 🖼️ Geração de imagem DALL·E 3
 async def gerar_imagem(prompt: str) -> str:
+    if client is None:
+        logging.warning("OPENAI_API_KEY não configurada. Impossível gerar imagem.")
+        return ""
     try:
         resposta = await client.images.generate(
             model="dall-e-3",
@@ -86,6 +95,9 @@ async def gerar_imagem(prompt: str) -> str:
         return resposta.data[0].url
     except OpenAIError as e:
         logging.error(f"Erro ao gerar imagem com DALL·E: {e}")
+        return ""
+    except Exception as e:
+        logging.exception(f"Falha inesperada ao gerar imagem: {e}")
         return ""
 
 # 📝 Sobrepor texto na imagem
