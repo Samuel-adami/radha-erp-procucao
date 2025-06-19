@@ -14,7 +14,33 @@ echo "=== Iniciando serviços do Radha ERP ===" | tee -a "$LOG_DIR/startup_main.
 echo "Data de início: $(date)" | tee -a "$LOG_DIR/startup_main.log"
 echo "Logs detalhados de cada serviço serão encontrados em $LOG_DIR" | tee -a "$LOG_DIR/startup_main.log"
 
-# Função para iniciar um serviço Python
+# Encerra um serviço previamente executado caso exista um PID salvo
+stop_service_if_running() {
+    local service_name=$1
+    local pid_file="$LOG_DIR/${service_name}.pid"
+    local port=$2
+
+    if [ -f "$pid_file" ]; then
+        local old_pid=$(cat "$pid_file")
+        if kill -0 "$old_pid" >/dev/null 2>&1; then
+            echo "Parando $service_name em execução anterior (PID $old_pid)..." | tee -a "$LOG_DIR/startup_main.log"
+            kill "$old_pid" >/dev/null 2>&1
+            sleep 2
+        fi
+        rm -f "$pid_file"
+    fi
+
+    if command -v lsof >/dev/null 2>&1 && [ -n "$port" ]; then
+        local port_pids=$(lsof -ti:"$port" 2>/dev/null)
+        if [ -n "$port_pids" ]; then
+            echo "Liberando porta $port usada por $service_name..." | tee -a "$LOG_DIR/startup_main.log"
+            kill $port_pids >/dev/null 2>&1
+            sleep 2
+        fi
+    fi
+}
+
+# Fun\xC3\xA7\xC3\xA3o para iniciar um servi\xC3\xA7o Python
 start_python_service() {
     local service_name=$1
     local service_path=$2
@@ -22,6 +48,8 @@ start_python_service() {
     local port=$4
     local pid_file="$LOG_DIR/${service_name}.pid"
     local log_file="$LOG_DIR/${service_name}.log"
+
+    stop_service_if_running "$service_name" "$port"
 
     echo "Iniciando $service_name (porta $port)..." | tee -a "$LOG_DIR/startup_main.log"
 
@@ -56,6 +84,8 @@ start_node_service() {
     local port=$4
     local pid_file="$LOG_DIR/${service_name}.pid"
     local log_file="$LOG_DIR/${service_name}.log"
+
+    stop_service_if_running "$service_name" "$port"
 
     echo "Iniciando $service_name (porta $port)..." | tee -a "$LOG_DIR/startup_main.log"
 
