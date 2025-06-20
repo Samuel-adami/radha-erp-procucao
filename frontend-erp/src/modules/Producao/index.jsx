@@ -6,11 +6,11 @@ import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, Ap
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
-  const matchHome = useMatch(`${resolved.pathname}`); // Matches /producao exactly
+  const matchHome = useMatch({ path: `${resolved.pathname}`, end: true });
   // Para o link "Início Produção" ser ativo quando estiver na raiz do módulo
   const matchLote = useMatch(`${resolved.pathname}/lote/*`); // Matches /producao/lote/qualquer_nome
-  const matchApontamento = useMatch(`${resolved.pathname}/apontamento`);
-  const matchVolume = useMatch(`${resolved.pathname}/apontamento-volume`);
+  const matchApontamento = useMatch({ path: `${resolved.pathname}/apontamento`, end: true });
+  const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
