@@ -18,6 +18,7 @@ const ApontamentoVolume = () => {
     } else {
       setVolumes([]);
     }
+o8bmdc-codex/corrigir-lista-de-peças-na-tela-de-apontamento-de-volumes
     setCodigo("");
   }, [pacoteIndex, lote]);
 
@@ -70,6 +71,7 @@ const ApontamentoVolume = () => {
         onChangePacote={(v) => setPacoteIndex(v)}
       />
       {pacote && (
+o8bmdc-codex/corrigir-lista-de-peças-na-tela-de-apontamento-de-volumes
         <>
           <form onSubmit={registrarCodigo} className="mb-4">
             <input
@@ -84,6 +86,7 @@ const ApontamentoVolume = () => {
             {volumes.map(v => (
               <li key={v.numero} className="border rounded p-2">
                 <div className="font-semibold flex justify-between items-center">
+
                 <span>Volume {v.numero} - {v.barcode}</span>
                 <button
                   onClick={() => imprimirEtiqueta(v)}
@@ -97,10 +100,12 @@ const ApontamentoVolume = () => {
                   <li key={pc.id}>{String(pc.id).padStart(6,'0')} - {pc.nome || pc.descricao}</li>
                 ))}
               </ul>
+o8bmdc-codex/corrigir-lista-de-peças-na-tela-de-apontamento-de-volumes
               </li>
             ))}
           </ul>
         </>
+
       )}
     </div>
   );
