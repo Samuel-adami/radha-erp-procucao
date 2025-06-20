@@ -40,6 +40,18 @@ const Pacote = () => {
     setPacote({ ...pacoteAlvo });
   };
 
+  const excluirFerragem = (id) => {
+    if (!window.confirm(`Excluir ferragem ID ${id}?`)) return;
+    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+    const loteAlvo = lotes.find(l => l.nome === nome);
+    if (!loteAlvo) return;
+    const pacoteAlvo = loteAlvo.pacotes[parseInt(indice)];
+    if (!pacoteAlvo) return;
+    pacoteAlvo.ferragens = (pacoteAlvo.ferragens || []).filter(f => f.id !== id);
+    localStorage.setItem("lotesProducao", JSON.stringify(lotes));
+    setPacote({ ...pacoteAlvo });
+  };
+
   const pecasFiltradas = pacote.pecas.filter(p => {
     const textoBusca = filtroTexto.toLowerCase();
     const valorCampo = p[filtroCampo] ? String(p[filtroCampo]).toLowerCase() : "";
@@ -76,7 +88,7 @@ const Pacote = () => {
       <ul className="space-y-2">
         {pecasFiltradas.map((p) => (
           <li key={p.id} className="border rounded p-3">
-            <p><strong>ID {p.id} ({p.codigo_peca})</strong>: {p.nome} - {p.comprimento} x {p.largura} mm</p>
+            <p><strong>ID {String(p.id).padStart(6,'0')} ({p.codigo_peca})</strong>: {p.nome} - {p.comprimento} x {p.largura} mm</p>
             <div className="mt-2 space-x-2">
               {/* CORREÇÃO: Sintaxe de navegação para a peça corrigida */}
               <Button onClick={() => navigate(`/producao/lote/${nome}/peca/${p.id}`)}>Editar</Button>
@@ -85,6 +97,23 @@ const Pacote = () => {
           </li>
         ))}
       </ul>
+
+      {pacote.ferragens && pacote.ferragens.length > 0 && (
+        <div className="mt-8">
+          <h3 className="font-semibold mb-2">Ferragens e Acessórios</h3>
+          <ul className="space-y-2">
+            {pacote.ferragens.map(f => (
+              <li key={f.id} className="border rounded p-3 flex justify-between">
+                <span><strong>ID {String(f.id).padStart(6,'0')}</strong>: {f.descricao} - {f.quantidade}</span>
+                <div className="space-x-2">
+                  <Button onClick={() => navigate(`/producao/lote/${nome}/ferragem/${f.id}`)}>Editar</Button>
+                  <Button variant="destructive" onClick={() => excluirFerragem(f.id)}>Excluir</Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };

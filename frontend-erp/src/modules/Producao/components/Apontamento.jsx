@@ -17,7 +17,7 @@ const Apontamento = () => {
     if (!pacote) return;
     const cod = codigo.trim();
     if (!cod) return;
-    const peca = pacote.pecas.find(p => String(p.codigo_peca) === cod);
+    const peca = pacote.pecas.find(p => String(p.id).padStart(6,'0') === cod);
     if (peca) {
       if (!apontados.includes(peca.id)) {
         setApontados([...apontados, peca.id]);
@@ -44,7 +44,7 @@ const Apontamento = () => {
           <form onSubmit={registrarCodigo} className="mb-4">
             <input
               className="input w-full sm:w-64"
-              placeholder="Program1 / Código de Barras"
+              placeholder="ID da peça (6 dígitos)"
               value={codigo}
               onChange={e => setCodigo(e.target.value)}
               autoFocus
@@ -56,7 +56,7 @@ const Apontamento = () => {
                 key={p.id}
                 className={`border rounded p-2 ${apontados.includes(p.id) ? 'bg-green-200' : ''}`}
               >
-                <span className="font-mono mr-2">{p.codigo_peca}</span>
+                <span className="font-mono mr-2">{String(p.id).padStart(6,'0')}</span>
                 {p.nome}
               </li>
             ))}

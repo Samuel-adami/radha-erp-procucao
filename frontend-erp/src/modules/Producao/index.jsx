@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem } from './AppProducao';
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
@@ -49,6 +49,7 @@ function Producao() {
         <Route path="lote/:nome" element={<LoteProducao />} />
         <Route path="lote/:nome/pacote/:indice" element={<Pacote />} />
         <Route path="lote/:nome/peca/:peca" element={<EditarPecaProducao />} />
+        <Route path="lote/:nome/ferragem/:id" element={<EditarFerragem />} />
         <Route path="apontamento" element={<Apontamento />} />
         <Route path="apontamento-volume" element={<ApontamentoVolume />} />
       </Route>
