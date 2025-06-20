@@ -386,12 +386,9 @@ def parse_xml_producao(root, xml_path):
 
     if pecas:
         print(f"📦 Total de peças válidas importadas: {len(pecas)}")
-        pacote = {"nome_pacote": nome_pacote, "pecas": pecas}
-        if ferragens:
-            print(f"📦 Total de ferragens importadas: {len(ferragens)}")
-            pacote["ferragens"] = ferragens
-        pacotes.append(pacote)
-    elif ferragens:
+        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+
+    if ferragens:
         print(f"📦 Total de ferragens importadas: {len(ferragens)}")
         pacotes.append({"nome_pacote": "Ferragens e Acessórios", "ferragens": ferragens})
 
