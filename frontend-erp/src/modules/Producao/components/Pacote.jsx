@@ -26,9 +26,9 @@ const Pacote = () => {
     const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     const loteAlvo = lotes.find(l => l.nome === nome);
     if (!loteAlvo) return;
-    
+
     const pacoteAlvo = loteAlvo.pacotes[parseInt(indice)];
-    if (!pacoteAlvo) return;
+    if (!pacoteAlvo || !pacoteAlvo.pecas) return;
 
     // Filtra para remover a peça
     pacoteAlvo.pecas = pacoteAlvo.pecas.filter(p => p.id !== id);
@@ -52,7 +52,7 @@ const Pacote = () => {
     setPacote({ ...pacoteAlvo });
   };
 
-  const pecasFiltradas = pacote.pecas.filter(p => {
+  const pecasFiltradas = (pacote.pecas || []).filter(p => {
     const textoBusca = filtroTexto.toLowerCase();
     const valorCampo = p[filtroCampo] ? String(p[filtroCampo]).toLowerCase() : "";
     const codigoPeca = p['codigo_peca'] ? String(p['codigo_peca']).toLowerCase() : "";
