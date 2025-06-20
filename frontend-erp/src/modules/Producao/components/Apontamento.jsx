@@ -43,14 +43,24 @@ const Apontamento = () => {
     return `VOL-${Date.now()}-${num}`;
   };
 
-  const imprimirEtiqueta = (codigo) => {
-    const printWindow = window.open('', '_blank', 'width=400,height=200');
+  const imprimirEtiqueta = (volume) => {
+    const printWindow = window.open('', '_blank', 'width=400,height=400');
     if (!printWindow) return;
-    printWindow.document.write(`<html><body style="margin:0;display:flex;align-items:center;justify-content:center;">`);
+    printWindow.document.write(`<html><body style="font-family:sans-serif;margin:0;padding:8px;">`);
+    printWindow.document.write(`<h3>Volume ${volume.numero}</h3>`);
+    if (pacote?.nome_pacote) {
+      printWindow.document.write(`<div>${pacote.nome_pacote}</div>`);
+    }
+    printWindow.document.write('<ul style="margin:8px 0; padding-left:16px; font-size:12px">');
+    volume.pecas.forEach(p => {
+      const nome = p.nome || p.descricao || '';
+      printWindow.document.write(`<li>${String(p.id).padStart(6,'0')} - ${nome}</li>`);
+    });
+    printWindow.document.write('</ul>');
     printWindow.document.write(`<svg id="barcode"></svg>`);
     printWindow.document.write('</body></html>');
     printWindow.document.close();
-    JsBarcode(printWindow.document.getElementById('barcode'), codigo, { format: 'CODE128', displayValue: true });
+    JsBarcode(printWindow.document.getElementById('barcode'), volume.barcode, { format: 'CODE128', displayValue: true });
     printWindow.focus();
     printWindow.print();
     printWindow.close();
@@ -74,7 +84,7 @@ const Apontamento = () => {
         setVolumes(atualizados);
         salvarVolumes(atualizados);
         setPendentes([]);
-        imprimirEtiqueta(novoVolume.barcode);
+        imprimirEtiqueta(novoVolume);
       }
     } else {
       const item = itensPacote.find(p => String(p.id).padStart(6,'0') === cod);
