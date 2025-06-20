@@ -33,7 +33,10 @@ const EditarFerragem = () => {
       const idx = (pacote.ferragens || []).findIndex(x => x.id === parseInt(id));
       if (idx >= 0) {
         pacote.ferragens[idx].quantidade = quantidade;
-        if (substituir) pacote.ferragens[idx].descricao = substituir;
+        if (substituir) {
+          pacote.ferragens[idx].descricao = substituir;
+          pacote.ferragens[idx].nome = substituir;
+        }
       }
     }
     localStorage.setItem("lotesProducao", JSON.stringify(lotes));
@@ -45,7 +48,7 @@ const EditarFerragem = () => {
   return (
     <div className="p-6 space-y-4">
       <h3 className="text-lg font-semibold">Editar Ferragem</h3>
-      <p>ID {String(ferragem.id).padStart(6,'0')} - {ferragem.descricao}</p>
+      <p>ID {String(ferragem.id).padStart(6,'0')} - {ferragem.descricao || ferragem.nome}</p>
       <label className="block">Quantidade:
         <input type="number" className="input" value={quantidade} onChange={e => setQuantidade(parseInt(e.target.value))} />
       </label>
