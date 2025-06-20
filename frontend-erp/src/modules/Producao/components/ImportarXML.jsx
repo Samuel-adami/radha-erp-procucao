@@ -23,7 +23,7 @@ const ImportarXML = ({ onImportarPacote }) => {
 
     try {
       // URL completa apontando para o gateway, que redirecionará para o backend de produção
-      const data = await fetchComAuth("/producao/importar-xml", {
+      const data = await fetchComAuth("/importar-xml", {
         method: "POST",
         body: formData,
         // Não é mais necessário definir headers aqui, fetchComAuth cuidará disso.

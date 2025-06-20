@@ -99,7 +99,7 @@ const LoteProducao = () => {
       ...pc,
       operacoes: JSON.parse(localStorage.getItem("op_producao_" + pc.id) || "[]")
     })));
-    const json = await fetchComAuth("/producao/gerar-lote-final", {
+    const json = await fetchComAuth("/gerar-lote-final", {
       method: "POST",
       body: JSON.stringify({ lote: nome, pecas })
     });
