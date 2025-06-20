@@ -137,12 +137,27 @@ def classificar_item(item):
     largura = float(item.get("WIDTH", 0))
     comprimento = float(item.get("DEPTH", 0))
     espessura = float(item.get("HEIGHT", 0))
-    if item.get("COMPONENT") != "Y" or item.get("STRUCTURE") != "N": return "outro"
-    if family in ["acessórios", "roteiro produtivo", "ferragem", "ferragens"]: return "outro"
-    if ref and not supplier and largura > 0 and comprimento > 0 and espessura > 0: return "mdf"
-    if "fita" in desc or item.get("PRODUCTTYPE") == "EdgeBanding": return "fita"
-    if tipo == "accessory" or "parafuso" in desc or "dobradiça" in desc or supplier: return "ferragem"
-    return "outro" 
+    if item.get("COMPONENT") != "Y" or item.get("STRUCTURE") != "N":
+        return "outro"
+
+    # Considerar famílias de ferragens e acessórios como ferragem para que os
+    # itens sejam corretamente importados
+    if family in ["acessórios", "ferragem", "ferragens"]:
+        return "ferragem"
+
+    if family == "roteiro produtivo":
+        return "outro"
+
+    if ref and not supplier and largura > 0 and comprimento > 0 and espessura > 0:
+        return "mdf"
+
+    if "fita" in desc or item.get("PRODUCTTYPE") == "EdgeBanding":
+        return "fita"
+
+    if tipo == "accessory" or "parafuso" in desc or "dobradiça" in desc or supplier:
+        return "ferragem"
+
+    return "outro"
 
 def inferir_operacoes_por_nome(nome, largura, comprimento):
     operacoes, nome_lower, espessura = [], nome.lower(), comprimento
