@@ -64,7 +64,7 @@ const LoteProducao = () => {
 
   const salvarPacotes = (novosPacotes) => {
     const pacotesComIds = novosPacotes.map(pacote => {
-      const pecasComIds = pacote.pecas.map(p => {
+      const pecasComIds = (pacote.pecas || []).map(p => {
         const id = globalIdProducao++;
         if (p.operacoes) {
           localStorage.setItem("op_producao_" + id, JSON.stringify(p.operacoes));
@@ -122,7 +122,7 @@ const LoteProducao = () => {
 
       <ul className="space-y-2 mt-4">
         {pacotes.map((p, i) => (
-          <li key={p.id || i} className="border p-2 rounded">
+          <li key={i} className="border p-2 rounded">
             <div className="flex justify-between">
               <div className="font-semibold">{p.nome_pacote || `Pacote ${i + 1}`}</div>
               <div className="space-x-2">
