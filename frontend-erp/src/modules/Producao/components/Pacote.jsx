@@ -104,7 +104,7 @@ const Pacote = () => {
           <ul className="space-y-2">
             {pacote.ferragens.map(f => (
               <li key={f.id} className="border rounded p-3 flex justify-between">
-                <span><strong>ID {String(f.id).padStart(6,'0')}</strong>: {f.descricao} - {f.quantidade}</span>
+                <span><strong>ID {String(f.id).padStart(6,'0')}</strong>: {f.descricao || f.nome} - {f.quantidade}</span>
                 <div className="space-x-2">
                   <Button onClick={() => navigate(`/producao/lote/${nome}/ferragem/${f.id}`)}>Editar</Button>
                   <Button variant="destructive" onClick={() => excluirFerragem(f.id)}>Excluir</Button>
