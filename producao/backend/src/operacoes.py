@@ -397,8 +397,10 @@ def parse_xml_orcamento(root):
             else:
                 ferragens.append({"nome": nome_ferragem, "quantidade": quantidade})
 
-    if pecas or ferragens:
-        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas, "ferragens": ferragens})
+    if pecas:
+        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+    if ferragens:
+        pacotes.append({"nome_pacote": "Ferragens e Acessórios", "ferragens": ferragens})
 
     return pacotes
 
@@ -511,7 +513,10 @@ def parse_xml_producao(root, xml_path):
         print(
             f"✅ Itens classificados: {len(pecas)} peças de MDF, {len(ferragens)} tipos de ferragens."
         )
-        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas, "ferragens": ferragens})
+    if pecas:
+        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+    if ferragens:
+        pacotes.append({"nome_pacote": "Ferragens e Acessórios", "ferragens": ferragens})
 
     print("✅ Finalizado parse_xml_producao")
     return pacotes
