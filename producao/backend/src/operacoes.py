@@ -137,13 +137,14 @@ def classificar_item(item):
     largura = float(item.get("WIDTH", 0))
     comprimento = float(item.get("DEPTH", 0))
     espessura = float(item.get("HEIGHT", 0))
-    if item.get("COMPONENT") != "Y" or item.get("STRUCTURE") != "N":
-        return "outro"
-
     # Considerar famílias de ferragens e acessórios como ferragem para que os
-    # itens sejam corretamente importados
+    # itens sejam corretamente importados, independentemente dos campos
+    # COMPONENT ou STRUCTURE
     if family in ["acessórios", "ferragem", "ferragens"]:
         return "ferragem"
+
+    if item.get("COMPONENT") != "Y" or item.get("STRUCTURE") != "N":
+        return "outro"
 
     if family == "roteiro produtivo":
         return "outro"
