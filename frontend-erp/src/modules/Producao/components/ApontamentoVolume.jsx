@@ -14,6 +14,7 @@ const ApontamentoVolume = () => {
   const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
   const pacotes = lote ? (lotes.find(l => l.nome === lote)?.pacotes || []) : [];
   const pacote = pacotes[parseInt(pacoteIndex)] || null;
+  const itensPacote = pacote ? [...(pacote.pecas || []), ...(pacote.ferragens || [])] : [];
 
   useEffect(() => {
     if (pacote) {
@@ -61,10 +62,10 @@ const gerarCodigoBarra = (num) => {
     if (!cod) return;
     if (cod === CODE_FECHA_VOLUME) {
       if (apontados.length) {
-        const pecasVolume = apontados.map(id => pacote.pecas.find(p => p.id === id));
+        const itensVolume = apontados.map(id => itensPacote.find(p => p.id === id));
         const novoVolume = {
           numero: volumes.length + 1,
-          pecas: pecasVolume,
+          pecas: itensVolume,
           barcode: gerarCodigoBarra(volumes.length + 1)
         };
         const atualizados = [...volumes, novoVolume];
@@ -74,10 +75,10 @@ const gerarCodigoBarra = (num) => {
         imprimirEtiqueta(novoVolume.barcode);
       }
     } else {
-      const peca = pacote.pecas.find(p => String(p.id).padStart(6,'0') === cod);
-      if (peca) {
-        if (!apontados.includes(peca.id)) {
-          setApontados([...apontados, peca.id]);
+      const item = itensPacote.find(p => String(p.id).padStart(6,'0') === cod);
+      if (item) {
+        if (!apontados.includes(item.id)) {
+          setApontados([...apontados, item.id]);
         }
       } else {
         alert("Código não encontrado no pacote");
@@ -102,20 +103,20 @@ const gerarCodigoBarra = (num) => {
           <form onSubmit={registrarCodigo} className="mb-4">
             <input
               className="input w-full sm:w-64"
-              placeholder="ID da peça ou 999999 para fechar volume"
+              placeholder="ID do item ou 999999 para fechar volume"
               value={codigo}
               onChange={e => setCodigo(e.target.value)}
               autoFocus
             />
           </form>
           <ul className="space-y-1 max-h-64 overflow-y-auto mb-4">
-            {pacote.pecas.map(p => (
+            {itensPacote.map(item => (
               <li
-                key={p.id}
-                className={`border rounded p-2 ${apontados.includes(p.id) ? 'bg-green-200' : ''}`}
+                key={item.id}
+                className={`border rounded p-2 ${apontados.includes(item.id) ? 'bg-green-200' : ''}`}
               >
-                <span className="font-mono mr-2">{String(p.id).padStart(6,'0')}</span>
-                {p.nome}
+                <span className="font-mono mr-2">{String(item.id).padStart(6,'0')}</span>
+                {item.nome || item.descricao}
               </li>
             ))}
           </ul>
@@ -126,7 +127,7 @@ const gerarCodigoBarra = (num) => {
                 <div className="font-semibold">Volume {v.numero} - {v.barcode}</div>
                 <ul className="text-sm list-disc ml-4">
                   {v.pecas.map(pc => (
-                    <li key={pc.id}>{String(pc.id).padStart(6,'0')} - {pc.nome}</li>
+                    <li key={pc.id}>{String(pc.id).padStart(6,'0')} - {pc.nome || pc.descricao}</li>
                   ))}
                 </ul>
               </li>

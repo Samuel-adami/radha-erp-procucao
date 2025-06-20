@@ -11,16 +11,17 @@ const Apontamento = () => {
 
   const pacotes = lote ? (lotes.find(l => l.nome === lote)?.pacotes || []) : [];
   const pacote = pacotes[parseInt(pacoteIndex)] || null;
+  const itensPacote = pacote ? [...(pacote.pecas || []), ...(pacote.ferragens || [])] : [];
 
   const registrarCodigo = (e) => {
     e.preventDefault();
     if (!pacote) return;
     const cod = codigo.trim();
     if (!cod) return;
-    const peca = pacote.pecas.find(p => String(p.id).padStart(6,'0') === cod);
-    if (peca) {
-      if (!apontados.includes(peca.id)) {
-        setApontados([...apontados, peca.id]);
+    const item = itensPacote.find(p => String(p.id).padStart(6,'0') === cod);
+    if (item) {
+      if (!apontados.includes(item.id)) {
+        setApontados([...apontados, item.id]);
       }
     } else {
       alert("Código não encontrado no pacote");
@@ -30,7 +31,7 @@ const Apontamento = () => {
 
   return (
     <div className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Apontamento de Peças</h2>
+      <h2 className="text-lg font-semibold mb-4">Apontamento de Itens</h2>
       <FiltroPacote
         lotes={lotes}
         lote={lote}
@@ -44,20 +45,20 @@ const Apontamento = () => {
           <form onSubmit={registrarCodigo} className="mb-4">
             <input
               className="input w-full sm:w-64"
-              placeholder="ID da peça (6 dígitos)"
+              placeholder="ID do item (6 dígitos)"
               value={codigo}
               onChange={e => setCodigo(e.target.value)}
               autoFocus
             />
           </form>
           <ul className="space-y-1 max-h-96 overflow-y-auto">
-            {pacote.pecas.map(p => (
+            {itensPacote.map(item => (
               <li
-                key={p.id}
-                className={`border rounded p-2 ${apontados.includes(p.id) ? 'bg-green-200' : ''}`}
+                key={item.id}
+                className={`border rounded p-2 ${apontados.includes(item.id) ? 'bg-green-200' : ''}`}
               >
-                <span className="font-mono mr-2">{String(p.id).padStart(6,'0')}</span>
-                {p.nome}
+                <span className="font-mono mr-2">{String(item.id).padStart(6,'0')}</span>
+                {item.nome || item.descricao}
               </li>
             ))}
           </ul>
