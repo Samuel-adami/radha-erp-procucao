@@ -47,10 +47,10 @@ const Apontamento = () => {
     const printWindow = window.open('', '_blank', 'width=400,height=400');
     if (!printWindow) return;
     printWindow.document.write(`<html><body style="font-family:sans-serif;margin:0;padding:8px;">`);
-    printWindow.document.write(`<h3>Volume ${volume.numero}</h3>`);
     if (pacote?.nome_pacote) {
       printWindow.document.write(`<div>${pacote.nome_pacote}</div>`);
     }
+    printWindow.document.write(`<h3>Volume ${volume.numero}</h3>`);
     printWindow.document.write('<ul style="margin:8px 0; padding-left:16px; font-size:12px">');
     volume.pecas.forEach(p => {
       const nome = p.nome || p.descricao || '';
