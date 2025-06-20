@@ -40,7 +40,7 @@ const Apontamento = () => {
   };
 
   const gerarCodigoBarra = (num) => {
-    return `VOL-${Date.now()}-${num}`;
+    return `${Date.now()}${num}`;
   };
 
   const imprimirEtiqueta = (volume) => {

@@ -6,6 +6,7 @@ const ApontamentoVolume = () => {
   const [lote, setLote] = useState("");
   const [pacoteIndex, setPacoteIndex] = useState("");
   const [volumes, setVolumes] = useState([]);
+  const [codigo, setCodigo] = useState("");
 
   const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
   const pacotes = lote ? (lotes.find(l => l.nome === lote)?.pacotes || []) : [];
@@ -17,7 +18,22 @@ const ApontamentoVolume = () => {
     } else {
       setVolumes([]);
     }
+o8bmdc-codex/corrigir-lista-de-peças-na-tela-de-apontamento-de-volumes
+    setCodigo("");
   }, [pacoteIndex, lote]);
+
+  const registrarCodigo = (e) => {
+    e.preventDefault();
+    const cod = codigo.trim();
+    if (!cod) return;
+    const vol = volumes.find(v => v.barcode === cod);
+    if (vol) {
+      imprimirEtiqueta(vol);
+    } else {
+      alert("Volume não encontrado");
+    }
+    setCodigo("");
+  };
 
   const imprimirEtiqueta = (volume) => {
     const printWindow = window.open('', '_blank', 'width=400,height=400');
@@ -55,10 +71,22 @@ const ApontamentoVolume = () => {
         onChangePacote={(v) => setPacoteIndex(v)}
       />
       {pacote && (
-        <ul className="space-y-2">
-          {volumes.map(v => (
-            <li key={v.numero} className="border rounded p-2">
-              <div className="font-semibold flex justify-between items-center">
+o8bmdc-codex/corrigir-lista-de-peças-na-tela-de-apontamento-de-volumes
+        <>
+          <form onSubmit={registrarCodigo} className="mb-4">
+            <input
+              className="input w-full sm:w-64"
+              placeholder="Código de barras do volume"
+              value={codigo}
+              onChange={e => setCodigo(e.target.value)}
+              autoFocus
+            />
+          </form>
+          <ul className="space-y-2">
+            {volumes.map(v => (
+              <li key={v.numero} className="border rounded p-2">
+                <div className="font-semibold flex justify-between items-center">
+
                 <span>Volume {v.numero} - {v.barcode}</span>
                 <button
                   onClick={() => imprimirEtiqueta(v)}
@@ -72,9 +100,12 @@ const ApontamentoVolume = () => {
                   <li key={pc.id}>{String(pc.id).padStart(6,'0')} - {pc.nome || pc.descricao}</li>
                 ))}
               </ul>
-            </li>
-          ))}
-        </ul>
+o8bmdc-codex/corrigir-lista-de-peças-na-tela-de-apontamento-de-volumes
+              </li>
+            ))}
+          </ul>
+        </>
+
       )}
     </div>
   );
