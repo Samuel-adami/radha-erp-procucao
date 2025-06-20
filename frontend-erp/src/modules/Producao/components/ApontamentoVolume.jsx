@@ -74,7 +74,7 @@ const gerarCodigoBarra = (num) => {
         imprimirEtiqueta(novoVolume.barcode);
       }
     } else {
-      const peca = pacote.pecas.find(p => String(p.codigo_peca) === cod);
+      const peca = pacote.pecas.find(p => String(p.id).padStart(6,'0') === cod);
       if (peca) {
         if (!apontados.includes(peca.id)) {
           setApontados([...apontados, peca.id]);
@@ -102,7 +102,7 @@ const gerarCodigoBarra = (num) => {
           <form onSubmit={registrarCodigo} className="mb-4">
             <input
               className="input w-full sm:w-64"
-              placeholder="Código de Barras"
+              placeholder="ID da peça ou 999999 para fechar volume"
               value={codigo}
               onChange={e => setCodigo(e.target.value)}
               autoFocus
@@ -114,7 +114,7 @@ const gerarCodigoBarra = (num) => {
                 key={p.id}
                 className={`border rounded p-2 ${apontados.includes(p.id) ? 'bg-green-200' : ''}`}
               >
-                <span className="font-mono mr-2">{p.codigo_peca}</span>
+                <span className="font-mono mr-2">{String(p.id).padStart(6,'0')}</span>
                 {p.nome}
               </li>
             ))}
@@ -126,7 +126,7 @@ const gerarCodigoBarra = (num) => {
                 <div className="font-semibold">Volume {v.numero} - {v.barcode}</div>
                 <ul className="text-sm list-disc ml-4">
                   {v.pecas.map(pc => (
-                    <li key={pc.id}>{pc.codigo_peca} - {pc.nome}</li>
+                    <li key={pc.id}>{String(pc.id).padStart(6,'0')} - {pc.nome}</li>
                   ))}
                 </ul>
               </li>

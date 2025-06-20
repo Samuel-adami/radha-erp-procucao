@@ -7,6 +7,7 @@ import { fetchComAuth } from "../../utils/fetchComAuth";
 import Pacote from "./components/Pacote";
 import Apontamento from "./components/Apontamento";
 import ApontamentoVolume from "./components/ApontamentoVolume";
+import EditarFerragem from "./components/EditarFerragem";
 import "./Producao.css";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -70,7 +71,11 @@ const LoteProducao = () => {
         }
         return { ...p, id };
       });
-      return { ...pacote, pecas: pecasComIds };
+      const ferragensComIds = (pacote.ferragens || []).map(f => ({
+        ...f,
+        id: globalIdProducao++
+      }));
+      return { ...pacote, pecas: pecasComIds, ferragens: ferragensComIds };
     });
 
     localStorage.setItem("globalPecaIdProducao", globalIdProducao);
@@ -389,4 +394,4 @@ const EditarPecaProducao = () => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, ImportarXML, VisualizacaoPeca };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca };

@@ -305,7 +305,7 @@ def parse_xml_orcamento(root):
 
 def parse_xml_producao(root, xml_path):
     print("🚀 Início do parse_xml_producao")
-    pacotes, pecas = [], []
+    pacotes, pecas, ferragens = [], [], []
     try:
         nome_cliente = root.find(".//CLIENTE_LOJA").attrib["NOME"]
     except:
@@ -328,6 +328,13 @@ def parse_xml_producao(root, xml_path):
         try:
             desenho_id = item.attrib.get("DESENHO")
             if not desenho_id:
+                if classificar_item(item.attrib) == "ferragem":
+                    desc = item.attrib.get("DESCRICAO", "").strip().upper()
+                    try:
+                        qtd = int(item.attrib.get("QUANTIDADE", item.attrib.get("QTDE", "1")))
+                    except ValueError:
+                        qtd = 1
+                    ferragens.append({"descricao": desc, "quantidade": qtd})
                 continue
             filename, caminho_dxf = f"{desenho_id}.dxf", pasta_base / f"{desenho_id}.dxf"
             if not caminho_dxf.exists():
@@ -363,6 +370,9 @@ def parse_xml_producao(root, xml_path):
 
     if pecas:
         print(f"📦 Total de peças válidas importadas: {len(pecas)}")
-        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+        pacote = {"nome_pacote": nome_pacote, "pecas": pecas}
+        if ferragens:
+            pacote["ferragens"] = ferragens
+        pacotes.append(pacote)
     print("✅ Finalizado parse_xml_producao")
     return pacotes
