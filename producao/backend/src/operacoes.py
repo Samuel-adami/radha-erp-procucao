@@ -397,10 +397,16 @@ def parse_xml_orcamento(root):
             else:
                 ferragens.append({"nome": nome_ferragem, "quantidade": quantidade})
 
+    # Combina MDF e ferragens em um único pacote para que o frontend exiba as
+    # ferragens como um "subpacote" dentro da tela do pacote principal.
+    pacote = {"nome_pacote": nome_pacote}
     if pecas:
-        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+        pacote["pecas"] = pecas
     if ferragens:
-        pacotes.append({"nome_pacote": "Ferragens e Acessórios", "ferragens": ferragens})
+        pacote["ferragens"] = ferragens
+
+    if pacote.get("pecas") or pacote.get("ferragens"):
+        pacotes.append(pacote)
 
     return pacotes
 
@@ -513,10 +519,17 @@ def parse_xml_producao(root, xml_path):
         print(
             f"✅ Itens classificados: {len(pecas)} peças de MDF, {len(ferragens)} tipos de ferragens."
         )
+
+    # Assim como em parse_xml_orcamento, as ferragens são incorporadas ao mesmo
+    # pacote de MDF para facilitar a exibição no frontend.
+    pacote = {"nome_pacote": nome_pacote}
     if pecas:
-        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+        pacote["pecas"] = pecas
     if ferragens:
-        pacotes.append({"nome_pacote": "Ferragens e Acessórios", "ferragens": ferragens})
+        pacote["ferragens"] = ferragens
+
+    if pacote.get("pecas") or pacote.get("ferragens"):
+        pacotes.append(pacote)
 
     print("✅ Finalizado parse_xml_producao")
     return pacotes
