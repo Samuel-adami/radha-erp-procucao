@@ -128,35 +128,71 @@ materiais = {
     ("18", "999"): "Nogal Terracota 18mm",
 }
 
-def classificar_item(item):
-    desc = item.get("DESCRIPTION", "").lower()
+def classificar_item(item, xml_type='orcamento'):
+    """Classifica o item do XML como MDF, ferragem ou outro."""
+    desc = item.get("DESCRIPTION", item.get("DESCRICAO", "")).lower()
+
+    if xml_type == 'producao':
+        caminho = item.get("CAMINHOITEMCATALOG", "").lower()
+        if "montagem" in caminho:
+            return "mdf"
+        if "ferragens" in caminho or item.get("TIPO_PRODUTO") == "C":
+            return "ferragem"
+        if (
+            "cozinhas" in caminho
+            or "fita de borda" in desc
+            or item.get("ID") == "CHAPA"
+        ):
+            return "ignorar"
+        if any(
+            kw in desc
+            for kw in [
+                "parafuso",
+                "dobradiça",
+                "suporte",
+                "bucha",
+                "cavilha",
+                "prego",
+                "puxador",
+            ]
+        ):
+            return "ferragem"
+        return "outro"
+
+    # xml_type == 'orcamento'
     ref = item.get("REFERENCE", "")
     supplier = item.get("SUPPLIER", "")
     family = item.get("FAMILY", "").lower()
     tipo = item.get("TYPE", "").lower()
-    largura = float(item.get("WIDTH", 0))
-    comprimento = float(item.get("DEPTH", 0))
-    espessura = float(item.get("HEIGHT", 0))
-    # Considerar famílias de ferragens e acessórios como ferragem para que os
-    # itens sejam corretamente importados, independentemente dos campos
-    # COMPONENT ou STRUCTURE
-    if family in ["acessórios", "ferragem", "ferragens"]:
+
+    if (
+        tipo == "accessory"
+        or "parafuso" in desc
+        or "dobradiça" in desc
+        or "puxador" in desc
+        or supplier
+        or family in ["acessórios", "ferragem", "ferragens", "puxadores"]
+    ):
         return "ferragem"
-
-    if item.get("COMPONENT") != "Y" or item.get("STRUCTURE") != "N":
-        return "outro"
-
-    if family == "roteiro produtivo":
-        return "outro"
-
-    if ref and not supplier and largura > 0 and comprimento > 0 and espessura > 0:
-        return "mdf"
 
     if "fita" in desc or item.get("PRODUCTTYPE") == "EdgeBanding":
-        return "fita"
+        return "ignorar"
 
-    if tipo == "accessory" or "parafuso" in desc or "dobradiça" in desc or supplier:
-        return "ferragem"
+    try:
+        largura = float(item.get("WIDTH", 0))
+        comprimento = float(item.get("DEPTH", 0))
+        espessura = float(item.get("HEIGHT", 0))
+        if (
+            item.get("COMPONENT") == "Y"
+            and item.get("STRUCTURE") == "N"
+            and ref
+            and largura > 0
+            and comprimento > 0
+            and espessura > 0
+        ):
+            return "mdf"
+    except (ValueError, TypeError):
+        return "outro"
 
     return "outro"
 
@@ -297,100 +333,185 @@ def parse_dxt_producao(root, dxt_path):
     return [{"nome_pacote": nome_pacote, "pecas": pecas_importadas}]
 
 def parse_xml_orcamento(root):
+    """Lê um XML de orçamento gerado pelo Promob e extrai peças e ferragens."""
     pacotes, cliente_node = [], root.find(".//DATA[@ID='nomecliente']")
-    nome_cliente = cliente_node.attrib.get("VALUE", "") if cliente_node is not None else "SemCliente"
+    nome_cliente = (
+        cliente_node.attrib.get("VALUE", "") if cliente_node is not None else "SemCliente"
+    )
     ambiente_node = root.find(".//AMBIENT")
-    nome_ambiente = ambiente_node.attrib.get("DESCRIPTION", "") if ambiente_node is not None else "SemDescricao"
-    nome_pacote, pecas = f"{nome_cliente} - {nome_ambiente}", []
+    nome_ambiente = (
+        ambiente_node.attrib.get("DESCRIPTION", "") if ambiente_node is not None else "SemDescricao"
+    )
+
+    nome_pacote = f"{nome_cliente} - {nome_ambiente}"
+    pecas, ferragens = [], []
+
     for item in root.findall(".//ITEM"):
-        nome, nome_item = item.attrib.get("DESCRICAO", "").lower(), item.attrib.get("DESCRIPTION", "").upper()
-        if any(p in nome for p in ["fita", "dobradiça", "parafuso", "puxador", "suporte", "batente"]) or classificar_item(item.attrib) != "mdf": continue
-        try:
-            largura, comprimento = float(item.attrib.get("DEPTH", "0")), float(item.attrib.get("WIDTH", "0"))
-            if ("PORTA" in nome or "FRENTE DE" in nome) and "BASCULANTE" not in nome:
-                largura, comprimento = float(item.attrib.get("HEIGHT", "0")), float(item.attrib.get("WIDTH", "0"))
-        except ValueError: continue
-        ref_parts = item.attrib.get("REFERENCE", "").split(".")
-        espessura = ref_parts[2] if len(ref_parts) > 2 else "?"
-        cor = ref_parts[-1] if len(ref_parts) > 4 else "?"
-        peca = {"nome": nome_item, "largura": largura, "comprimento": comprimento, "espessura": espessura, "material": materiais.get((espessura, cor), f"Desconhecido ({espessura}/{cor})"), "cliente": nome_cliente, "ambiente": nome_ambiente, "observacoes": item.attrib.get("OBSERVATIONS", ""), "orientacao": "horizontal" if comprimento > largura else "vertical"}
-        peca["operacoes"] = inferir_operacoes_por_nome(peca["nome"], largura, comprimento)
-        pecas.append(peca)
-    if pecas: pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+        atributos = item.attrib
+        tipo_item = classificar_item(atributos, xml_type="orcamento")
+
+        if tipo_item == "mdf":
+            try:
+                nome_item = atributos.get("DESCRIPTION", "").upper()
+                largura = float(atributos.get("DEPTH", "0"))
+                comprimento = float(atributos.get("WIDTH", "0"))
+                if (
+                    "PORTA" in nome_item or "FRENTE DE" in nome_item
+                ) and "BASCULANTE" not in nome_item:
+                    largura = float(atributos.get("HEIGHT", "0"))
+
+                ref_parts = atributos.get("REFERENCE", "").split(".")
+                espessura = ref_parts[2] if len(ref_parts) > 2 else "?"
+                cor = ref_parts[-1] if len(ref_parts) > 4 else "?"
+                material = materiais.get((espessura, cor), f"Desconhecido ({espessura}/{cor})")
+
+                peca = {
+                    "nome": nome_item,
+                    "largura": largura,
+                    "comprimento": comprimento,
+                    "espessura": espessura,
+                    "material": material,
+                    "cliente": nome_cliente,
+                    "ambiente": nome_ambiente,
+                    "observacoes": atributos.get("OBSERVATIONS", ""),
+                    "orientacao": "horizontal" if comprimento > largura else "vertical",
+                    "status": "Pendente",
+                    "codigo_peca": atributos.get("UNIQUEID", ""),
+                }
+                peca["operacoes"] = inferir_operacoes_por_nome(peca["nome"], largura, comprimento)
+                pecas.append(peca)
+            except (ValueError, TypeError) as e:
+                print(
+                    f"Aviso: Ignorando item MDF malformado (Orçamento). Erro: {e}. Atributos: {atributos}"
+                )
+                continue
+        elif tipo_item == "ferragem":
+            nome_ferragem = atributos.get("DESCRIPTION", "Ferragem sem descrição")
+            try:
+                quantidade = int(float(atributos.get("AMOUNT", "1")))
+            except ValueError:
+                quantidade = 1
+            item_existente = next((f for f in ferragens if f["nome"] == nome_ferragem), None)
+            if item_existente:
+                item_existente["quantidade"] += quantidade
+            else:
+                ferragens.append({"nome": nome_ferragem, "quantidade": quantidade})
+
+    if pecas or ferragens:
+        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas, "ferragens": ferragens})
+
     return pacotes
 
 def parse_xml_producao(root, xml_path):
+    """Lê um XML de produção exportado pelo Promob e extrai peças e ferragens."""
     print("🚀 Início do parse_xml_producao")
     pacotes, pecas, ferragens = [], [], []
+
     try:
         nome_cliente = root.find(".//CLIENTE_LOJA").attrib["NOME"]
-    except:
+    except Exception:
         nome_cliente = "SemCliente"
-    
-    # --- LÓGICA CORRIGIDA CONFORME SUA SUGESTÃO ---
-    nome_ambiente = "Projeto"  # Valor padrão
+
+    nome_ambiente = "Projeto"
     primeiro_item = root.find(".//ITENS_PEDIDO/ITEM")
     if primeiro_item is not None:
         unique_id_node = primeiro_item.find("UNIQUE_ID")
         if unique_id_node is not None:
             nome_ambiente = unique_id_node.attrib.get("AMBIENTNAME", "Projeto")
-    # ----------------------------------------------
 
-    nome_pacote, pasta_base = f"{nome_cliente} - {nome_ambiente}", Path(os.path.abspath(xml_path)).parent
-    
+    nome_pacote = f"{nome_cliente} - {nome_ambiente}"
+    pasta_base = Path(os.path.abspath(xml_path)).parent
+
     itens = root.findall(".//ITEM")
     print(f"📦 Total de itens encontrados no XML: {len(itens)}")
+
     for item in itens:
-        try:
-            desenho_id = item.attrib.get("DESENHO")
-            if not desenho_id:
-                if classificar_item(item.attrib) == "ferragem":
-                    desc = item.attrib.get("DESCRICAO", "").strip().upper()
-                    try:
-                        qtd = int(item.attrib.get("QUANTIDADE", item.attrib.get("QTDE", "1")))
-                    except ValueError:
-                        qtd = 1
-                    ferragens.append({"descricao": desc, "quantidade": qtd})
-                continue
-            filename, caminho_dxf = f"{desenho_id}.dxf", pasta_base / f"{desenho_id}.dxf"
-            if not caminho_dxf.exists():
-                continue
-            descricao = item.attrib.get("DESCRICAO", "").strip().upper()
-            print(f"-> Peça válida encontrada: '{descricao}'. Processando...")
+        atributos = item.attrib
+        tipo_item = classificar_item(atributos, xml_type="producao")
 
-            comprimento_xml, largura_xml, espessura = float(item.attrib.get("LARGURA", "0")), float(item.attrib.get("PROFUNDIDADE", "0")), float(item.attrib.get("ALTURA", "0"))
+        if tipo_item == "mdf":
+            try:
+                desenho_id = atributos.get("DESENHO")
+                if not desenho_id:
+                    continue
 
-            operacoes_dxf = processar_dxf_producao(caminho_dxf, {'comprimento': comprimento_xml, 'largura': largura_xml})
+                filename = f"{desenho_id}.dxf"
+                caminho_dxf = pasta_base / filename
+                if not caminho_dxf.exists():
+                    print(f"  -> AVISO: Arquivo DXF não encontrado para a peça '{desenho_id}'")
+                    continue
 
-            operacoes_bpp = []
-            caminho_bpp = caminho_dxf.with_suffix('.bpp')
-            if caminho_bpp.exists():
-                print(f"    -> Arquivo BPP encontrado: {caminho_bpp.name}.")
-                operacoes_bpp = parse_bpp_furos_topo(caminho_bpp, largura_xml)
-                if operacoes_bpp:
-                    print(f"        -> {len(operacoes_bpp)} furos de topo (faces 1 e 3) criados simetricamente.")
+                descricao = atributos.get("DESCRICAO", "Peça sem descrição").strip().upper()
 
-            material_node = item.find(".//COLUNA[@CODIGO='Material']")
-            material = material_node.attrib.get("RESPOSTA", "Desconhecido") if material_node is not None else "Desconhecido"
+                comprimento_xml = float(atributos.get("LARGURA", "0"))
+                largura_xml = float(atributos.get("PROFUNDIDADE", "0"))
+                espessura = float(atributos.get("ALTURA", "0"))
 
-            pecas.append({
-                "nome": descricao, "codigo_peca": Path(filename).stem, 
-                "largura": largura_xml, "comprimento": comprimento_xml, "espessura": espessura, 
-                "material": material, 
-                "cliente": nome_cliente, "ambiente": nome_ambiente, "observacoes": "", 
-                "orientacao": "horizontal" if comprimento_xml > largura_xml else "vertical", 
-                "operacoes": operacoes_dxf + operacoes_bpp
-            })
-        except Exception as e:
-            print(f"⚠️ Erro crítico ao processar um item: {str(e)}")
+                operacoes_dxf = processar_dxf_producao(
+                    caminho_dxf,
+                    {"comprimento": comprimento_xml, "largura": largura_xml},
+                )
 
-    if pecas:
-        print(f"📦 Total de peças válidas importadas: {len(pecas)}")
-        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas})
+                operacoes_bpp = []
+                caminho_bpp = caminho_dxf.with_suffix(".bpp")
+                if caminho_bpp.exists():
+                    print(f"    -> Arquivo BPP encontrado: {caminho_bpp.name}.")
+                    operacoes_bpp = parse_bpp_furos_topo(caminho_bpp, largura_xml)
 
-    if ferragens:
-        print(f"📦 Total de ferragens importadas: {len(ferragens)}")
-        pacotes.append({"nome_pacote": "Ferragens e Acessórios", "ferragens": ferragens})
+                material_node = item.find(".//COLUNA[@CODIGO='Material']")
+                material = (
+                    material_node.attrib.get("RESPOSTA", "Desconhecido")
+                    if material_node is not None
+                    else "Desconhecido"
+                )
+
+                pecas.append(
+                    {
+                        "nome": descricao,
+                        "codigo_peca": Path(filename).stem,
+                        "largura": largura_xml,
+                        "comprimento": comprimento_xml,
+                        "espessura": espessura,
+                        "material": material,
+                        "cliente": nome_cliente,
+                        "ambiente": nome_ambiente,
+                        "observacoes": "",
+                        "orientacao": "horizontal" if comprimento_xml > largura_xml else "vertical",
+                        "operacoes": operacoes_dxf + operacoes_bpp,
+                        "status": "Pendente",
+                    }
+                )
+            except Exception as e:
+                print(f"⚠️ Erro ao processar item MDF de produção: {e}. Atributos: {atributos}")
+
+        elif tipo_item == "ferragem":
+            nome_ferragem = atributos.get("DESCRICAO", "Ferragem sem descrição")
+            codigo_ferragem = atributos.get("REFERENCIA", "S/REF")
+            try:
+                quantidade = int(float(atributos.get("QUANTIDADE", "1")))
+            except ValueError:
+                quantidade = 1
+
+            item_existente = next(
+                (f for f in ferragens if f["codigo_ferragem"] == codigo_ferragem),
+                None,
+            )
+            if item_existente:
+                item_existente["quantidade"] += quantidade
+            else:
+                ferragens.append(
+                    {
+                        "nome": nome_ferragem,
+                        "codigo_ferragem": codigo_ferragem,
+                        "quantidade": quantidade,
+                    }
+                )
+
+    if pecas or ferragens:
+        print(
+            f"✅ Itens classificados: {len(pecas)} peças de MDF, {len(ferragens)} tipos de ferragens."
+        )
+        pacotes.append({"nome_pacote": nome_pacote, "pecas": pecas, "ferragens": ferragens})
 
     print("✅ Finalizado parse_xml_producao")
     return pacotes
