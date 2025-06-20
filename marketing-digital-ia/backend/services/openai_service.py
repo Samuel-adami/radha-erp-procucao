@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import time
 from dotenv import load_dotenv
 from openai import AsyncOpenAI, OpenAIError
 from PIL import Image, ImageDraw, ImageFont
@@ -39,7 +40,15 @@ async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
     if client is None:
         logging.warning("OPENAI_API_KEY não configurada. Respondendo com mensagem padrão.")
         return "Serviço de IA indisponível no momento."
-    conhecimento = consultar_conhecimento(prompt)
+    try:
+        conhecimento = consultar_conhecimento(prompt)
+    except FileNotFoundError as e:
+        logging.error(f"Índice de embeddings não encontrado: {e}")
+        conhecimento = ""
+    except Exception as e:
+        logging.error(f"Erro ao consultar conhecimento: {e}")
+        conhecimento = ""
+
     if conhecimento:
         prompt = f"{conhecimento}\n\nUsuário: {prompt}"
 
@@ -59,10 +68,17 @@ async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
         await client.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
         run = await client.beta.threads.runs.create(thread_id=thread.id, assistant_id=id_assistant)
 
+        inicio = time.time()
         while True:
             status = await client.beta.threads.runs.retrieve(thread_id=thread.id, run_id=run.id)
             if status.status == "completed":
                 break
+            if status.status in ("failed", "cancelled", "expired"):
+                logging.error(f"Execução do assistente finalizada com status {status.status}")
+                return "Não foi possível obter uma resposta no momento."
+            if time.time() - inicio > 60:
+                logging.error("Tempo limite ao aguardar conclusão da execução do assistente")
+                return "Não foi possível obter uma resposta no momento."
             await asyncio.sleep(1)
 
         messages = await client.beta.threads.messages.list(thread_id=thread.id)
