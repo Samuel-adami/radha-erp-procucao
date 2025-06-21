@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting } from './AppProducao';
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
@@ -11,6 +11,7 @@ function ProducaoLayout() {
   const matchLote = useMatch(`${resolved.pathname}/lote/*`); // Matches /producao/lote/qualquer_nome
   const matchApontamento = useMatch({ path: `${resolved.pathname}/apontamento`, end: true });
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
+  const matchNesting = useMatch({ path: `${resolved.pathname}/nesting`, end: true });
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
@@ -34,6 +35,12 @@ function ProducaoLayout() {
         >
           Apontamento Volume
         </Link>
+        <Link
+          to="nesting"
+          className={`px-3 py-1 rounded ${matchNesting ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Nesting
+        </Link>
         {/* Adicionar mais links de navegação interna do módulo, se necessário */}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}
@@ -52,6 +59,7 @@ function Producao() {
         <Route path="lote/:nome/ferragem/:id" element={<EditarFerragem />} />
         <Route path="apontamento" element={<Apontamento />} />
         <Route path="apontamento-volume" element={<ApontamentoVolume />} />
+        <Route path="nesting" element={<Nesting />} />
       </Route>
     </Routes>
   );

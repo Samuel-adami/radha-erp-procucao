@@ -8,6 +8,7 @@ import Pacote from "./components/Pacote";
 import Apontamento from "./components/Apontamento";
 import ApontamentoVolume from "./components/ApontamentoVolume";
 import EditarFerragem from "./components/EditarFerragem";
+import Nesting from "./components/Nesting";
 import "./Producao.css";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -394,4 +395,4 @@ const EditarPecaProducao = () => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting };
