@@ -107,10 +107,12 @@ async def gerar_lote_final(request: Request):
 async def executar_nesting(request: Request):
     dados = await request.json()
     pasta_lote = dados.get('pasta_lote')
+    largura_chapa = float(dados.get('largura_chapa', 2750))
+    altura_chapa = float(dados.get('altura_chapa', 1850))
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
     try:
-        pasta_resultado = gerar_nesting(pasta_lote)
+        pasta_resultado = gerar_nesting(pasta_lote, largura_chapa, altura_chapa)
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok", "pasta_resultado": pasta_resultado}

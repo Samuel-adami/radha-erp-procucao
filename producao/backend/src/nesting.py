@@ -1,7 +1,8 @@
-import os
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Dict
+
+from rectpack import newPacker
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
@@ -25,54 +26,84 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
     return pecas
 
 
-def _gcode_basico(p: Dict) -> str:
-    """Gera um G-code simples para contornar um retângulo."""
+def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0) -> str:
+    """Gera um G-code simples para contornar um retângulo com deslocamento."""
     l = p['Length']
     w = p['Width']
     return '\n'.join([
-        '( Powered by Radha ERP )',
         f'( Peça: {p["PartName"]} )',
         'G0 Z50.0',
         'M6 T1',
         'M3 S20000',
-        'G0 X0 Y0 Z5.0',
+        f'G0 X{ox:.4f} Y{oy:.4f} Z5.0',
         'G1 Z-1.0 F3000',
-        f'G1 X{l:.4f} Y0',
-        f'G1 X{l:.4f} Y{w:.4f}',
-        f'G1 X0 Y{w:.4f}',
-        'G1 X0 Y0',
+        f'G1 X{ox + l:.4f} Y{oy:.4f}',
+        f'G1 X{ox + l:.4f} Y{oy + w:.4f}',
+        f'G1 X{ox:.4f} Y{oy + w:.4f}',
+        f'G1 X{ox:.4f} Y{oy:.4f}',
         'G0 Z50.0',
-        'M5',
-        'M30',
     ])
 
 
-def _gerar_cyc(pecas: List[Dict], saida: Path):
-    root = ET.Element('CycleFile')
-    for p in pecas:
-        cycle = ET.SubElement(root, 'Cycle', Name='Cycle_Label')
-        ET.SubElement(cycle, 'Field', Name='LabelName', Value=f"{p['Program1']}.bmp")
-        ET.SubElement(cycle, 'Field', Name='X', Value=str(p['Length']/2))
-        ET.SubElement(cycle, 'Field', Name='Y', Value=str(p['Width']/2))
-        ET.SubElement(cycle, 'Field', Name='R', Value='0')
-    tree = ET.ElementTree(root)
-    tree.write(saida / 'labels.cyc', encoding='utf-8', xml_declaration=False)
+def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
+    for i, pecas in enumerate(chapas, start=1):
+        root = ET.Element('CycleFile')
+        for p in pecas:
+            cycle = ET.SubElement(root, 'Cycle', Name='Cycle_Label')
+            ET.SubElement(cycle, 'Field', Name='LabelName', Value=f"{p['Program1']}.bmp")
+            ET.SubElement(cycle, 'Field', Name='X', Value=str(p['x'] + p['Length']/2))
+            ET.SubElement(cycle, 'Field', Name='Y', Value=str(p['y'] + p['Width']/2))
+            ET.SubElement(cycle, 'Field', Name='R', Value='0')
+        tree = ET.ElementTree(root)
+        tree.write(saida / f'chapa_{i}.cyc', encoding='utf-8', xml_declaration=False)
 
 
-def gerar_nesting(pasta_lote: str) -> str:
-    """Gera arquivos .nc e .cyc em uma subpasta 'nesting' dentro da pasta do lote."""
+def _gerar_gcodes(chapas: List[List[Dict]], saida: Path):
+    for i, pecas in enumerate(chapas, start=1):
+        linhas = ['( Powered by Radha ERP )']
+        for p in pecas:
+            linhas.extend(_gcode_peca(p, p['x'], p['y']).split('\n'))
+        linhas.append('M5')
+        linhas.append('M30')
+        (saida / f'chapa_{i}.nc').write_text('\n'.join(linhas), encoding='utf-8')
+
+
+def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: float = 1850) -> str:
+    """Realiza o nesting das peças do lote usando rectpack."""
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
         raise FileNotFoundError(f"Pasta '{pasta_lote}' não encontrada")
     dxts = list(pasta.glob('*.dxt'))
     if not dxts:
         raise FileNotFoundError('Arquivo DXT não encontrado na pasta do lote')
+
     pecas = _ler_dxt(dxts[0])
+    packer = newPacker(rotation=False)
+    for p in pecas:
+        packer.add_rect(int(p['Length']), int(p['Width']), rid=p)
+
+    for _ in range(len(pecas)):
+        packer.add_bin(int(largura_chapa), int(altura_chapa))
+
+    packer.pack()
+
+    chapas: List[List[Dict]] = []
+    for abin in packer:
+        if not abin:
+            continue
+        placa = []
+        for rect in abin:
+            piece = rect.rid.copy()
+            piece['x'] = float(rect.x)
+            piece['y'] = float(rect.y)
+            piece['Length'] = float(rect.width)
+            piece['Width'] = float(rect.height)
+            placa.append(piece)
+        chapas.append(placa)
+
     pasta_saida = pasta / 'nesting'
     pasta_saida.mkdir(exist_ok=True)
-    for idx, p in enumerate(pecas, start=1):
-        gcode = _gcode_basico(p)
-        nc_path = pasta_saida / f"peca_{idx}.nc"
-        nc_path.write_text(gcode, encoding='utf-8')
-    _gerar_cyc(pecas, pasta_saida)
+    _gerar_gcodes(chapas, pasta_saida)
+    _gerar_cyc(chapas, pasta_saida)
     return str(pasta_saida)
+
