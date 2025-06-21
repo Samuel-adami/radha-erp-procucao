@@ -57,7 +57,11 @@ start_python_service() {
 
     if [ ! -f venv/bin/activate ]; then
         echo "Criando ambiente virtual para $service_name..." | tee -a "$LOG_DIR/startup_main.log"
-        python3 -m venv venv >> "$log_file" 2>&1 || { echo "Erro ao criar venv para $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
+        python3 -m venv venv >> "$log_file" 2>&1
+        if [ ! -f venv/bin/activate ]; then
+            echo "Erro ao criar venv para $service_name." | tee -a "$LOG_DIR/startup_main.log"
+            exit 1
+        fi
     fi
 
     source venv/bin/activate || { echo "Erro ao ativar venv para $service_name. Abortando." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }

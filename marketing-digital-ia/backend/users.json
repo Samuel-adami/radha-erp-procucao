@@ -1,7 +1,7 @@
 [
   {
     "username": "Caroline",
-    "password": "Carol@123",
+    "password": "<CHANGE_ME>",
     "email": "atendimento3@radhamoveis.com.br",
     "nome": "Caroline Pinto",
     "cargo": "Marketing",
@@ -9,7 +9,7 @@
   },
   {
     "username": "Daniela",
-    "password": "Dani@123",
+    "password": "<CHANGE_ME>",
     "email": "gerenciacomercial@radhamoveis.com.br",
     "nome": "Daniela Pozzebon",
     "cargo": "Marketing",
@@ -17,7 +17,7 @@
   },
   {
     "username": "Luisa",
-    "password": "Lu@123",
+    "password": "<CHANGE_ME>",
     "email": "comercial@radhamoveis.com.br",
     "nome": "Ana Luísa",
     "cargo": "Marketing",
@@ -25,7 +25,7 @@
   },
   {
     "username": "Samuel",
-    "password": "Sma@1984",
+    "password": "<CHANGE_ME>",
     "email": "radha@radhamoveis.com.br",
     "nome": "Samuel Adami",
     "cargo": "Diretoria",
@@ -33,7 +33,7 @@
   },
   {
     "username": "Marcos",
-    "password": "Mar@123",
+    "password": "<CHANGE_ME>",
     "email": "r@radhamoveis.com.br",
     "nome": "Marcos Marques",
     "cargo": "Marketing",
@@ -41,7 +41,7 @@
   },
   {
     "username": "Andreia",
-    "password": "Deia@1984",
+    "password": "<CHANGE_ME>",
     "email": "financeiro@radhamoveis.com.br",
     "nome": "Andreia Bourscheid",
     "cargo": "Diretoria",

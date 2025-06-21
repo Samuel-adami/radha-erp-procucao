@@ -64,18 +64,25 @@ function App() {
         }
       }
 
-      try {
-        const login = await fetchComAuth("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ username: "Samuel", password: "Sma@1984" }),
-        });
-        localStorage.setItem("token", login.access_token);
-        setUsuarioLogado(login.usuario);
-      } catch (error) {
-        console.error("Falha no login automático:", error);
-      } finally {
-        setCarregando(false);
-      }
+        const defaultUser = process.env.REACT_APP_DEFAULT_USERNAME;
+        const defaultPass = process.env.REACT_APP_DEFAULT_PASSWORD;
+
+        if (defaultUser && defaultPass) {
+          try {
+            const login = await fetchComAuth("/auth/login", {
+              method: "POST",
+              body: JSON.stringify({ username: defaultUser, password: defaultPass }),
+            });
+            localStorage.setItem("token", login.access_token);
+            setUsuarioLogado(login.usuario);
+          } catch (error) {
+            console.error("Falha no login automático:", error);
+          } finally {
+            setCarregando(false);
+          }
+        } else {
+          setCarregando(false);
+        }
     };
 
     autenticar();
