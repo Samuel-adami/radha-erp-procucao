@@ -26,6 +26,10 @@ stop_service_if_running() {
             echo "Parando $service_name em execução anterior (PID $old_pid)..." | tee -a "$LOG_DIR/startup_main.log"
             kill "$old_pid" >/dev/null 2>&1
             sleep 2
+            if kill -0 "$old_pid" >/dev/null 2>&1; then
+                echo "Forçando encerramento do $service_name (PID $old_pid)..." | tee -a "$LOG_DIR/startup_main.log"
+                kill -9 "$old_pid" >/dev/null 2>&1
+            fi
         fi
         rm -f "$pid_file"
     fi
@@ -36,6 +40,12 @@ stop_service_if_running() {
             echo "Liberando porta $port usada por $service_name..." | tee -a "$LOG_DIR/startup_main.log"
             kill $port_pids >/dev/null 2>&1
             sleep 2
+            local remaining_pids=$(lsof -ti:"$port" 2>/dev/null)
+            if [ -n "$remaining_pids" ]; then
+                echo "Forçando liberação da porta $port..." | tee -a "$LOG_DIR/startup_main.log"
+                kill -9 $remaining_pids >/dev/null 2>&1
+                sleep 1
+            fi
         fi
     fi
 }
