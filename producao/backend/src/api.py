@@ -116,3 +116,13 @@ async def executar_nesting(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok", "pasta_resultado": pasta_resultado}
+
+
+@app.get("/listar-lotes")
+async def listar_lotes():
+    """Retorna uma lista das pastas de lote disponíveis em 'saida'."""
+    base = Path("saida")
+    if not base.is_dir():
+        return {"lotes": []}
+    lotes = [str(p) for p in sorted(base.iterdir(), key=lambda x: x.name) if p.is_dir() and p.name.startswith("Lote_")]
+    return {"lotes": lotes}
