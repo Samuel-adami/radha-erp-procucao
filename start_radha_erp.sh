@@ -58,15 +58,14 @@ start_python_service() {
     if [ ! -f venv/bin/activate ]; then
         echo "Criando ambiente virtual para $service_name..." | tee -a "$LOG_DIR/startup_main.log"
         python3 -m venv venv >> "$log_file" 2>&1 || { echo "Erro ao criar venv para $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
-        source venv/bin/activate
-        if [ -f requirements.txt ]; then
-            pip install --upgrade pip >> "$log_file" 2>&1
-            pip install -r requirements.txt >> "$log_file" 2>&1 || { echo "Erro ao instalar dependências para $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
-        fi
-        deactivate
     fi
 
     source venv/bin/activate || { echo "Erro ao ativar venv para $service_name. Abortando." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
+
+    if [ -f requirements.txt ]; then
+        pip install --upgrade pip >> "$log_file" 2>&1
+        pip install -r requirements.txt >> "$log_file" 2>&1 || { echo "Erro ao instalar dependências para $service_name." | tee -a "$LOG_DIR/startup_main.log"; exit 1; }
+    fi
 
     nohup uvicorn "$app_module" --host 0.0.0.0 --port "$port" --reload > "$log_file" 2>&1 &
     echo $! > "$pid_file"
