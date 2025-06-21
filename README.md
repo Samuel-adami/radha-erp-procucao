@@ -2,6 +2,15 @@
 
 This repository contains the services and utilities that compose Radha ERP.
 
+## Prerequisites
+
+The startup script requires Python 3 with the `python3-venv` package as well as Node.js and npm.
+On Debian based systems you can install them with:
+```bash
+sudo apt install python3 python3-venv nodejs npm
+```
+
+
 ## Scripts
 
 - **start_radha_erp.sh** – starts all backend and frontend services. When executed for the first time it will create the required Python virtual environments and install dependencies automatically if they are missing.
