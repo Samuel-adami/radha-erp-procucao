@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 
 const Nesting = () => {
   const [pastaLote, setPastaLote] = useState("");
+  const [lotes, setLotes] = useState([]);
   const [larguraChapa, setLarguraChapa] = useState(2750);
   const [alturaChapa, setAlturaChapa] = useState(1850);
   const [resultado, setResultado] = useState("");
@@ -13,6 +14,9 @@ const Nesting = () => {
     if (cfg.pastaLote) setPastaLote(cfg.pastaLote);
     if (cfg.larguraChapa) setLarguraChapa(cfg.larguraChapa);
     if (cfg.alturaChapa) setAlturaChapa(cfg.alturaChapa);
+    fetchComAuth("/listar-lotes")
+      .then((d) => setLotes(d?.lotes || []))
+      .catch((e) => console.error("Falha ao carregar lotes", e));
   }, []);
 
   const salvar = () => {
@@ -49,12 +53,18 @@ const Nesting = () => {
       <h2 className="text-lg font-semibold">Configuração de Nesting</h2>
       <label className="block">
         <span className="text-sm">Pasta do Lote</span>
-        <input
-          type="text"
+        <select
           className="input w-full"
           value={pastaLote}
           onChange={(e) => setPastaLote(e.target.value)}
-        />
+        >
+          <option value="">Selecione...</option>
+          {lotes.map((l) => (
+            <option key={l} value={l}>
+              {l}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="block">
         <span className="text-sm">Largura da chapa (mm)</span>
