@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, ConfigMaquina } from './AppProducao';
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
@@ -60,6 +60,7 @@ function Producao() {
         <Route path="apontamento" element={<Apontamento />} />
         <Route path="apontamento-volume" element={<ApontamentoVolume />} />
         <Route path="nesting" element={<Nesting />} />
+        <Route path="nesting/config-maquina" element={<ConfigMaquina />} />
       </Route>
     </Routes>
   );
