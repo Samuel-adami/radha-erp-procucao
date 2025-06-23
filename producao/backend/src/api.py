@@ -6,6 +6,7 @@ from datetime import datetime
 from leitor_dxf import aplicar_usinagem_retangular
 from gerador_dxf import gerar_dxf_base
 from pathlib import Path
+import json
 import tempfile
 import shutil
 from operacoes import (
@@ -15,6 +16,8 @@ from operacoes import (
 )
 from nesting import gerar_nesting
 import ezdxf
+
+CONFIG_FILE = Path(__file__).resolve().parent / "config_maquina.json"
 
 def coletar_layers(pasta_lote: str) -> list[str]:
     """Percorre os arquivos DXF do lote e coleta os nomes de layers."""
@@ -169,3 +172,27 @@ async def excluir_lote(request: Request):
         shutil.rmtree(pasta, ignore_errors=True)
         return {"status": "ok", "mensagem": f"Lote {numero_lote} removido"}
     return {"status": "ok", "mensagem": "Lote não encontrado"}
+
+
+@app.get("/config-maquina")
+async def obter_config_maquina():
+    """Retorna a configuracao de maquina persistida."""
+    if CONFIG_FILE.is_file():
+        try:
+            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+        except Exception as e:
+            return {"erro": str(e)}
+    return {}
+
+
+@app.post("/config-maquina")
+async def salvar_config_maquina(request: Request):
+    """Salva configuracao de maquina em disco."""
+    dados = await request.json()
+    try:
+        CONFIG_FILE.write_text(
+            json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
