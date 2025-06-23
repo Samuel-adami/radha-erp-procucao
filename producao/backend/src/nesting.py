@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Dict
 
 from rectpack import newPacker
+import ezdxf
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
@@ -21,14 +22,22 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
                 'Thickness': float(fields.get('Thickness', 0)),
                 'Program1': fields.get('Program1', ''),
                 'Material': fields.get('Material', 'Desconhecido'),
+                'Filename': fields.get('Filename', ''),
             })
         except ValueError:
             continue
     return pecas
 
 
-def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0, ferramenta: dict | None = None) -> str:
-    """Gera um G-code simples para contornar um retângulo com deslocamento."""
+def _gcode_peca(
+    p: Dict,
+    ox: float = 0,
+    oy: float = 0,
+    ferramenta: dict | None = None,
+    dxf_path: Path | None = None,
+    config_layers: list[dict] | None = None,
+) -> str:
+    """Gera um G-code simples para contornar um retângulo e operações."""
     l = p['Length']
     w = p['Width']
     codigo = '1'
@@ -36,7 +45,8 @@ def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0, ferramenta: dict | None =
     if ferramenta:
         codigo = str(ferramenta.get('codigo', codigo))
         rpm = str(ferramenta.get('velocidadeRotacao', rpm))
-    return '\n'.join([
+
+    linhas = [
         f'( Peça: {p["PartName"]} )',
         'G0 Z50.0',
         f'M6 T{codigo}',
@@ -48,7 +58,32 @@ def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0, ferramenta: dict | None =
         f'G1 X{ox:.4f} Y{oy + w:.4f}',
         f'G1 X{ox:.4f} Y{oy:.4f}',
         'G0 Z50.0',
-    ])
+    ]
+
+    if dxf_path and config_layers:
+        try:
+            doc = ezdxf.readfile(dxf_path)
+            msp = doc.modelspace()
+            for ent in msp:
+                layer = ent.dxf.layer
+                cfg = next((c for c in config_layers if c.get('nome', '').lower() == layer.lower() and c.get('tipo') == 'Operação'), None)
+                if not cfg:
+                    continue
+                prof = float(cfg.get('profundidade', 1))
+                feed = 5000
+                if ent.dxftype() == 'CIRCLE':
+                    x = ox + float(ent.dxf.center.x)
+                    y = oy + float(ent.dxf.center.y)
+                    linhas.extend([
+                        f'({layer})',
+                        f'G0 X{x:.4f} Y{y:.4f} Z5.0',
+                        f'G1 Z-{prof:.4f} F{feed}',
+                        'G0 Z50.0',
+                    ])
+        except Exception:
+            pass
+
+    return '\n'.join(linhas)
 
 
 def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
@@ -95,20 +130,49 @@ def _gerar_xml_chapas(
     tree.write(saida / "chapas.xml", encoding="utf-8", xml_declaration=True)
 
 
-def _gerar_gcodes(chapas: List[List[Dict]], saida: Path, ferramenta: dict | None = None):
+def _gerar_gcodes(
+    chapas: List[List[Dict]],
+    saida: Path,
+    ferramenta: dict | None = None,
+    config_layers: list[dict] | None = None,
+    config_maquina: dict | None = None,
+    pasta_lote: Path | None = None,
+):
+    intro = '( Powered by Radha ERP )'
+    if config_maquina and config_maquina.get('introducao'):
+        intro = config_maquina['introducao'].split('\n')[0]
     for i, pecas in enumerate(chapas, start=1):
         material = pecas[0].get("Material", "chapa") if pecas else "chapa"
         thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
         prefix = f"{i:03d}-MDF {thickness}mm {material}"
-        linhas = ['( Powered by Radha ERP )']
+        linhas = [intro]
         for p in pecas:
-            linhas.extend(_gcode_peca(p, p['x'], p['y'], ferramenta).split('\n'))
+            dxf_path = None
+            if pasta_lote and p.get('Filename'):
+                dxf_path = pasta_lote / p['Filename']
+            linhas.extend(
+                _gcode_peca(
+                    p,
+                    p['x'],
+                    p['y'],
+                    ferramenta,
+                    dxf_path,
+                    config_layers,
+                ).split('\n')
+            )
         linhas.append('M5')
         linhas.append('M30')
         (saida / f'{prefix}.nc').write_text('\n'.join(linhas), encoding='utf-8')
 
 
-def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: float = 1850, ferramentas: list | None = None) -> str:
+def gerar_nesting(
+    pasta_lote: str,
+    largura_chapa: float = 2750,
+    altura_chapa: float = 1850,
+    ferramentas: list | None = None,
+    config_layers: list[dict] | None = None,
+    config_maquina: dict | None = None,
+) -> str:
     """Realiza o nesting das peças do lote usando rectpack."""
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
@@ -157,7 +221,14 @@ def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: fl
                 ferramenta = f
                 break
 
-    _gerar_gcodes(chapas, pasta_saida, ferramenta)
+    _gerar_gcodes(
+        chapas,
+        pasta_saida,
+        ferramenta,
+        config_layers,
+        config_maquina,
+        Path(pasta_lote),
+    )
     _gerar_cyc(chapas, pasta_saida)
     _gerar_xml_chapas(chapas, pasta_saida, largura_chapa, altura_chapa)
     return str(pasta_saida)

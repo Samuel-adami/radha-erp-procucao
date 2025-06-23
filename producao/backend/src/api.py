@@ -127,10 +127,19 @@ async def executar_nesting(request: Request):
     largura_chapa = float(dados.get('largura_chapa', 2750))
     altura_chapa = float(dados.get('altura_chapa', 1850))
     ferramentas = dados.get('ferramentas', [])
+    config_maquina = dados.get('config_maquina')
+    config_layers = dados.get('config_layers')
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
     try:
-        pasta_resultado = gerar_nesting(pasta_lote, largura_chapa, altura_chapa, ferramentas)
+        pasta_resultado = gerar_nesting(
+            pasta_lote,
+            largura_chapa,
+            altura_chapa,
+            ferramentas,
+            config_layers,
+            config_maquina,
+        )
         layers = coletar_layers(pasta_lote)
     except Exception as e:
         return {"erro": str(e)}
