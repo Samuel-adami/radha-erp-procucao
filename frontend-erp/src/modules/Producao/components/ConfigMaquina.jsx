@@ -146,6 +146,22 @@ const ConfigMaquina = () => {
     setLayers(cfgLayers);
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("ferramentasNesting", JSON.stringify(ferramentas));
+  }, [ferramentas]);
+
+  useEffect(() => {
+    localStorage.setItem("configuracoesCorte", JSON.stringify(cortes));
+  }, [cortes]);
+
+  useEffect(() => {
+    localStorage.setItem("configMaquina", JSON.stringify(configMaquina));
+  }, [configMaquina]);
+
+  useEffect(() => {
+    localStorage.setItem("configLayers", JSON.stringify(layers));
+  }, [layers]);
+
   const salvarLS = (dados) => {
     setFerramentas(dados);
     localStorage.setItem("ferramentasNesting", JSON.stringify(dados));
