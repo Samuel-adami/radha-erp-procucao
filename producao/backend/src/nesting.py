@@ -4,6 +4,7 @@ from typing import List, Dict
 
 from rectpack import newPacker
 import ezdxf
+from PIL import Image, ImageDraw
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
@@ -130,6 +131,47 @@ def _gerar_xml_chapas(
     tree.write(saida / "chapas.xml", encoding="utf-8", xml_declaration=True)
 
 
+def _gerar_imagens_chapas(
+    chapas: List[List[Dict]],
+    saida: Path,
+    largura_chapa: float,
+    altura_chapa: float,
+    config_maquina: dict | None = None,
+) -> None:
+    """Gera imagens BMP com a disposição das peças em cada chapa."""
+    escala = 800 / max(largura_chapa, altura_chapa)
+    largura_img = int(largura_chapa * escala)
+    altura_img = int(altura_chapa * escala)
+    for i, pecas in enumerate(chapas, start=1):
+        img = Image.new("RGB", (largura_img, altura_img), "white")
+        draw = ImageDraw.Draw(img)
+        for p in pecas:
+            x1 = int(p["x"] * escala)
+            y1 = int(p["y"] * escala)
+            x2 = int((p["x"] + p["Length"]) * escala)
+            y2 = int((p["y"] + p["Width"]) * escala)
+            # converter para origem no canto superior esquerdo
+            y1 = altura_img - y1
+            y2 = altura_img - y2
+            draw.rectangle([x1, y2, x2, y1], outline="black", width=2)
+        if config_maquina:
+            if config_maquina.get("inverterXChapa"):
+                img = img.transpose(Image.FLIP_LEFT_RIGHT)
+            if config_maquina.get("inverterYChapa"):
+                img = img.transpose(Image.FLIP_TOP_BOTTOM)
+            angulo = str(config_maquina.get("anguloRotacaoChapa", "0"))
+            if angulo.startswith("90"):
+                img = img.rotate(-90, expand=True)
+            elif angulo.startswith("180"):
+                img = img.rotate(180, expand=True)
+            elif angulo.startswith("270"):
+                img = img.rotate(-270, expand=True)
+        ext = "bmp"
+        if config_maquina and config_maquina.get("formatoImagemChapa"):
+            ext = config_maquina["formatoImagemChapa"].lower()
+        img.save(saida / f"{i}.{ext}")
+
+
 def _gerar_gcodes(
     chapas: List[List[Dict]],
     saida: Path,
@@ -231,5 +273,12 @@ def gerar_nesting(
     )
     _gerar_cyc(chapas, pasta_saida)
     _gerar_xml_chapas(chapas, pasta_saida, largura_chapa, altura_chapa)
+    _gerar_imagens_chapas(
+        chapas,
+        pasta_saida,
+        largura_chapa,
+        altura_chapa,
+        config_maquina,
+    )
     return str(pasta_saida)
 
