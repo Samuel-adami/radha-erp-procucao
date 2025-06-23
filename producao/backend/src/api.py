@@ -7,6 +7,7 @@ from leitor_dxf import aplicar_usinagem_retangular
 from gerador_dxf import gerar_dxf_base
 from pathlib import Path
 import tempfile
+import shutil
 from operacoes import (
     parse_xml_orcamento,
     parse_xml_producao,
@@ -154,3 +155,17 @@ async def listar_lotes():
         return {"lotes": []}
     lotes = [str(p) for p in sorted(base.iterdir(), key=lambda x: x.name) if p.is_dir() and p.name.startswith("Lote_")]
     return {"lotes": lotes}
+
+
+@app.post("/excluir-lote")
+async def excluir_lote(request: Request):
+    """Remove a pasta do lote em 'saida'."""
+    dados = await request.json()
+    numero_lote = dados.get("lote")
+    if not numero_lote:
+        return {"erro": "Parâmetro 'lote' não informado."}
+    pasta = Path("saida") / f"Lote_{numero_lote}"
+    if pasta.is_dir():
+        shutil.rmtree(pasta, ignore_errors=True)
+        return {"status": "ok", "mensagem": f"Lote {numero_lote} removido"}
+    return {"status": "ok", "mensagem": "Lote não encontrado"}
