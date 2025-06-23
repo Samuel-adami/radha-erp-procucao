@@ -20,6 +20,7 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
                 'Width': float(fields.get('Width', 0)),
                 'Thickness': float(fields.get('Thickness', 0)),
                 'Program1': fields.get('Program1', ''),
+                'Material': fields.get('Material', 'Desconhecido'),
             })
         except ValueError:
             continue
@@ -52,6 +53,9 @@ def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0, ferramenta: dict | None =
 
 def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
     for i, pecas in enumerate(chapas, start=1):
+        material = pecas[0].get("Material", "chapa") if pecas else "chapa"
+        thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
+        prefix = f"{i:03d}-MDF {thickness}mm {material}"
         root = ET.Element('CycleFile')
         for p in pecas:
             cycle = ET.SubElement(root, 'Cycle', Name='Cycle_Label')
@@ -60,7 +64,7 @@ def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
             ET.SubElement(cycle, 'Field', Name='Y', Value=str(p['y'] + p['Width']/2))
             ET.SubElement(cycle, 'Field', Name='R', Value='0')
         tree = ET.ElementTree(root)
-        tree.write(saida / f'chapa_{i}.cyc', encoding='utf-8', xml_declaration=False)
+        tree.write(saida / f'{prefix}.cyc', encoding='utf-8', xml_declaration=False)
 
 
 def _gerar_xml_chapas(
@@ -72,15 +76,15 @@ def _gerar_xml_chapas(
     """Gera um XML listando todas as chapas otimizadas."""
     root = ET.Element("CycleFile")
     for i, pecas in enumerate(chapas, start=1):
+        material = pecas[0].get("Material", "chapa") if pecas else "chapa"
+        thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
+        prefix = f"{i:03d}-MDF {thickness}mm {material} ({largura_chapa:.0f}mm X {altura_chapa:.0f}mm)"
         cycle = ET.SubElement(root, "Cycle", Name="Cycle_List")
-        ET.SubElement(cycle, "Field", Name="PlateID", Value=f"chapa_{i}.nc")
-        ET.SubElement(cycle, "Field", Name="LabelName", Value=f"chapa_{i}.cyc")
+        ET.SubElement(cycle, "Field", Name="PlateID", Value=f"{prefix}.nc")
+        ET.SubElement(cycle, "Field", Name="LabelName", Value=f"{prefix}.cyc")
         ET.SubElement(cycle, "Field", Name="Height", Value=f"{altura_chapa:.3f}")
         ET.SubElement(cycle, "Field", Name="Width", Value=f"{largura_chapa:.3f}")
-        thickness = 0
-        if pecas:
-            thickness = pecas[0].get("Thickness", 0)
-        ET.SubElement(cycle, "Field", Name="Thickness", Value=f"{int(thickness):02d}")
+        ET.SubElement(cycle, "Field", Name="Thickness", Value=f"{thickness:02d}")
         ET.SubElement(cycle, "Field", Name="LargeImage", Value=f"{i}.bmp")
         ET.SubElement(cycle, "Field", Name="SmallImage", Value=f"{i}.bmp")
     tree = ET.ElementTree(root)
@@ -93,12 +97,15 @@ def _gerar_xml_chapas(
 
 def _gerar_gcodes(chapas: List[List[Dict]], saida: Path, ferramenta: dict | None = None):
     for i, pecas in enumerate(chapas, start=1):
+        material = pecas[0].get("Material", "chapa") if pecas else "chapa"
+        thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
+        prefix = f"{i:03d}-MDF {thickness}mm {material}"
         linhas = ['( Powered by Radha ERP )']
         for p in pecas:
             linhas.extend(_gcode_peca(p, p['x'], p['y'], ferramenta).split('\n'))
         linhas.append('M5')
         linhas.append('M30')
-        (saida / f'chapa_{i}.nc').write_text('\n'.join(linhas), encoding='utf-8')
+        (saida / f'{prefix}.nc').write_text('\n'.join(linhas), encoding='utf-8')
 
 
 def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: float = 1850, ferramentas: list | None = None) -> str:
@@ -111,28 +118,35 @@ def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: fl
         raise FileNotFoundError('Arquivo DXT não encontrado na pasta do lote')
 
     pecas = _ler_dxt(dxts[0])
-    packer = newPacker(rotation=False)
+
+    pecas_por_material: Dict[str, List[Dict]] = {}
     for p in pecas:
-        packer.add_rect(int(p['Length']), int(p['Width']), rid=p)
-
-    for _ in range(len(pecas)):
-        packer.add_bin(int(largura_chapa), int(altura_chapa))
-
-    packer.pack()
+        material = p.get("Material", "Desconhecido")
+        pecas_por_material.setdefault(material, []).append(p)
 
     chapas: List[List[Dict]] = []
-    for abin in packer:
-        if not abin:
-            continue
-        placa = []
-        for rect in abin:
-            piece = rect.rid.copy()
-            piece['x'] = float(rect.x)
-            piece['y'] = float(rect.y)
-            piece['Length'] = float(rect.width)
-            piece['Width'] = float(rect.height)
-            placa.append(piece)
-        chapas.append(placa)
+    for material, lista in pecas_por_material.items():
+        packer = newPacker(rotation=False)
+        for p in lista:
+            packer.add_rect(int(p['Length']), int(p['Width']), rid=p)
+        for _ in range(len(lista)):
+            packer.add_bin(int(largura_chapa), int(altura_chapa))
+        packer.pack()
+
+        for abin in packer:
+            if not abin:
+                continue
+            placa = []
+            for rect in abin:
+                piece = rect.rid.copy()
+                piece['x'] = float(rect.x)
+                piece['y'] = float(rect.y)
+                piece['Length'] = float(rect.width)
+                piece['Width'] = float(rect.height)
+                piece['Material'] = material
+                placa.append(piece)
+            if placa:
+                chapas.append(placa)
 
     pasta_saida = pasta / 'nesting'
     pasta_saida.mkdir(exist_ok=True)
