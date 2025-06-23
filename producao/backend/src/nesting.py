@@ -63,6 +63,34 @@ def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
         tree.write(saida / f'chapa_{i}.cyc', encoding='utf-8', xml_declaration=False)
 
 
+def _gerar_xml_chapas(
+    chapas: List[List[Dict]],
+    saida: Path,
+    largura_chapa: float,
+    altura_chapa: float,
+) -> None:
+    """Gera um XML listando todas as chapas otimizadas."""
+    root = ET.Element("CycleFile")
+    for i, pecas in enumerate(chapas, start=1):
+        cycle = ET.SubElement(root, "Cycle", Name="Cycle_List")
+        ET.SubElement(cycle, "Field", Name="PlateID", Value=f"chapa_{i}.nc")
+        ET.SubElement(cycle, "Field", Name="LabelName", Value=f"chapa_{i}.cyc")
+        ET.SubElement(cycle, "Field", Name="Height", Value=f"{altura_chapa:.3f}")
+        ET.SubElement(cycle, "Field", Name="Width", Value=f"{largura_chapa:.3f}")
+        thickness = 0
+        if pecas:
+            thickness = pecas[0].get("Thickness", 0)
+        ET.SubElement(cycle, "Field", Name="Thickness", Value=f"{int(thickness):02d}")
+        ET.SubElement(cycle, "Field", Name="LargeImage", Value=f"{i}.bmp")
+        ET.SubElement(cycle, "Field", Name="SmallImage", Value=f"{i}.bmp")
+    tree = ET.ElementTree(root)
+    try:
+        ET.indent(tree, space="  ")  # Python 3.9+
+    except AttributeError:
+        pass
+    tree.write(saida / "chapas.xml", encoding="utf-8", xml_declaration=True)
+
+
 def _gerar_gcodes(chapas: List[List[Dict]], saida: Path, ferramenta: dict | None = None):
     for i, pecas in enumerate(chapas, start=1):
         linhas = ['( Powered by Radha ERP )']
@@ -117,5 +145,6 @@ def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: fl
 
     _gerar_gcodes(chapas, pasta_saida, ferramenta)
     _gerar_cyc(chapas, pasta_saida)
+    _gerar_xml_chapas(chapas, pasta_saida, largura_chapa, altura_chapa)
     return str(pasta_saida)
 
