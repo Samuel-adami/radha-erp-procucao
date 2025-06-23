@@ -3,6 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 import { Button } from "./ui/button";
 
+const modeloLayer = {
+  nome: "",
+  tipo: "Chapa",
+  cortarSobras: false,
+  rotacao: "90 graus",
+  espessura: "",
+  pecaOuSobra: "Peça",
+  profundidade: "",
+  ferramenta: "",
+  estrategia: "",
+};
+
 const Nesting = () => {
   const navigate = useNavigate();
   const [pastaLote, setPastaLote] = useState("");
@@ -45,6 +57,36 @@ const Nesting = () => {
         alert(data.erro);
       } else if (data?.pasta_resultado) {
         setResultado(data.pasta_resultado);
+        if (Array.isArray(data.layers)) {
+          const existentes = JSON.parse(localStorage.getItem("configLayers") || "[]");
+          const novos = [...existentes];
+          const adiciona = (nome) => {
+            if (novos.some(l => l.nome === nome)) return;
+            const matchFuro = nome.match(/^FURO_(\d+)_([\d\.]+)$/i);
+            const matchUsinar = nome.match(/^USINAR_([\d\.]+)_([\w]+)/i);
+            if (matchFuro) {
+              novos.push({
+                ...modeloLayer,
+                nome,
+                tipo: 'Operação',
+                profundidade: matchFuro[2],
+                ferramenta: matchFuro[1]
+              });
+            } else if (matchUsinar) {
+              novos.push({
+                ...modeloLayer,
+                nome,
+                tipo: 'Operação',
+                profundidade: matchUsinar[1],
+                estrategia: matchUsinar[2]
+              });
+            } else {
+              novos.push({ ...modeloLayer, nome });
+            }
+          };
+          data.layers.forEach(adiciona);
+          localStorage.setItem("configLayers", JSON.stringify(novos));
+        }
       }
     } catch (err) {
       alert("Falha ao executar nesting");
