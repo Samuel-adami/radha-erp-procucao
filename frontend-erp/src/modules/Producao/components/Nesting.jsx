@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 import { Button } from "./ui/button";
 
 const Nesting = () => {
+  const navigate = useNavigate();
   const [pastaLote, setPastaLote] = useState("");
   const [lotes, setLotes] = useState([]);
   const [larguraChapa, setLarguraChapa] = useState(2750);
@@ -29,12 +31,14 @@ const Nesting = () => {
 
   const executar = async () => {
     try {
+      const ferramentas = JSON.parse(localStorage.getItem("ferramentasNesting") || "[]");
       const data = await fetchComAuth("/executar-nesting", {
         method: "POST",
         body: JSON.stringify({
           pasta_lote: pastaLote,
           largura_chapa: parseFloat(larguraChapa),
           altura_chapa: parseFloat(alturaChapa),
+          ferramentas,
         }),
       });
       if (data?.erro) {
@@ -85,6 +89,7 @@ const Nesting = () => {
         />
       </label>
       <div className="space-x-2">
+        <Button variant="outline" onClick={() => navigate('config-maquina')}>Configurar Máquina</Button>
         <Button onClick={salvar}>Salvar</Button>
         <Button onClick={executar}>Executar Nesting</Button>
       </div>

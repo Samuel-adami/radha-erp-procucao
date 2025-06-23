@@ -26,15 +26,20 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
     return pecas
 
 
-def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0) -> str:
+def _gcode_peca(p: Dict, ox: float = 0, oy: float = 0, ferramenta: dict | None = None) -> str:
     """Gera um G-code simples para contornar um retângulo com deslocamento."""
     l = p['Length']
     w = p['Width']
+    codigo = '1'
+    rpm = '20000'
+    if ferramenta:
+        codigo = str(ferramenta.get('codigo', codigo))
+        rpm = str(ferramenta.get('velocidadeRotacao', rpm))
     return '\n'.join([
         f'( Peça: {p["PartName"]} )',
         'G0 Z50.0',
-        'M6 T1',
-        'M3 S20000',
+        f'M6 T{codigo}',
+        f'M3 S{rpm}',
         f'G0 X{ox:.4f} Y{oy:.4f} Z5.0',
         'G1 Z-1.0 F3000',
         f'G1 X{ox + l:.4f} Y{oy:.4f}',
@@ -58,17 +63,17 @@ def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
         tree.write(saida / f'chapa_{i}.cyc', encoding='utf-8', xml_declaration=False)
 
 
-def _gerar_gcodes(chapas: List[List[Dict]], saida: Path):
+def _gerar_gcodes(chapas: List[List[Dict]], saida: Path, ferramenta: dict | None = None):
     for i, pecas in enumerate(chapas, start=1):
         linhas = ['( Powered by Radha ERP )']
         for p in pecas:
-            linhas.extend(_gcode_peca(p, p['x'], p['y']).split('\n'))
+            linhas.extend(_gcode_peca(p, p['x'], p['y'], ferramenta).split('\n'))
         linhas.append('M5')
         linhas.append('M30')
         (saida / f'chapa_{i}.nc').write_text('\n'.join(linhas), encoding='utf-8')
 
 
-def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: float = 1850) -> str:
+def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: float = 1850, ferramentas: list | None = None) -> str:
     """Realiza o nesting das peças do lote usando rectpack."""
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
@@ -103,7 +108,14 @@ def gerar_nesting(pasta_lote: str, largura_chapa: float = 2750, altura_chapa: fl
 
     pasta_saida = pasta / 'nesting'
     pasta_saida.mkdir(exist_ok=True)
-    _gerar_gcodes(chapas, pasta_saida)
+    ferramenta = None
+    if ferramentas:
+        for f in ferramentas:
+            if f.get('tipo') == 'Fresa':
+                ferramenta = f
+                break
+
+    _gerar_gcodes(chapas, pasta_saida, ferramenta)
     _gerar_cyc(chapas, pasta_saida)
     return str(pasta_saida)
 
