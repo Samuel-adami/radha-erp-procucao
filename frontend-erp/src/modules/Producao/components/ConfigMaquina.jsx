@@ -107,6 +107,18 @@ const modeloConfigMaquina = {
   ordenarChapasEspessura: "Crescente",
 };
 
+const modeloLayer = {
+  nome: "",
+  tipo: "Chapa", // Chapa, Peça/Sobra, Operação
+  cortarSobras: false,
+  rotacao: "90 graus",
+  espessura: "",
+  pecaOuSobra: "Peça",
+  profundidade: "",
+  ferramenta: "",
+  estrategia: "",
+};
+
 const ConfigMaquina = () => {
   const [ferramentas, setFerramentas] = useState([]);
   const [mostrarForm, setMostrarForm] = useState(false);
@@ -118,6 +130,10 @@ const ConfigMaquina = () => {
   const [formCorte, setFormCorte] = useState(modeloCorte);
   const [configMaquina, setConfigMaquina] = useState(modeloConfigMaquina);
   const [mostrarExtrasMov, setMostrarExtrasMov] = useState(false);
+  const [layers, setLayers] = useState([]);
+  const [mostrarFormLayer, setMostrarFormLayer] = useState(false);
+  const [editLayerIndex, setEditLayerIndex] = useState(null);
+  const [formLayer, setFormLayer] = useState(modeloLayer);
 
   useEffect(() => {
     const salvas = JSON.parse(localStorage.getItem("ferramentasNesting") || "[]");
@@ -126,6 +142,8 @@ const ConfigMaquina = () => {
     setCortes(cfgCortes);
     const cfgMaquina = JSON.parse(localStorage.getItem("configMaquina") || "null");
     if (cfgMaquina) setConfigMaquina(cfgMaquina);
+    const cfgLayers = JSON.parse(localStorage.getItem("configLayers") || "[]");
+    setLayers(cfgLayers);
   }, []);
 
   const salvarLS = (dados) => {
@@ -143,6 +161,11 @@ const ConfigMaquina = () => {
     localStorage.setItem("configMaquina", JSON.stringify(dados));
   };
 
+  const salvarLayersLS = (dados) => {
+    setLayers(dados);
+    localStorage.setItem("configLayers", JSON.stringify(dados));
+  };
+
   const novo = () => {
     setForm(modeloFerramenta);
     setEditIndex(null);
@@ -153,6 +176,12 @@ const ConfigMaquina = () => {
     setFormCorte(modeloCorte);
     setEditCorteIndex(null);
     setMostrarFormCorte(true);
+  };
+
+  const novoLayer = () => {
+    setFormLayer(modeloLayer);
+    setEditLayerIndex(null);
+    setMostrarFormLayer(true);
   };
 
   const editar = (idx) => {
@@ -167,6 +196,12 @@ const ConfigMaquina = () => {
     setMostrarFormCorte(true);
   };
 
+  const editarLayer = (idx) => {
+    setFormLayer({ ...layers[idx] });
+    setEditLayerIndex(idx);
+    setMostrarFormLayer(true);
+  };
+
   const remover = (idx) => {
     const nov = ferramentas.filter((_, i) => i !== idx);
     salvarLS(nov);
@@ -177,9 +212,26 @@ const ConfigMaquina = () => {
     salvarCortesLS(lista);
   };
 
+  const removerLayer = (idx) => {
+    const lista = layers.filter((_, i) => i !== idx);
+    salvarLayersLS(lista);
+  };
+
   const marcarPadrao = (idx) => {
     const lista = cortes.map((c, i) => ({ ...c, padrao: i === idx }));
     salvarCortesLS(lista);
+  };
+
+  const handleLayer = (campo) => (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setFormLayer({ ...formLayer, [campo]: value });
+  };
+
+  const salvarLayer = () => {
+    const lista = [...layers];
+    if (editLayerIndex !== null) lista[editLayerIndex] = formLayer; else lista.push(formLayer);
+    salvarLayersLS(lista);
+    setMostrarFormLayer(false);
   };
 
   const salvar = () => {
@@ -767,6 +819,97 @@ const ConfigMaquina = () => {
         )}
         <ul className="space-y-1">
           {cortes.map((c, i) => <CorteItem c={c} i={i} key={i} />)}
+        </ul>
+      </div>
+      <div className="mt-8 space-y-2">
+        <h2 className="text-lg font-semibold">Cadastro de Layers</h2>
+        <Button onClick={novoLayer}>Cadastrar Novo Layer</Button>
+        {mostrarFormLayer && (
+          <div className="border p-4 rounded space-y-2">
+            <label className="block">
+              <span className="text-sm">Nome do Layer</span>
+              <input className="input" value={formLayer.nome} onChange={handleLayer('nome')} />
+            </label>
+            <label className="block">
+              <span className="text-sm">Configuração</span>
+              <select className="input" value={formLayer.tipo} onChange={handleLayer('tipo')}>
+                <option>Chapa</option>
+                <option>Peça/Sobra</option>
+                <option>Operação</option>
+              </select>
+            </label>
+            {formLayer.tipo === 'Chapa' && (
+              <>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={formLayer.cortarSobras} onChange={handleLayer('cortarSobras')} />
+                  <span className="text-sm">Cortar sobras após cortar peças</span>
+                </label>
+                <label className="block">
+                  <span className="text-sm">Rotacionar DXF</span>
+                  <select className="input" value={formLayer.rotacao} onChange={handleLayer('rotacao')}>
+                    <option>90 graus</option>
+                    <option>180 graus</option>
+                    <option>270 graus</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-sm">Espessura do Material (mm)</span>
+                  <input type="number" className="input" value={formLayer.espessura} onChange={handleLayer('espessura')} />
+                </label>
+              </>
+            )}
+            {formLayer.tipo === 'Peça/Sobra' && (
+              <label className="block">
+                <span className="text-sm">Tipo</span>
+                <select className="input" value={formLayer.pecaOuSobra} onChange={handleLayer('pecaOuSobra')}>
+                  <option>Peça</option>
+                  <option>Sobra</option>
+                </select>
+              </label>
+            )}
+            {formLayer.tipo === 'Operação' && (
+              <>
+                <label className="block">
+                  <span className="text-sm">Profundidade (mm)</span>
+                  <input type="number" className="input" value={formLayer.profundidade} onChange={handleLayer('profundidade')} />
+                </label>
+                <label className="block">
+                  <span className="text-sm">Ferramenta</span>
+                  <input className="input" value={formLayer.ferramenta} onChange={handleLayer('ferramenta')} />
+                </label>
+                <label className="block">
+                  <span className="text-sm">Estratégia</span>
+                  <select className="input" value={formLayer.estrategia} onChange={handleLayer('estrategia')}>
+                    <option value="">Selecione</option>
+                    <option>Por Dentro</option>
+                    <option>Por Fora</option>
+                    <option>Desbaste</option>
+                  </select>
+                </label>
+              </>
+            )}
+            <div className="space-x-2 pt-2">
+              <Button onClick={salvarLayer}>Salvar</Button>
+              <Button variant="outline" onClick={() => setMostrarFormLayer(false)}>Cancelar</Button>
+            </div>
+          </div>
+        )}
+        <ul className="space-y-1">
+          {layers.map((l, i) => (
+            <li key={i} className="grid grid-cols-4 gap-2 items-center border rounded p-2">
+              <span>{l.nome}</span>
+              <span>{l.tipo}</span>
+              <span className="text-xs">
+                {l.tipo === 'Chapa' && `Espessura: ${l.espessura}mm / Rotação ${l.rotacao}`}
+                {l.tipo === 'Peça/Sobra' && `${l.pecaOuSobra}`}
+                {l.tipo === 'Operação' && `Ferramenta: ${l.ferramenta} Prof: ${l.profundidade}`}
+              </span>
+              <div className="space-x-1">
+                <Button size="sm" variant="outline" onClick={() => editarLayer(i)}>Editar</Button>
+                <Button size="sm" variant="destructive" onClick={() => removerLayer(i)}>Excluir</Button>
+              </div>
+            </li>
+          ))}
         </ul>
       </div>
     </div>

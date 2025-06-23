@@ -13,6 +13,23 @@ from operacoes import (
     parse_dxt_producao,
 )
 from nesting import gerar_nesting
+import ezdxf
+
+def coletar_layers(pasta_lote: str) -> list[str]:
+    """Percorre os arquivos DXF do lote e coleta os nomes de layers."""
+    pasta = Path(pasta_lote)
+    layers: set[str] = set()
+    for arquivo in pasta.glob('*.dxf'):
+        try:
+            doc = ezdxf.readfile(arquivo)
+        except Exception:
+            continue
+        msp = doc.modelspace()
+        for ent in msp:
+            nome = ent.dxf.layer
+            if nome and nome.upper() != 'CONTORNO':
+                layers.add(nome)
+    return sorted(layers)
 
 app = FastAPI()
 
@@ -114,9 +131,10 @@ async def executar_nesting(request: Request):
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
     try:
         pasta_resultado = gerar_nesting(pasta_lote, largura_chapa, altura_chapa, ferramentas)
+        layers = coletar_layers(pasta_lote)
     except Exception as e:
         return {"erro": str(e)}
-    return {"status": "ok", "pasta_resultado": pasta_resultado}
+    return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers}
 
 
 @app.get("/listar-lotes")
