@@ -156,6 +156,33 @@ const ConfigMaquina = () => {
         }
       })
       .catch((err) => console.error('Erro ao carregar configuracao da maquina', err));
+
+    fetchComAuth('/config-ferramentas')
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setFerramentas(data);
+          localStorage.setItem('ferramentasNesting', JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.error('Erro ao carregar ferramentas', err));
+
+    fetchComAuth('/config-cortes')
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setCortes(data);
+          localStorage.setItem('configuracoesCorte', JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.error('Erro ao carregar configuracoes de corte', err));
+
+    fetchComAuth('/config-layers')
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setLayers(data);
+          localStorage.setItem('configLayers', JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.error('Erro ao carregar layers', err));
   }, []);
 
   useEffect(() => {
@@ -177,11 +204,19 @@ const ConfigMaquina = () => {
   const salvarLS = (dados) => {
     setFerramentas(dados);
     localStorage.setItem("ferramentasNesting", JSON.stringify(dados));
+    fetchComAuth('/config-ferramentas', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }).catch((err) => console.error('Erro ao salvar ferramentas', err));
   };
 
   const salvarCortesLS = (dados) => {
     setCortes(dados);
     localStorage.setItem("configuracoesCorte", JSON.stringify(dados));
+    fetchComAuth('/config-cortes', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }).catch((err) => console.error('Erro ao salvar cortes', err));
   };
 
   const salvarConfigMaquinaLS = (dados) => {
@@ -192,6 +227,10 @@ const ConfigMaquina = () => {
   const salvarLayersLS = (dados) => {
     setLayers(dados);
     localStorage.setItem("configLayers", JSON.stringify(dados));
+    fetchComAuth('/config-layers', {
+      method: 'POST',
+      body: JSON.stringify(dados),
+    }).catch((err) => console.error('Erro ao salvar layers', err));
   };
 
   const updateLayoutEtiqueta = (dados) => {

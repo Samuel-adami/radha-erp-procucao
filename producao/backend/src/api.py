@@ -225,3 +225,102 @@ async def salvar_config_maquina(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok"}
+
+
+# Novos endpoints para persistir ferramentas, configuracoes de corte e layers
+
+
+@app.get("/config-ferramentas")
+async def obter_ferramentas():
+    """Retorna a lista de ferramentas salva."""
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT dados FROM config_ferramentas WHERE id=1"
+            ).fetchone()
+            if row:
+                return json.loads(row["dados"])
+    except Exception as e:
+        return {"erro": str(e)}
+    return []
+
+
+@app.post("/config-ferramentas")
+async def salvar_ferramentas(request: Request):
+    """Salva lista de ferramentas no banco de dados."""
+    dados = await request.json()
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO config_ferramentas (id, dados) VALUES (1, ?) "
+                "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                (json.dumps(dados, ensure_ascii=False),),
+            )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.get("/config-cortes")
+async def obter_cortes():
+    """Retorna as configuracoes de corte salvas."""
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT dados FROM config_cortes WHERE id=1"
+            ).fetchone()
+            if row:
+                return json.loads(row["dados"])
+    except Exception as e:
+        return {"erro": str(e)}
+    return []
+
+
+@app.post("/config-cortes")
+async def salvar_cortes(request: Request):
+    """Salva configuracoes de corte no banco de dados."""
+    dados = await request.json()
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO config_cortes (id, dados) VALUES (1, ?) "
+                "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                (json.dumps(dados, ensure_ascii=False),),
+            )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.get("/config-layers")
+async def obter_layers():
+    """Retorna configuracoes de layers salvas."""
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT dados FROM config_layers WHERE id=1"
+            ).fetchone()
+            if row:
+                return json.loads(row["dados"])
+    except Exception as e:
+        return {"erro": str(e)}
+    return []
+
+
+@app.post("/config-layers")
+async def salvar_layers(request: Request):
+    """Salva configuracoes de layers no banco de dados."""
+    dados = await request.json()
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO config_layers (id, dados) VALUES (1, ?) "
+                "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                (json.dumps(dados, ensure_ascii=False),),
+            )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
