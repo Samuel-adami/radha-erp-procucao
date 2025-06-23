@@ -7,6 +7,7 @@ from leitor_dxf import aplicar_usinagem_retangular
 from gerador_dxf import gerar_dxf_base
 from pathlib import Path
 import json
+from database import get_db_connection, init_db
 import tempfile
 import shutil
 from operacoes import (
@@ -17,7 +18,7 @@ from operacoes import (
 from nesting import gerar_nesting
 import ezdxf
 
-CONFIG_FILE = Path(__file__).resolve().parent / "config_maquina.json"
+init_db()
 
 def coletar_layers(pasta_lote: str) -> list[str]:
     """Percorre os arquivos DXF do lote e coleta os nomes de layers."""
@@ -74,6 +75,15 @@ async def gerar_lote_final(request: Request):
     numero_lote = dados.get('lote', 'sem_nome')
     pasta_saida = os.path.join('saida', f"Lote_{numero_lote}")
     os.makedirs(pasta_saida, exist_ok=True)
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO lotes (pasta, criado_em) VALUES (?, ?)",
+                (pasta_saida, datetime.now().isoformat()),
+            )
+            conn.commit()
+    except Exception:
+        pass
     todas = []
     for p in dados.get("pecas", []):
         nome = f"{p['id']}.DXF"
@@ -152,11 +162,15 @@ async def executar_nesting(request: Request):
 
 @app.get("/listar-lotes")
 async def listar_lotes():
-    """Retorna uma lista das pastas de lote disponíveis em 'saida'."""
-    base = Path("saida")
-    if not base.is_dir():
-        return {"lotes": []}
-    lotes = [str(p) for p in sorted(base.iterdir(), key=lambda x: x.name) if p.is_dir() and p.name.startswith("Lote_")]
+    """Retorna uma lista das pastas de lote registradas."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT pasta FROM lotes ORDER BY id"
+            ).fetchall()
+            lotes = [row["pasta"] for row in rows]
+    except Exception:
+        lotes = []
     return {"lotes": lotes}
 
 
@@ -170,6 +184,13 @@ async def excluir_lote(request: Request):
     pasta = Path("saida") / f"Lote_{numero_lote}"
     if pasta.is_dir():
         shutil.rmtree(pasta, ignore_errors=True)
+    try:
+        with get_db_connection() as conn:
+            conn.execute("DELETE FROM lotes WHERE pasta = ?", (str(pasta),))
+            conn.commit()
+    except Exception:
+        pass
+    if pasta.is_dir():
         return {"status": "ok", "mensagem": f"Lote {numero_lote} removido"}
     return {"status": "ok", "mensagem": "Lote não encontrado"}
 
@@ -177,22 +198,30 @@ async def excluir_lote(request: Request):
 @app.get("/config-maquina")
 async def obter_config_maquina():
     """Retorna a configuracao de maquina persistida."""
-    if CONFIG_FILE.is_file():
-        try:
-            return json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
-        except Exception as e:
-            return {"erro": str(e)}
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT dados FROM config_maquina WHERE id=1"
+            ).fetchone()
+            if row:
+                return json.loads(row["dados"])
+    except Exception as e:
+        return {"erro": str(e)}
     return {}
 
 
 @app.post("/config-maquina")
 async def salvar_config_maquina(request: Request):
-    """Salva configuracao de maquina em disco."""
+    """Salva configuracao de maquina no banco de dados."""
     dados = await request.json()
     try:
-        CONFIG_FILE.write_text(
-            json.dumps(dados, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO config_maquina (id, dados) VALUES (1, ?) "
+                "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                (json.dumps(dados, ensure_ascii=False),),
+            )
+            conn.commit()
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok"}
