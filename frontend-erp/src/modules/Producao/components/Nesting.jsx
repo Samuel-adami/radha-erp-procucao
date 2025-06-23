@@ -44,6 +44,8 @@ const Nesting = () => {
   const executar = async () => {
     try {
       const ferramentas = JSON.parse(localStorage.getItem("ferramentasNesting") || "[]");
+      const configMaquina = JSON.parse(localStorage.getItem("configMaquina") || "null");
+      const configLayers = JSON.parse(localStorage.getItem("configLayers") || "[]");
       const data = await fetchComAuth("/executar-nesting", {
         method: "POST",
         body: JSON.stringify({
@@ -51,6 +53,8 @@ const Nesting = () => {
           largura_chapa: parseFloat(larguraChapa),
           altura_chapa: parseFloat(alturaChapa),
           ferramentas,
+          config_maquina: configMaquina,
+          config_layers: configLayers,
         }),
       });
       if (data?.erro) {
