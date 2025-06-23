@@ -11,6 +11,7 @@ import {
 
 import MarketingDigitalIA from "./modules/MarketingDigitalIA";
 import Producao from "./modules/Producao";
+import Login from "./pages/Login";
 import { fetchComAuth } from "./utils/fetchComAuth";
 
 // Componente de Layout: A "moldura" do ERP para um usuário logado
@@ -47,6 +48,11 @@ function App() {
   const [usuarioLogado, setUsuarioLogado] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const navigate = useNavigate();
+
+  const handleLoginSuccess = (usuario) => {
+    setUsuarioLogado(usuario);
+    navigate("/");
+  };
 
   // Efeito para autenticação automática na inicialização da aplicação
   useEffect(() => {
@@ -102,23 +108,22 @@ function App() {
   
   return (
       <Routes>
-        {/* Rotas principais do ERP */}
         <Route
           element={
             usuarioLogado ? (
               <Layout usuario={usuarioLogado} onLogout={handleLogout} />
             ) : (
-              <p className="p-4">Falha na autenticação.</p>
+              <Navigate to="/login" replace />
             )
           }
         >
-          {/* Rotas filhas do Layout. Elas serão renderizadas no <Outlet /> */}
           <Route index element={<p className="text-center text-lg mt-10">Bem-vindo ao ERP Radha. Selecione um módulo no menu.</p>} />
           <Route path="marketing-ia/*" element={<MarketingDigitalIA />} />
           <Route path="producao/*" element={<Producao />} />
         </Route>
 
-        {/* Rota para qualquer outro caminho não encontrado */}
+        <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
   );
