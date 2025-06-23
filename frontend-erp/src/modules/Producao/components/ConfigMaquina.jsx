@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
+import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 const modeloFerramenta = {
   tipo: "Fresa",
@@ -140,10 +141,19 @@ const ConfigMaquina = () => {
     setFerramentas(salvas);
     const cfgCortes = JSON.parse(localStorage.getItem("configuracoesCorte") || "[]");
     setCortes(cfgCortes);
-    const cfgMaquina = JSON.parse(localStorage.getItem("configMaquina") || "null");
-    if (cfgMaquina) setConfigMaquina(cfgMaquina);
+    const cfgMaquinaLocal = JSON.parse(localStorage.getItem("configMaquina") || "null");
+    if (cfgMaquinaLocal) setConfigMaquina(cfgMaquinaLocal);
     const cfgLayers = JSON.parse(localStorage.getItem("configLayers") || "[]");
     setLayers(cfgLayers);
+
+    fetchComAuth('/config-maquina')
+      .then((data) => {
+        if (data) {
+          setConfigMaquina(data);
+          localStorage.setItem('configMaquina', JSON.stringify(data));
+        }
+      })
+      .catch((err) => console.error('Erro ao carregar configuracao da maquina', err));
   }, []);
 
   useEffect(() => {
@@ -274,8 +284,18 @@ const ConfigMaquina = () => {
     setMostrarFormCorte(false);
   };
 
-  const salvarConfig = () => {
-    salvarConfigMaquinaLS({ ...configMaquina });
+  const salvarConfig = async () => {
+    try {
+      await fetchComAuth('/config-maquina', {
+        method: 'POST',
+        body: JSON.stringify(configMaquina),
+      });
+      salvarConfigMaquinaLS({ ...configMaquina });
+      alert('Configuração salva com sucesso');
+    } catch (err) {
+      console.error('Erro ao salvar configuração', err);
+      alert('Erro ao salvar configuração: ' + err.message);
+    }
   };
 
   const handle = (campo) => (e) => setForm({ ...form, [campo]: e.target.value });
