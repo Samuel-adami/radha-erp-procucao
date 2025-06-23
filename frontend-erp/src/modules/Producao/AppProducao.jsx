@@ -30,11 +30,19 @@ const HomeProducao = () => {
     navigate(`lote/${nome}`);
   };
 
-  const excluirLote = (nome) => {
+  const excluirLote = async (nome) => {
     if (!window.confirm(`Tem certeza que deseja excluir o lote "${nome}"?`)) return;
     const atualizados = lotes.filter(l => l.nome !== nome);
     setLotes(atualizados);
     localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+    try {
+      await fetchComAuth("/excluir-lote", {
+        method: "POST",
+        body: JSON.stringify({ lote: nome })
+      });
+    } catch (e) {
+      console.error("Erro ao excluir lote no backend", e);
+    }
   };
 
   return (
