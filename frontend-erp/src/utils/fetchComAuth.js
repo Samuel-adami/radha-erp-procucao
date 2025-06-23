@@ -21,9 +21,9 @@ export async function fetchComAuth(url, options = {}) {
   if (url.startsWith('/')) { // Se for uma rota relativa
       if (url.startsWith('/publicos') || url.startsWith('/nova-campanha') || url.startsWith('/nova-publicacao') || url.startsWith('/chat') || url.startsWith('/conhecimento')) {
           finalUrl = `${GATEWAY_URL}/marketing-ia${url}`; // Rotas do Marketing Digital IA via Gateway
-      } else if (url.startsWith('/importar-xml') || url.startsWith('/gerar-lote-final') || url.startsWith('/executar-nesting') || url.startsWith('/listar-lotes') || url.startsWith('/excluir-lote') || url.startsWith('/config-maquina')) {
-          finalUrl = `${GATEWAY_URL}/producao${url}`; // Rotas de Produção via Gateway
-      } else if (url.startsWith('/auth')) {
+        } else if (url.startsWith('/importar-xml') || url.startsWith('/gerar-lote-final') || url.startsWith('/executar-nesting') || url.startsWith('/listar-lotes') || url.startsWith('/excluir-lote') || url.startsWith('/config-maquina') || url.startsWith('/config-ferramentas') || url.startsWith('/config-cortes') || url.startsWith('/config-layers')) {
+            finalUrl = `${GATEWAY_URL}/producao${url}`; // Rotas de Produção via Gateway
+        } else if (url.startsWith('/auth')) {
           finalUrl = `${GATEWAY_URL}${url}`; // Endpoints de autenticação direto no Gateway
       }
   } else {

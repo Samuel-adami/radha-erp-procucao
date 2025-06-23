@@ -17,6 +17,15 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS config_maquina (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
     )
     cur.execute(
+        "CREATE TABLE IF NOT EXISTS config_ferramentas (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
+    )
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS config_cortes (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
+    )
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS config_layers (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
+    )
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS lotes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             pasta TEXT UNIQUE,
