@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
+import EtiquetaDesigner from "./EtiquetaDesigner";
 
 const modeloFerramenta = {
   tipo: "Fresa",
@@ -70,6 +71,7 @@ const modeloConfigMaquina = {
   rotacionarEtiquetaHorario: false,
   tamanhoMinimoPeca: "",
   mostrarNomeMaterial: false,
+  layoutEtiqueta: [],
   // REFERENCIAS
   xHoming: "",
   yHoming: "",
@@ -190,6 +192,10 @@ const ConfigMaquina = () => {
   const salvarLayersLS = (dados) => {
     setLayers(dados);
     localStorage.setItem("configLayers", JSON.stringify(dados));
+  };
+
+  const updateLayoutEtiqueta = (dados) => {
+    setConfigMaquina((c) => ({ ...c, layoutEtiqueta: dados }));
   };
 
   const novo = () => {
@@ -471,6 +477,15 @@ const ConfigMaquina = () => {
             <input type="checkbox" checked={configMaquina.mostrarNomeMaterial} onChange={handleConfig('mostrarNomeMaterial')} />
             <span className="text-sm">Mostrar nome completo do material (longo)</span>
           </label>
+          <div>
+            <h4 className="font-medium mb-1">Layout da Etiqueta</h4>
+            <EtiquetaDesigner
+              layout={configMaquina.layoutEtiqueta || []}
+              onChange={updateLayoutEtiqueta}
+              largura={configMaquina.tamanhoEtiquetadoraX}
+              altura={configMaquina.tamanhoEtiquetadoraY}
+            />
+          </div>
         </div>
 
         <div className="border p-4 rounded space-y-2">

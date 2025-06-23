@@ -177,6 +177,34 @@ def _gerar_imagens_chapas(
         img.save(saida / f"{i}.{ext}")
 
 
+def _gerar_etiquetas(
+    chapas: List[List[Dict]],
+    saida: Path,
+    config_maquina: dict | None = None,
+) -> None:
+    """Gera imagens das etiquetas conforme layout configurado."""
+    if not config_maquina or not config_maquina.get("layoutEtiqueta"):
+        return
+    layout = config_maquina.get("layoutEtiqueta", [])
+    largura = float(config_maquina.get("tamanhoEtiquetadoraX", 50))
+    altura = float(config_maquina.get("tamanhoEtiquetadoraY", 30))
+    escala = 4
+    ext = str(config_maquina.get("formatoImagemEtiqueta", "bmp")).lower()
+    for p in [pc for placa in chapas for pc in placa]:
+        img = Image.new("RGB", (int(largura * escala), int(altura * escala)), "white")
+        draw = ImageDraw.Draw(img)
+        for item in layout:
+            campo = item.get("campo")
+            if not campo:
+                continue
+            valor = p.get(campo, "")
+            x = float(item.get("x", 0)) * escala
+            y = float(item.get("y", 0)) * escala
+            draw.text((x, y), str(valor), fill="black")
+        nome = Path(p.get("Filename", p.get("PartName", "etiqueta"))).stem
+        img.save(saida / f"{nome}.{ext}")
+
+
 def _gerar_gcodes(
     chapas: List[List[Dict]],
     saida: Path,
@@ -358,6 +386,11 @@ def gerar_nesting(
         pasta_saida,
         largura_chapa,
         altura_chapa,
+        config_maquina,
+    )
+    _gerar_etiquetas(
+        chapas,
+        pasta_saida,
         config_maquina,
     )
     return str(pasta_saida)
