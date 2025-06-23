@@ -1,6 +1,10 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Dict
+from datetime import datetime
+
+from shapely.geometry import box
+from shapely.ops import unary_union
 
 from rectpack import newPacker
 import ezdxf
@@ -37,6 +41,7 @@ def _gcode_peca(
     ferramenta: dict | None = None,
     dxf_path: Path | None = None,
     config_layers: list[dict] | None = None,
+    tipo: str = "Peça",
 ) -> str:
     """Gera um G-code simples para contornar um retângulo e operações."""
     l = p['Length']
@@ -48,7 +53,7 @@ def _gcode_peca(
         rpm = str(ferramenta.get('velocidadeRotacao', rpm))
 
     linhas = [
-        f'( Peça: {p["PartName"]} )',
+        f'({tipo.upper()} - {l:.0f} x {w:.0f})',
         'G0 Z50.0',
         f'M6 T{codigo}',
         f'M3 S{rpm}',
@@ -175,19 +180,61 @@ def _gerar_imagens_chapas(
 def _gerar_gcodes(
     chapas: List[List[Dict]],
     saida: Path,
+    largura_chapa: float,
+    altura_chapa: float,
     ferramenta: dict | None = None,
     config_layers: list[dict] | None = None,
     config_maquina: dict | None = None,
     pasta_lote: Path | None = None,
 ):
-    intro = '( Powered by Radha ERP )'
+    """Gera arquivos .nc usando as configuracoes e chapas fornecidas."""
+
+    def substituir(texto: str, valores: dict) -> str:
+        for k, v in valores.items():
+            texto = texto.replace(f'[{k}]', str(v))
+        return texto
+
+    data_criacao = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+
+    lista_ferramentas = []
     if config_maquina and config_maquina.get('introducao'):
-        intro = config_maquina['introducao'].split('\n')[0]
+        if ferramenta:
+            lista_ferramentas.append(f"{ferramenta.get('codigo')} - {ferramenta.get('descricao','')}")
+
+    intro_tpl = '( Powered by Radha ERP )'
+    if config_maquina and config_maquina.get('introducao'):
+        intro_tpl = config_maquina['introducao']
+
+    header_tpl = config_maquina.get('cabecalho', '') if config_maquina else ''
+    footer_tpl = config_maquina.get('rodape', '') if config_maquina else ''
+
     for i, pecas in enumerate(chapas, start=1):
-        material = pecas[0].get("Material", "chapa") if pecas else "chapa"
-        thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
+        material = pecas[0].get('Material', 'chapa') if pecas else 'chapa'
+        thickness = int(pecas[0].get('Thickness', 0)) if pecas else 0
         prefix = f"{i:03d}-MDF {thickness}mm {material}"
-        linhas = [intro]
+
+        valores_intro = {
+            'CREATION_DATE_TIME': data_criacao,
+            'POST_PROCESSOR_NAME': config_maquina.get('nome', '') if config_maquina else '',
+            'BATCH_NAME': pasta_lote.name if pasta_lote else '',
+            'MATERIAL': material,
+            'X_LENGHT': config_maquina.get('comprimentoX', largura_chapa) if config_maquina else largura_chapa,
+            'Y_LENGHT': config_maquina.get('comprimentoY', altura_chapa) if config_maquina else altura_chapa,
+            'Z_LENGHT': config_maquina.get('movimentacaoZ', 0) if config_maquina else 0,
+            'LIST_OF_USED_TOOLS': '\n'.join(f'({t})' for t in lista_ferramentas),
+        }
+        linhas = substituir(intro_tpl, valores_intro).splitlines()
+
+        valores_header = {
+            'T': ferramenta.get('codigo') if ferramenta else '',
+            'TOOL_DESCRIPTION': ferramenta.get('descricao', '') if ferramenta else '',
+            'ZH': config_maquina.get('zHoming', '') if config_maquina else '',
+            'XH': config_maquina.get('xHoming', '') if config_maquina else '',
+            'YH': config_maquina.get('yHoming', '') if config_maquina else '',
+            'CMD_EXTRA': ferramenta.get('comandoExtra', '') if ferramenta else '',
+        }
+        linhas.extend(substituir(header_tpl, valores_header).splitlines())
+
         for p in pecas:
             dxf_path = None
             if pasta_lote and p.get('Filename'):
@@ -200,10 +247,41 @@ def _gerar_gcodes(
                     ferramenta,
                     dxf_path,
                     config_layers,
+                    tipo='PECAS',
                 ).split('\n')
             )
-        linhas.append('M5')
-        linhas.append('M30')
+
+        # Gerar sobras
+        placa_poly = box(0, 0, largura_chapa, altura_chapa)
+        pecas_polys = [box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width']) for p in pecas]
+        sobra_geo = placa_poly.difference(unary_union(pecas_polys))
+        if not sobra_geo.is_empty:
+            geoms = [sobra_geo] if sobra_geo.geom_type == 'Polygon' else list(sobra_geo.geoms)
+            for g in geoms:
+                minx, miny, maxx, maxy = g.bounds
+                sobra = {
+                    'PartName': 'Sobra',
+                    'Length': maxx - minx,
+                    'Width': maxy - miny,
+                    'Thickness': thickness,
+                    'Material': material,
+                    'Filename': '',
+                    'x': minx,
+                    'y': miny,
+                }
+                linhas.extend(
+                    _gcode_peca(
+                        sobra,
+                        sobra['x'],
+                        sobra['y'],
+                        ferramenta,
+                        None,
+                        None,
+                        tipo='SOBRAS',
+                    ).split('\n')
+                )
+
+        linhas.extend(substituir(footer_tpl, valores_header).splitlines())
         (saida / f'{prefix}.nc').write_text('\n'.join(linhas), encoding='utf-8')
 
 
@@ -266,6 +344,8 @@ def gerar_nesting(
     _gerar_gcodes(
         chapas,
         pasta_saida,
+        largura_chapa,
+        altura_chapa,
         ferramenta,
         config_layers,
         config_maquina,
