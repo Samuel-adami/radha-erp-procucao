@@ -64,8 +64,8 @@ function App() {
         }
       }
 
-        const defaultUser = process.env.REACT_APP_DEFAULT_USERNAME;
-        const defaultPass = process.env.REACT_APP_DEFAULT_PASSWORD;
+        const defaultUser = import.meta.env.VITE_DEFAULT_USERNAME;
+        const defaultPass = import.meta.env.VITE_DEFAULT_PASSWORD;
 
         if (defaultUser && defaultPass) {
           try {
