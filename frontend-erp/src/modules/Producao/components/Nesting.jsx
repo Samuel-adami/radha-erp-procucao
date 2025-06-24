@@ -51,6 +51,10 @@ const Nesting = () => {
   );
   const [fila, setFila] = useState([]);
   const [layerAtual, setLayerAtual] = useState(null);
+  const [ferramentas, setFerramentas] = useState(() =>
+    JSON.parse(localStorage.getItem("ferramentasNesting") || "[]")
+  );
+  const [aguardarExecucao, setAguardarExecucao] = useState(false);
 
   useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
@@ -79,16 +83,8 @@ const Nesting = () => {
     setLayerAtual({ ...layerAtual, [campo]: value });
   };
 
-  const executar = async () => {
+  const executarBackend = async () => {
     try {
-      const ferramentas = JSON.parse(localStorage.getItem("ferramentasNesting") || "[]");
-      const configMaquina = JSON.parse(localStorage.getItem("configMaquina") || "null");
-      const configLayers = layers;
-      const cortes = JSON.parse(localStorage.getItem("configuracoesCorte") || "[]");
-
-      if (!configMaquina) return alert("Configuração da máquina não cadastrada.");
-      if (!ferramentas.length) return alert("Cadastre ao menos uma ferramenta.");
-      if (!cortes.length) return alert("Configure o módulo de corte.");
       const data = await fetchComAuth("/executar-nesting", {
         method: "POST",
         body: JSON.stringify({
@@ -96,8 +92,8 @@ const Nesting = () => {
           largura_chapa: parseFloat(larguraChapa),
           altura_chapa: parseFloat(alturaChapa),
           ferramentas,
-          config_maquina: configMaquina,
-          config_layers: configLayers,
+          config_maquina: JSON.parse(localStorage.getItem("configMaquina") || "null"),
+          config_layers: layers,
         }),
       });
       if (data?.erro) {
@@ -120,13 +116,57 @@ const Nesting = () => {
             const filaInicial = faltantes.map(criaLayer);
             setFila(filaInicial);
             setLayerAtual(filaInicial[0]);
-          }
+            setAguardarExecucao(true);
+            }
         }
       }
     } catch (err) {
       alert("Falha ao executar nesting");
       console.error(err);
     }
+  };
+
+  const executar = async () => {
+    const cfgMaquina = JSON.parse(localStorage.getItem("configMaquina") || "null");
+    const cortes = JSON.parse(localStorage.getItem("configuracoesCorte") || "[]");
+
+    if (!cfgMaquina) {
+      alert("Configuração da máquina não cadastrada.");
+      return navigate("config-maquina");
+    }
+    if (!ferramentas.length) {
+      alert("Cadastre ao menos uma ferramenta.");
+      return navigate("config-maquina");
+    }
+    if (!cortes.length) {
+      alert("Configure o módulo de corte.");
+      return navigate("config-maquina");
+    }
+    try {
+      const resp = await fetchComAuth("/coletar-layers", {
+        method: "POST",
+        body: JSON.stringify({ pasta_lote: pastaLote }),
+      });
+      if (resp?.erro) {
+        alert(resp.erro);
+        return;
+      }
+      const faltantes = (resp.layers || []).filter(
+        (n) => !layers.some((l) => l.nome === n)
+      );
+      if (faltantes.length) {
+        const filaInicial = faltantes.map(criaLayer);
+        setFila(filaInicial);
+        setLayerAtual(filaInicial[0]);
+        setAguardarExecucao(true);
+        return;
+      }
+    } catch (err) {
+      alert("Erro ao verificar layers");
+      return;
+    }
+
+    executarBackend();
   };
 
   return (
@@ -244,7 +284,17 @@ const Nesting = () => {
                 </label>
                 <label className="block">
                   <span className="text-sm">Ferramenta</span>
-                  <input className="input w-full" value={layerAtual.ferramenta} onChange={handleLayer('ferramenta')} />
+                  <select className="input w-full" value={layerAtual.ferramenta} onChange={handleLayer('ferramenta')}>
+                    <option value="">Selecione...</option>
+                    {ferramentas.map((f, i) => (
+                      <option key={i} value={f.codigo}>
+                        {f.codigo} {f.descricao ? `- ${f.descricao}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={() => navigate('config-maquina')} className="mt-1 w-full">
+                    Gerenciar Ferramentas
+                  </Button>
                 </label>
                 <label className="block">
                   <span className="text-sm">Estratégia</span>
@@ -266,9 +316,16 @@ const Nesting = () => {
                   localStorage.setItem('configLayers', JSON.stringify(lista));
                   setFila(prox);
                   setLayerAtual(prox[0] || null);
+                  if (prox.length === 0 && aguardarExecucao) {
+                    setAguardarExecucao(false);
+                    executarBackend();
+                  }
                 }}
               >
                 Cadastrar
+              </Button>
+              <Button variant="outline" onClick={() => { setFila([]); setLayerAtual(null); setAguardarExecucao(false); }}>
+                Cancelar
               </Button>
             </div>
           </div>
