@@ -106,6 +106,8 @@ def _gcode_peca(
     l = p["Length"]
     w = p["Width"]
     linhas = [f"({tipo.upper()} - {l:.0f} x {w:.0f})"]
+    z_seg = float(config_maquina.get("zSeguranca", 48)) if config_maquina else 48
+    z_pre = float(config_maquina.get("zAntesTrabalho", 20)) if config_maquina else 20
 
     ops = []
     if dxf_path and config_layers:
@@ -144,20 +146,28 @@ def _gcode_peca(
 
     # Operação padrão - contorno
     ferramenta_padrao = ferramentas[0] if ferramentas else None
-    ops.insert(
-        0,
-        {
-            "tool": ferramenta_padrao,
-            "contorno": True,
-            "l": l,
-            "w": w,
-        },
-    )
+    contorno_op = {
+        "tool": ferramenta_padrao,
+        "contorno": True,
+        "l": l,
+        "w": w,
+    }
+    ops.insert(0, contorno_op)
 
     header_tpl = templates.get("header", "") if templates else ""
     troca_tpl = templates.get("troca", "") if templates else ""
 
+    # ordenar operacoes por proximidade e garantir contorno por ultimo
+    if ops and ops[0].get("contorno"):
+        contorno_op = ops.pop(0)
+    else:
+        contorno_op = None
+    ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
+    if contorno_op:
+        ops.append(contorno_op)
+
     atual = None
+    furando = True
     for op in ops:
         tool = op["tool"]
         if tool and tool != atual:
@@ -183,24 +193,30 @@ def _gcode_peca(
             atual = tool
 
         if op.get("contorno"):
+            if furando and config_maquina and config_maquina.get("comandoFinalFuros"):
+                linhas.extend(str(config_maquina.get("comandoFinalFuros")).splitlines())
+            furando = False
             linhas.extend(
                 [
-                    f"G0 X{ox:.4f} Y{oy:.4f} Z5.0",
-                    "G1 Z-1.0 F3000",
-                    f"G1 X{ox + l:.4f} Y{oy:.4f}",
-                    f"G1 X{ox + l:.4f} Y{oy + w:.4f}",
-                    f"G1 X{ox:.4f} Y{oy + w:.4f}",
-                    f"G1 X{ox:.4f} Y{oy:.4f}",
-                    "G0 Z50.0",
+                    f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
+                    f"G0 X{ox:.4f} Y{oy:.4f} Z{z_pre:.4f}",
+                    "(Step:1/1)",
+                    f"G1 X{ox + l:.4f} Y{oy:.4f} Z-0.2000 F3500.0",
+                    f"G1 X{ox + l:.4f} Y{oy + w:.4f} Z-0.2000 F7000.0",
+                    f"G1 X{ox:.4f} Y{oy + w:.4f} Z-0.2000",
+                    f"G1 X{ox:.4f} Y{oy:.4f} Z-0.2000",
+                    f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
                 ]
             )
         else:
             linhas.extend(
                 [
                     f"({op['layer']})",
-                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z5.0",
-                    f"G1 Z-{op['prof']:.4f} F3000",
-                    "G0 Z50.0",
+                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
+                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_pre:.4f}",
+                    "(Step:1/1)",
+                    f"G1 X{op['x']:.4f} Y{op['y']:.4f} Z-{op['prof']:.4f} F5000.0",
+                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
                 ]
             )
 
