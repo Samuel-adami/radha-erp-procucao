@@ -170,6 +170,20 @@ async def executar_nesting(request: Request):
     return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers}
 
 
+@app.post("/coletar-layers")
+async def api_coletar_layers(request: Request):
+    """Retorna os layers encontrados nos DXFs do lote."""
+    dados = await request.json()
+    pasta_lote = dados.get("pasta_lote")
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+    try:
+        layers = coletar_layers(pasta_lote)
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"layers": layers}
+
+
 @app.get("/listar-lotes")
 async def listar_lotes():
     """Retorna uma lista das pastas de lote registradas."""
