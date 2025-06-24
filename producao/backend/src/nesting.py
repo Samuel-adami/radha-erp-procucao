@@ -38,58 +38,130 @@ def _gcode_peca(
     p: Dict,
     ox: float = 0,
     oy: float = 0,
-    ferramenta: dict | None = None,
+    ferramentas: list[dict] | None = None,
     dxf_path: Path | None = None,
     config_layers: list[dict] | None = None,
+    config_maquina: dict | None = None,
+    templates: dict | None = None,
     tipo: str = "Peça",
 ) -> str:
-    """Gera um G-code simples para contornar um retângulo e operações."""
-    l = p['Length']
-    w = p['Width']
-    codigo = '1'
-    rpm = '20000'
-    if ferramenta:
-        codigo = str(ferramenta.get('codigo', codigo))
-        rpm = str(ferramenta.get('velocidadeRotacao', rpm))
+    """Gera G-code para uma peça considerando múltiplas ferramentas."""
 
-    linhas = [
-        f'({tipo.upper()} - {l:.0f} x {w:.0f})',
-        'G0 Z50.0',
-        f'M6 T{codigo}',
-        f'M3 S{rpm}',
-        f'G0 X{ox:.4f} Y{oy:.4f} Z5.0',
-        'G1 Z-1.0 F3000',
-        f'G1 X{ox + l:.4f} Y{oy:.4f}',
-        f'G1 X{ox + l:.4f} Y{oy + w:.4f}',
-        f'G1 X{ox:.4f} Y{oy + w:.4f}',
-        f'G1 X{ox:.4f} Y{oy:.4f}',
-        'G0 Z50.0',
-    ]
+    def substituir(texto: str, valores: dict) -> str:
+        for k, v in valores.items():
+            texto = texto.replace(f'[{k}]', str(v))
+        return texto
 
+    def buscar_ferramenta(nome: str) -> dict | None:
+        if not ferramentas:
+            return None
+        for f in ferramentas:
+            if str(f.get("codigo")) == str(nome) or f.get("descricao") == nome:
+                return f
+        return None
+
+    l = p["Length"]
+    w = p["Width"]
+    linhas = [f"({tipo.upper()} - {l:.0f} x {w:.0f})"]
+
+    ops = []
     if dxf_path and config_layers:
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
             for ent in msp:
                 layer = ent.dxf.layer
-                cfg = next((c for c in config_layers if c.get('nome', '').lower() == layer.lower() and c.get('tipo') == 'Operação'), None)
+                cfg = next(
+                    (
+                        c
+                        for c in config_layers
+                        if c.get("nome", "").lower() == layer.lower()
+                        and c.get("tipo") == "Operação"
+                    ),
+                    None,
+                )
                 if not cfg:
                     continue
-                prof = float(cfg.get('profundidade', 1))
-                feed = 5000
-                if ent.dxftype() == 'CIRCLE':
+                ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
+                if not ferramenta_cfg:
+                    continue
+                prof = float(cfg.get("profundidade", 1))
+                if ent.dxftype() == "CIRCLE":
                     x = ox + float(ent.dxf.center.x)
                     y = oy + float(ent.dxf.center.y)
-                    linhas.extend([
-                        f'({layer})',
-                        f'G0 X{x:.4f} Y{y:.4f} Z5.0',
-                        f'G1 Z-{prof:.4f} F{feed}',
-                        'G0 Z50.0',
-                    ])
+                    ops.append({
+                        "tool": ferramenta_cfg,
+                        "x": x,
+                        "y": y,
+                        "prof": prof,
+                        "layer": layer,
+                    })
         except Exception:
             pass
 
-    return '\n'.join(linhas)
+    # Operação padrão - contorno
+    ferramenta_padrao = ferramentas[0] if ferramentas else None
+    ops.insert(
+        0,
+        {
+            "tool": ferramenta_padrao,
+            "contorno": True,
+            "l": l,
+            "w": w,
+        },
+    )
+
+    header_tpl = templates.get("header", "") if templates else ""
+    troca_tpl = templates.get("troca", "") if templates else ""
+
+    atual = None
+    for op in ops:
+        tool = op["tool"]
+        if tool and tool != atual:
+            valores = {
+                "T": tool.get("codigo", ""),
+                "TOOL_DESCRIPTION": tool.get("descricao", ""),
+                "ZH": config_maquina.get("zHoming", "") if config_maquina else "",
+                "XH": config_maquina.get("xHoming", "") if config_maquina else "",
+                "YH": config_maquina.get("yHoming", "") if config_maquina else "",
+                "CMD_EXTRA": tool.get("comandoExtra", ""),
+            }
+            tpl = header_tpl if atual is None else troca_tpl
+            if tpl:
+                linhas.extend(substituir(tpl, valores).splitlines())
+            else:
+                linhas.extend(
+                    [
+                        "G0 Z50.0",
+                        f"M6 T{tool.get('codigo', '')}",
+                        f"M3 S{tool.get('velocidadeRotacao', '20000')}",
+                    ]
+                )
+            atual = tool
+
+        if op.get("contorno"):
+            linhas.extend(
+                [
+                    f"G0 X{ox:.4f} Y{oy:.4f} Z5.0",
+                    "G1 Z-1.0 F3000",
+                    f"G1 X{ox + l:.4f} Y{oy:.4f}",
+                    f"G1 X{ox + l:.4f} Y{oy + w:.4f}",
+                    f"G1 X{ox:.4f} Y{oy + w:.4f}",
+                    f"G1 X{ox:.4f} Y{oy:.4f}",
+                    "G0 Z50.0",
+                ]
+            )
+        else:
+            linhas.extend(
+                [
+                    f"({op['layer']})",
+                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z5.0",
+                    f"G1 Z-{op['prof']:.4f} F3000",
+                    "G0 Z50.0",
+                ]
+            )
+
+    return "\n".join(linhas)
 
 
 def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
@@ -210,7 +282,7 @@ def _gerar_gcodes(
     saida: Path,
     largura_chapa: float,
     altura_chapa: float,
-    ferramenta: dict | None = None,
+    ferramentas: list[dict] | None = None,
     config_layers: list[dict] | None = None,
     config_maquina: dict | None = None,
     pasta_lote: Path | None = None,
@@ -226,8 +298,9 @@ def _gerar_gcodes(
 
     lista_ferramentas = []
     if config_maquina and config_maquina.get('introducao'):
-        if ferramenta:
-            lista_ferramentas.append(f"{ferramenta.get('codigo')} - {ferramenta.get('descricao','')}")
+        if ferramentas:
+            for f in ferramentas:
+                lista_ferramentas.append(f"{f.get('codigo')} - {f.get('descricao','')}")
 
     intro_tpl = '( Powered by Radha ERP )'
     if config_maquina and config_maquina.get('introducao'):
@@ -253,13 +326,14 @@ def _gerar_gcodes(
         }
         linhas = substituir(intro_tpl, valores_intro).splitlines()
 
+        primeira_ferramenta = ferramentas[0] if ferramentas else None
         valores_header = {
-            'T': ferramenta.get('codigo') if ferramenta else '',
-            'TOOL_DESCRIPTION': ferramenta.get('descricao', '') if ferramenta else '',
+            'T': primeira_ferramenta.get('codigo') if primeira_ferramenta else '',
+            'TOOL_DESCRIPTION': primeira_ferramenta.get('descricao', '') if primeira_ferramenta else '',
             'ZH': config_maquina.get('zHoming', '') if config_maquina else '',
             'XH': config_maquina.get('xHoming', '') if config_maquina else '',
             'YH': config_maquina.get('yHoming', '') if config_maquina else '',
-            'CMD_EXTRA': ferramenta.get('comandoExtra', '') if ferramenta else '',
+            'CMD_EXTRA': primeira_ferramenta.get('comandoExtra', '') if primeira_ferramenta else '',
         }
         linhas.extend(substituir(header_tpl, valores_header).splitlines())
 
@@ -272,9 +346,11 @@ def _gerar_gcodes(
                     p,
                     p['x'],
                     p['y'],
-                    ferramenta,
+                    ferramentas,
                     dxf_path,
                     config_layers,
+                    config_maquina,
+                    {'header': '', 'troca': config_maquina.get('trocaFerramenta','') if config_maquina else ''},
                     tipo='PECAS',
                 ).split('\n')
             )
@@ -302,9 +378,11 @@ def _gerar_gcodes(
                         sobra,
                         sobra['x'],
                         sobra['y'],
-                        ferramenta,
+                        ferramentas,
                         None,
                         None,
+                        config_maquina,
+                        {'header': '', 'troca': config_maquina.get('trocaFerramenta','') if config_maquina else ''},
                         tipo='SOBRAS',
                     ).split('\n')
                 )
@@ -362,19 +440,12 @@ def gerar_nesting(
 
     pasta_saida = pasta / 'nesting'
     pasta_saida.mkdir(exist_ok=True)
-    ferramenta = None
-    if ferramentas:
-        for f in ferramentas:
-            if f.get('tipo') == 'Fresa':
-                ferramenta = f
-                break
-
     _gerar_gcodes(
         chapas,
         pasta_saida,
         largura_chapa,
         altura_chapa,
-        ferramenta,
+        ferramentas,
         config_layers,
         config_maquina,
         Path(pasta_lote),
