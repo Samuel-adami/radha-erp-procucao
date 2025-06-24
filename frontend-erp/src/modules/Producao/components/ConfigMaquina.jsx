@@ -85,7 +85,7 @@ const modeloConfigMaquina = {
   inverterXReferencia: false,
   inverterYReferencia: false,
   // POS PROCESSADOR
-  introducao: "%\n( Powered by https://www.r-hex.com/ )\n( Cria\u00e7\u00e3o: [CREATION_DATE_TIME] )\n( P\u00f3s processador: [POST_PROCESSOR_NAME] )\n( Lote: [BATCH_NAME] )\n( Material: [MATERIAL] )\n( Dimens\u00f5es: X:[X_LENGHT] Y:[Y_LENGHT] Z:[Z_LENGHT] )\n( Ferramentas necess\u00e1rias para a execu\u00e7\u00e3o dos trabalhos: )\n[LIST_OF_USED_TOOLS]\n",
+  introducao: "%\n( Powered by Radha ERP )\n( Cria\u00e7\u00e3o: [CREATION_DATE_TIME] )\n( P\u00f3s processador: [POST_PROCESSOR_NAME] )\n( Lote: [BATCH_NAME] )\n( Material: [MATERIAL] )\n( Dimens\u00f5es: X:[X_LENGHT] Y:[Y_LENGHT] Z:[Z_LENGHT] )\n( Ferramentas necess\u00e1rias para a execu\u00e7\u00e3o dos trabalhos: )\n[LIST_OF_USED_TOOLS]\n",
   cabecalho: "(######## HEADER ########)\n( NUMERO DA FERRAMENTA: [T] - [TOOL_DESCRIPTION] )\nG0 Z[ZH]\nM6 T[T]\n[CMD_EXTRA]\n",
   trocaFerramenta: "(######## Troca de ferramentas ########)\n( NUMERO DA FERRAMENTA: [T] - [TOOL_DESCRIPTION] )\nG0 Z[ZH]\nM6 T[T]\n[CMD_EXTRA]\n",
   rodape: "(######## FOOTER ########)\nG0 Z[ZH]\n(G0 X[XH]Y[YH] retirado a pedido do Samuel)\nM5\nM30\n%\n",

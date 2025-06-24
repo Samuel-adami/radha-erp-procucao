@@ -345,7 +345,17 @@ def _gerar_gcodes(
             for f in ferramentas:
                 lista_ferramentas.append(f"{f.get('codigo')} - {f.get('descricao','')}")
 
-    intro_tpl = '( Powered by Radha ERP )'
+    intro_tpl = (
+        "%\n"
+        "( Powered by Radha ERP )\n"
+        "( Cria\u00e7\u00e3o: [CREATION_DATE_TIME] )\n"
+        "( P\u00f3s processador: [POST_PROCESSOR_NAME] )\n"
+        "( Lote: [BATCH_NAME] )\n"
+        "( Material: [MATERIAL] )\n"
+        "( Dimens\u00f5es: X:[X_LENGHT] Y:[Y_LENGHT] Z:[Z_LENGHT] )\n"
+        "( Ferramentas necess\u00e1rias para a execu\u00e7\u00e3o dos trabalhos: )\n"
+        "[LIST_OF_USED_TOOLS]\n"
+    )
     if config_maquina and config_maquina.get('introducao'):
         intro_tpl = config_maquina['introducao']
 
