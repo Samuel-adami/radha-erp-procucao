@@ -15,6 +15,30 @@ const modeloLayer = {
   estrategia: "",
 };
 
+const criaLayer = (nome) => {
+  const matchFuro = nome.match(/^FURO_(\d+)_([\d\.]+)$/i);
+  const matchUsinar = nome.match(/^USINAR_([\d\.]+)_([\w]+)/i);
+  if (matchFuro) {
+    return {
+      ...modeloLayer,
+      nome,
+      tipo: "Operação",
+      profundidade: matchFuro[2],
+      ferramenta: `BROCA ${matchFuro[1]}MM`,
+    };
+  }
+  if (matchUsinar) {
+    return {
+      ...modeloLayer,
+      nome,
+      tipo: "Operação",
+      profundidade: matchUsinar[1],
+      estrategia: matchUsinar[2],
+    };
+  }
+  return { ...modeloLayer, nome };
+};
+
 const Nesting = () => {
   const navigate = useNavigate();
   const [pastaLote, setPastaLote] = useState("");
@@ -22,6 +46,11 @@ const Nesting = () => {
   const [larguraChapa, setLarguraChapa] = useState(2750);
   const [alturaChapa, setAlturaChapa] = useState(1850);
   const [resultado, setResultado] = useState("");
+  const [layers, setLayers] = useState(() =>
+    JSON.parse(localStorage.getItem("configLayers") || "[]")
+  );
+  const [fila, setFila] = useState([]);
+  const [layerAtual, setLayerAtual] = useState(null);
 
   useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
@@ -32,6 +61,10 @@ const Nesting = () => {
       .then((d) => setLotes(d?.lotes || []))
       .catch((e) => console.error("Falha ao carregar lotes", e));
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("configLayers", JSON.stringify(layers));
+  }, [layers]);
 
   const salvar = () => {
     localStorage.setItem(
@@ -45,7 +78,13 @@ const Nesting = () => {
     try {
       const ferramentas = JSON.parse(localStorage.getItem("ferramentasNesting") || "[]");
       const configMaquina = JSON.parse(localStorage.getItem("configMaquina") || "null");
-      const configLayers = JSON.parse(localStorage.getItem("configLayers") || "[]");
+      const configLayers = layers;
+      const cortes = JSON.parse(localStorage.getItem("configuracoesCorte") || "[]");
+
+      if (!configMaquina) return alert("Configuração da máquina não cadastrada.");
+      if (!ferramentas.length) return alert("Cadastre ao menos uma ferramenta.");
+      if (!configLayers.length) return alert("Cadastre os layers necessários.");
+      if (!cortes.length) return alert("Configure o módulo de corte.");
       const data = await fetchComAuth("/executar-nesting", {
         method: "POST",
         body: JSON.stringify({
@@ -62,34 +101,14 @@ const Nesting = () => {
       } else if (data?.pasta_resultado) {
         setResultado(data.pasta_resultado);
         if (Array.isArray(data.layers)) {
-          const existentes = JSON.parse(localStorage.getItem("configLayers") || "[]");
-          const novos = [...existentes];
-          const adiciona = (nome) => {
-            if (novos.some(l => l.nome === nome)) return;
-            const matchFuro = nome.match(/^FURO_(\d+)_([\d\.]+)$/i);
-            const matchUsinar = nome.match(/^USINAR_([\d\.]+)_([\w]+)/i);
-            if (matchFuro) {
-              novos.push({
-                ...modeloLayer,
-                nome,
-                tipo: 'Operação',
-                profundidade: matchFuro[2],
-                ferramenta: matchFuro[1]
-              });
-            } else if (matchUsinar) {
-              novos.push({
-                ...modeloLayer,
-                nome,
-                tipo: 'Operação',
-                profundidade: matchUsinar[1],
-                estrategia: matchUsinar[2]
-              });
-            } else {
-              novos.push({ ...modeloLayer, nome });
-            }
-          };
-          data.layers.forEach(adiciona);
-          localStorage.setItem("configLayers", JSON.stringify(novos));
+          const faltantes = data.layers.filter(
+            (n) => !layers.some((l) => l.nome === n)
+          );
+          if (faltantes.length) {
+            const filaInicial = faltantes.map(criaLayer);
+            setFila(filaInicial);
+            setLayerAtual(filaInicial[0]);
+          }
         }
       }
     } catch (err) {
@@ -141,6 +160,78 @@ const Nesting = () => {
       </div>
       {resultado && (
         <p className="text-sm">Arquivos gerados em: {resultado}</p>
+      )}
+      {layerAtual && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 space-y-2 rounded shadow max-w-sm w-full">
+            <h3 className="font-semibold">Cadastrar Layer</h3>
+            <label className="block">
+              <span className="text-sm">Nome</span>
+              <input
+                className="input w-full"
+                value={layerAtual.nome}
+                onChange={(e) => setLayerAtual({ ...layerAtual, nome: e.target.value })}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm">Tipo</span>
+              <input
+                className="input w-full"
+                value={layerAtual.tipo}
+                onChange={(e) => setLayerAtual({ ...layerAtual, tipo: e.target.value })}
+              />
+            </label>
+            {layerAtual.tipo === 'Operação' && (
+              <>
+                <label className="block">
+                  <span className="text-sm">Ferramenta</span>
+                  <input
+                    className="input w-full"
+                    value={layerAtual.ferramenta}
+                    onChange={(e) =>
+                      setLayerAtual({ ...layerAtual, ferramenta: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm">Profundidade (mm)</span>
+                  <input
+                    type="number"
+                    className="input w-full"
+                    value={layerAtual.profundidade}
+                    onChange={(e) =>
+                      setLayerAtual({ ...layerAtual, profundidade: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm">Estratégia</span>
+                  <input
+                    className="input w-full"
+                    value={layerAtual.estrategia}
+                    onChange={(e) =>
+                      setLayerAtual({ ...layerAtual, estrategia: e.target.value })
+                    }
+                  />
+                </label>
+              </>
+            )}
+            <div className="space-x-2 pt-2">
+              <Button
+                onClick={() => {
+                  const prox = fila.slice(1);
+                  const lista = [...layers, layerAtual];
+                  setLayers(lista);
+                  localStorage.setItem('configLayers', JSON.stringify(lista));
+                  setFila(prox);
+                  setLayerAtual(prox[0] || null);
+                }}
+              >
+                Cadastrar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
