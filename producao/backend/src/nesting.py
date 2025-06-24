@@ -340,10 +340,9 @@ def _gerar_gcodes(
     data_criacao = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
 
     lista_ferramentas = []
-    if config_maquina and config_maquina.get('introducao'):
-        if ferramentas:
-            for f in ferramentas:
-                lista_ferramentas.append(f"{f.get('codigo')} - {f.get('descricao','')}")
+    if ferramentas:
+        for f in ferramentas:
+            lista_ferramentas.append(f"{f.get('codigo')} - {f.get('descricao','')}")
 
     intro_tpl = (
         "%\n"
