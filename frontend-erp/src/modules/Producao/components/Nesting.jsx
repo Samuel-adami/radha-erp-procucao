@@ -308,19 +308,27 @@ const Nesting = () => {
               </>
             )}
             <div className="space-x-2 pt-2">
-              <Button
-                onClick={() => {
-                  const prox = fila.slice(1);
-                  const lista = [...layers, layerAtual];
-                  setLayers(lista);
-                  localStorage.setItem('configLayers', JSON.stringify(lista));
-                  setFila(prox);
-                  setLayerAtual(prox[0] || null);
-                  if (prox.length === 0 && aguardarExecucao) {
-                    setAguardarExecucao(false);
-                    executarBackend();
-                  }
-                }}
+                <Button
+                  onClick={async () => {
+                    const prox = fila.slice(1);
+                    const lista = [...layers, layerAtual];
+                    setLayers(lista);
+                    localStorage.setItem('configLayers', JSON.stringify(lista));
+                    try {
+                      await fetchComAuth('/config-layers', {
+                        method: 'POST',
+                        body: JSON.stringify(lista),
+                      });
+                    } catch (err) {
+                      console.error('Erro ao salvar layers', err);
+                    }
+                    setFila(prox);
+                    setLayerAtual(prox[0] || null);
+                    if (prox.length === 0 && aguardarExecucao) {
+                      setAguardarExecucao(false);
+                      executarBackend();
+                    }
+                  }}
               >
                 Cadastrar
               </Button>
