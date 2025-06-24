@@ -818,13 +818,23 @@ const ConfigMaquina = () => {
         <div>
           <h3 className="font-semibold">Fresas</h3>
           <ul className="space-y-1">
-            {ferramentas.filter(f => f.tipo === 'Fresa').map((f, i) => <Item f={f} i={i} key={i} />)}
+            {ferramentas
+              .filter(f => f.tipo === 'Fresa')
+              .map(f => {
+                const idx = ferramentas.indexOf(f);
+                return <Item f={f} i={idx} key={idx} />;
+              })}
           </ul>
         </div>
         <div>
           <h3 className="font-semibold">Brocas</h3>
           <ul className="space-y-1">
-            {ferramentas.filter(f => f.tipo === 'Broca').map((f, i) => <Item f={f} i={i} key={i} />)}
+            {ferramentas
+              .filter(f => f.tipo === 'Broca')
+              .map(f => {
+                const idx = ferramentas.indexOf(f);
+                return <Item f={f} i={idx} key={idx} />;
+              })}
           </ul>
         </div>
       </div>
