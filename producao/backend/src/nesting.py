@@ -9,25 +9,67 @@ from shapely.ops import unary_union
 from rectpack import newPacker
 import ezdxf
 from PIL import Image, ImageDraw
+from database import get_db_connection
+
+
+def _medidas_dxf(path: Path) -> tuple[float, float] | None:
+    """Retorna (comprimento, largura) calculados a partir do DXF."""
+    try:
+        doc = ezdxf.readfile(path)
+    except Exception:
+        return None
+    msp = doc.modelspace()
+    xs: list[float] = []
+    ys: list[float] = []
+    for ent in msp:
+        layer = str(ent.dxf.layer).lower()
+        if layer in ("borda_externa", "contorno"):
+            try:
+                if ent.dxftype() == "LINE":
+                    xs.extend([float(ent.dxf.start.x), float(ent.dxf.end.x)])
+                    ys.extend([float(ent.dxf.start.y), float(ent.dxf.end.y)])
+                elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
+                    for x, y in ent.get_points("xy"):
+                        xs.append(float(x))
+                        ys.append(float(y))
+                elif ent.dxftype() == "CIRCLE":
+                    cx = float(ent.dxf.center.x)
+                    cy = float(ent.dxf.center.y)
+                    r = float(ent.dxf.radius)
+                    xs.extend([cx - r, cx + r])
+                    ys.extend([cy - r, cy + r])
+            except Exception:
+                continue
+    if not xs or not ys:
+        return None
+    return max(xs) - min(xs), max(ys) - min(ys)
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
     """Le um arquivo .dxt e extrai dados das peças."""
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
     pecas = []
+    pasta = dxt_path.parent
     for part in root.findall('.//Part'):
         fields = {f.find('Name').text: f.find('Value').text for f in part.findall('Field')}
         if not fields:
             continue
         try:
+            filename = fields.get('Filename', '')
+            length = float(fields.get('Length', 0))
+            width = float(fields.get('Width', 0))
+            if filename:
+                medidas = _medidas_dxf(pasta / filename)
+                if medidas:
+                    length, width = medidas
             pecas.append({
                 'PartName': fields.get('PartName', 'SemNome'),
-                'Length': float(fields.get('Length', 0)),
-                'Width': float(fields.get('Width', 0)),
+                'Length': length,
+                'Width': width,
                 'Thickness': float(fields.get('Thickness', 0)),
                 'Program1': fields.get('Program1', ''),
                 'Material': fields.get('Material', 'Desconhecido'),
-                'Filename': fields.get('Filename', ''),
+                'Filename': filename,
             })
         except ValueError:
             continue
@@ -409,6 +451,18 @@ def gerar_nesting(
 
     pecas = _ler_dxt(dxts[0])
 
+    # Carregar configuracoes de chapas
+    chapas_cfg: dict[str, dict] = {}
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+            ).fetchall()
+            for r in rows:
+                chapas_cfg[r["propriedade"]] = dict(r)
+    except Exception:
+        pass
+
     pecas_por_material: Dict[str, List[Dict]] = {}
     for p in pecas:
         material = p.get("Material", "Desconhecido")
@@ -416,11 +470,15 @@ def gerar_nesting(
 
     chapas: List[List[Dict]] = []
     for material, lista in pecas_por_material.items():
-        packer = newPacker(rotation=False)
+        cfg = chapas_cfg.get(material, {})
+        rot = False if cfg.get("possui_veio") else True
+        largura = float(cfg.get("comprimento", largura_chapa))
+        altura = float(cfg.get("largura", altura_chapa))
+        packer = newPacker(rotation=rot)
         for p in lista:
             packer.add_rect(int(p['Length']), int(p['Width']), rid=p)
         for _ in range(len(lista)):
-            packer.add_bin(int(largura_chapa), int(altura_chapa))
+            packer.add_bin(int(largura), int(altura))
         packer.pack()
 
         for abin in packer:

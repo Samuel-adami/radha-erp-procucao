@@ -26,6 +26,16 @@ def init_db():
         "CREATE TABLE IF NOT EXISTS config_layers (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
     )
     cur.execute(
+        """CREATE TABLE IF NOT EXISTS chapas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            possui_veio INTEGER,
+            propriedade TEXT,
+            espessura REAL,
+            comprimento REAL,
+            largura REAL
+        )"""
+    )
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS lotes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             pasta TEXT UNIQUE,

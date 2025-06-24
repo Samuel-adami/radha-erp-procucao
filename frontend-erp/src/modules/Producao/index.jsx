@@ -3,6 +3,7 @@ import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 // Importa os componentes renomeados do AppProducao.jsx
 import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, ConfigMaquina } from './AppProducao';
+import CadastroChapas from './components/CadastroChapas';
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
@@ -12,6 +13,7 @@ function ProducaoLayout() {
   const matchApontamento = useMatch({ path: `${resolved.pathname}/apontamento`, end: true });
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
   const matchNesting = useMatch({ path: `${resolved.pathname}/nesting`, end: true });
+  const matchChapas = useMatch({ path: `${resolved.pathname}/chapas`, end: true });
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
@@ -41,6 +43,12 @@ function ProducaoLayout() {
         >
           Nesting
         </Link>
+        <Link
+          to="chapas"
+          className={`px-3 py-1 rounded ${matchChapas ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Chapas
+        </Link>
         {/* Adicionar mais links de navegação interna do módulo, se necessário */}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}
@@ -61,6 +69,7 @@ function Producao() {
         <Route path="apontamento-volume" element={<ApontamentoVolume />} />
         <Route path="nesting" element={<Nesting />} />
         <Route path="nesting/config-maquina" element={<ConfigMaquina />} />
+        <Route path="chapas" element={<CadastroChapas />} />
       </Route>
     </Routes>
   );

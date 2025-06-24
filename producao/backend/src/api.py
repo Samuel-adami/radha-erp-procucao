@@ -324,3 +324,62 @@ async def salvar_layers(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok"}
+
+
+@app.get("/chapas")
+async def listar_chapas():
+    """Retorna todas as chapas cadastradas."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT id, possui_veio, propriedade, espessura, comprimento, largura FROM chapas"
+            ).fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+@app.post("/chapas")
+async def salvar_chapa(request: Request):
+    """Cria ou atualiza uma chapa."""
+    dados = await request.json()
+    try:
+        with get_db_connection() as conn:
+            if dados.get("id"):
+                conn.execute(
+                    "UPDATE chapas SET possui_veio=?, propriedade=?, espessura=?, comprimento=?, largura=? WHERE id=?",
+                    (
+                        1 if dados.get("possui_veio") else 0,
+                        dados.get("propriedade"),
+                        dados.get("espessura"),
+                        dados.get("comprimento"),
+                        dados.get("largura"),
+                        dados["id"],
+                    ),
+                )
+            else:
+                conn.execute(
+                    "INSERT INTO chapas (possui_veio, propriedade, espessura, comprimento, largura) VALUES (?, ?, ?, ?, ?)",
+                    (
+                        1 if dados.get("possui_veio") else 0,
+                        dados.get("propriedade"),
+                        dados.get("espessura"),
+                        dados.get("comprimento"),
+                        dados.get("largura"),
+                    ),
+                )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.delete("/chapas/{chapa_id}")
+async def remover_chapa(chapa_id: int):
+    try:
+        with get_db_connection() as conn:
+            conn.execute("DELETE FROM chapas WHERE id=?", (chapa_id,))
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
