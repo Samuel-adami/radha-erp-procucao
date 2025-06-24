@@ -157,12 +157,17 @@ def _gcode_peca(
     header_tpl = templates.get("header", "") if templates else ""
     troca_tpl = templates.get("troca", "") if templates else ""
 
-    # ordenar operacoes por proximidade e garantir contorno por ultimo
+    # ordenar e agrupar operacoes
     if ops and ops[0].get("contorno"):
         contorno_op = ops.pop(0)
     else:
         contorno_op = None
-    ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
+
+    furos_ops = [o for o in ops if o.get("tool", {}).get("tipo") == "Broca"]
+    fresa_ops = [o for o in ops if o.get("tool", {}).get("tipo") != "Broca"]
+
+    furos_ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
+    ops = furos_ops + fresa_ops
     if contorno_op:
         ops.append(contorno_op)
 
@@ -179,7 +184,7 @@ def _gcode_peca(
                 "YH": config_maquina.get("yHoming", "") if config_maquina else "",
                 "CMD_EXTRA": tool.get("comandoExtra", ""),
             }
-            tpl = header_tpl if atual is None else troca_tpl
+            tpl = header_tpl or troca_tpl
             if tpl:
                 linhas.extend(substituir(tpl, valores).splitlines())
             else:
@@ -192,10 +197,12 @@ def _gcode_peca(
                 )
             atual = tool
 
-        if op.get("contorno"):
-            if furando and config_maquina and config_maquina.get("comandoFinalFuros"):
+        if furando and (op.get("contorno") or tool.get("tipo") != "Broca"):
+            if config_maquina and config_maquina.get("comandoFinalFuros"):
                 linhas.extend(str(config_maquina.get("comandoFinalFuros")).splitlines())
             furando = False
+
+        if op.get("contorno"):
             linhas.extend(
                 [
                     f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
@@ -420,7 +427,10 @@ def _gerar_gcodes(
                     dxf_path,
                     config_layers,
                     config_maquina,
-                    {'header': '', 'troca': config_maquina.get('trocaFerramenta','') if config_maquina else ''},
+                    {
+                        'header': config_maquina.get('cabecalho', '') if config_maquina else '',
+                        'troca': config_maquina.get('trocaFerramenta', '') if config_maquina else '',
+                    },
                     tipo='PECAS',
                 ).split('\n')
             )
