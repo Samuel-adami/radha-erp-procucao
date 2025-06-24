@@ -35,13 +35,13 @@ def coletar_layers(pasta_lote: str) -> list[str]:
             # Inclui também os layers definidos no arquivo, não apenas os utilizados
             for layer in doc.layers:
                 nome = layer.dxf.name
-                if nome and nome.upper() != "CONTORNO":
+                if nome and nome.upper() not in {"CONTORNO", "0", "DEFPOINTS"}:
                     layers.add(nome)
 
             msp = doc.modelspace()
             for ent in msp:
                 nome = ent.dxf.layer
-                if nome and nome.upper() != "CONTORNO":
+                if nome and nome.upper() not in {"CONTORNO", "0", "DEFPOINTS"}:
                     layers.add(nome)
 
     return sorted(layers)

@@ -8,6 +8,7 @@ from shapely.ops import unary_union
 
 from rectpack import newPacker
 import ezdxf
+import math
 from PIL import Image, ImageDraw
 from database import get_db_connection
 
@@ -353,7 +354,7 @@ def _gerar_gcodes(
 
     for i, pecas in enumerate(chapas, start=1):
         material = pecas[0].get('Material', 'chapa') if pecas else 'chapa'
-        thickness = int(pecas[0].get('Thickness', 0)) if pecas else 0
+        thickness = float(pecas[0].get('Thickness', 0)) if pecas else 0.0
         prefix = f"{i:03d}-MDF {thickness}mm {material}"
 
         valores_intro = {
@@ -378,6 +379,8 @@ def _gerar_gcodes(
             'CMD_EXTRA': primeira_ferramenta.get('comandoExtra', '') if primeira_ferramenta else '',
         }
         linhas.extend(substituir(header_tpl, valores_header).splitlines())
+        camada_chapa = f"CHAPA_{math.floor(thickness):.1f}"
+        linhas.append(f"({camada_chapa})")
 
         for p in pecas:
             dxf_path = None
