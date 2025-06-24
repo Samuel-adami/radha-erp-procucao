@@ -74,6 +74,11 @@ const Nesting = () => {
     alert("Configurações salvas");
   };
 
+  const handleLayer = (campo) => (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setLayerAtual({ ...layerAtual, [campo]: value });
+  };
+
   const executar = async () => {
     try {
       const ferramentas = JSON.parse(localStorage.getItem("ferramentasNesting") || "[]");
@@ -83,7 +88,6 @@ const Nesting = () => {
 
       if (!configMaquina) return alert("Configuração da máquina não cadastrada.");
       if (!ferramentas.length) return alert("Cadastre ao menos uma ferramenta.");
-      if (!configLayers.length) return alert("Cadastre os layers necessários.");
       if (!cortes.length) return alert("Configure o módulo de corte.");
       const data = await fetchComAuth("/executar-nesting", {
         method: "POST",
@@ -166,53 +170,82 @@ const Nesting = () => {
           <div className="bg-white p-4 space-y-2 rounded shadow max-w-sm w-full">
             <h3 className="font-semibold">Cadastrar Layer</h3>
             <label className="block">
-              <span className="text-sm">Nome</span>
+              <span className="text-sm">Nome do Layer</span>
               <input
                 className="input w-full"
                 value={layerAtual.nome}
-                onChange={(e) => setLayerAtual({ ...layerAtual, nome: e.target.value })}
+                onChange={handleLayer('nome')}
               />
             </label>
             <label className="block">
-              <span className="text-sm">Tipo</span>
-              <input
-                className="input w-full"
-                value={layerAtual.tipo}
-                onChange={(e) => setLayerAtual({ ...layerAtual, tipo: e.target.value })}
-              />
+              <span className="text-sm">Configuração</span>
+              <select className="input w-full" value={layerAtual.tipo} onChange={handleLayer('tipo')}>
+                <option>Chapa</option>
+                <option>Peça/Sobra</option>
+                <option>Operação</option>
+              </select>
             </label>
-            {layerAtual.tipo === 'Operação' && (
+            {layerAtual.tipo === 'Chapa' && (
               <>
-                <label className="block">
-                  <span className="text-sm">Ferramenta</span>
+                <label className="flex items-center gap-2">
                   <input
+                    type="checkbox"
+                    checked={layerAtual.cortarSobras}
+                    onChange={handleLayer('cortarSobras')}
+                  />
+                  <span className="text-sm">Cortar sobras após cortar peças</span>
+                </label>
+                <label className="block">
+                  <span className="text-sm">Rotacionar DXF</span>
+                  <select className="input w-full" value={layerAtual.rotacao} onChange={handleLayer('rotacao')}>
+                    <option>90 graus</option>
+                    <option>180 graus</option>
+                    <option>270 graus</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-sm">Espessura do Material (mm)</span>
+                  <input
+                    type="number"
                     className="input w-full"
-                    value={layerAtual.ferramenta}
-                    onChange={(e) =>
-                      setLayerAtual({ ...layerAtual, ferramenta: e.target.value })
-                    }
+                    value={layerAtual.espessura}
+                    onChange={handleLayer('espessura')}
                   />
                 </label>
+              </>
+            )}
+            {layerAtual.tipo === 'Peça/Sobra' && (
+              <label className="block">
+                <span className="text-sm">Tipo</span>
+                <select className="input w-full" value={layerAtual.pecaOuSobra} onChange={handleLayer('pecaOuSobra')}>
+                  <option>Peça</option>
+                  <option>Sobra</option>
+                </select>
+              </label>
+            )}
+            {layerAtual.tipo === 'Operação' && (
+              <>
                 <label className="block">
                   <span className="text-sm">Profundidade (mm)</span>
                   <input
                     type="number"
                     className="input w-full"
                     value={layerAtual.profundidade}
-                    onChange={(e) =>
-                      setLayerAtual({ ...layerAtual, profundidade: e.target.value })
-                    }
+                    onChange={handleLayer('profundidade')}
                   />
                 </label>
                 <label className="block">
+                  <span className="text-sm">Ferramenta</span>
+                  <input className="input w-full" value={layerAtual.ferramenta} onChange={handleLayer('ferramenta')} />
+                </label>
+                <label className="block">
                   <span className="text-sm">Estratégia</span>
-                  <input
-                    className="input w-full"
-                    value={layerAtual.estrategia}
-                    onChange={(e) =>
-                      setLayerAtual({ ...layerAtual, estrategia: e.target.value })
-                    }
-                  />
+                  <select className="input w-full" value={layerAtual.estrategia} onChange={handleLayer('estrategia')}>
+                    <option value="">Selecione</option>
+                    <option>Por Dentro</option>
+                    <option>Por Fora</option>
+                    <option>Desbaste</option>
+                  </select>
                 </label>
               </>
             )}
