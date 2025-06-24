@@ -24,24 +24,25 @@ def coletar_layers(pasta_lote: str) -> list[str]:
     """Percorre os arquivos DXF do lote e coleta todos os nomes de layers."""
     pasta = Path(pasta_lote)
     layers: set[str] = set()
-    # Busca recursivamente por arquivos DXF na pasta do lote
-    for arquivo in pasta.rglob("*.dxf"):
-        try:
-            doc = ezdxf.readfile(arquivo)
-        except Exception:
-            continue
+    # Busca recursivamente por arquivos DXF na pasta do lote (case-insensitive)
+    for arquivo in pasta.rglob("*"):
+        if arquivo.is_file() and arquivo.suffix.lower() == ".dxf":
+            try:
+                doc = ezdxf.readfile(arquivo)
+            except Exception:
+                continue
 
-        # Inclui também os layers definidos no arquivo, não apenas os utilizados
-        for layer in doc.layers:
-            nome = layer.dxf.name
-            if nome and nome.upper() != "CONTORNO":
-                layers.add(nome)
+            # Inclui também os layers definidos no arquivo, não apenas os utilizados
+            for layer in doc.layers:
+                nome = layer.dxf.name
+                if nome and nome.upper() != "CONTORNO":
+                    layers.add(nome)
 
-        msp = doc.modelspace()
-        for ent in msp:
-            nome = ent.dxf.layer
-            if nome and nome.upper() != "CONTORNO":
-                layers.add(nome)
+            msp = doc.modelspace()
+            for ent in msp:
+                nome = ent.dxf.layer
+                if nome and nome.upper() != "CONTORNO":
+                    layers.add(nome)
 
     return sorted(layers)
 
