@@ -437,27 +437,29 @@ const EditarPecaProducao = () => {
       <div className="border p-4 rounded bg-gray-50 overflow-x-auto w-full min-w-[620px]">
         <VisualizacaoPeca comprimento={dadosPeca.comprimento} largura={dadosPeca.largura} orientacao={orientacao} operacoes={operacoes} />
         <p className="mt-2">Medidas: {dadosPeca.comprimento}mm x {dadosPeca.largura}mm</p>
-        <div className="flex gap-2 mt-2">
-          <label className="block">
-            <span className="text-sm">Comprimento:</span>
-            <input
-              type="number"
-              className="input w-24"
-              value={novoComprimento}
-              onChange={(e) => setNovoComprimento(e.target.value)}
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm">Largura:</span>
-            <input
-              type="number"
-              className="input w-24"
-              value={novaLargura}
-              onChange={(e) => setNovaLargura(e.target.value)}
-            />
-          </label>
-          <Button size="sm" className="self-end" onClick={salvarMedidas}>Salvar Medidas</Button>
-        </div>
+        {origemOcorrencia && (
+          <div className="flex gap-2 mt-2">
+            <label className="block">
+              <span className="text-sm">Comprimento:</span>
+              <input
+                type="number"
+                className="input w-24"
+                value={novoComprimento}
+                onChange={(e) => setNovoComprimento(e.target.value)}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm">Largura:</span>
+              <input
+                type="number"
+                className="input w-24"
+                value={novaLargura}
+                onChange={(e) => setNovaLargura(e.target.value)}
+              />
+            </label>
+            <Button size="sm" className="self-end" onClick={salvarMedidas}>Salvar Medidas</Button>
+          </div>
+        )}
         <label className="block mt-4">Operação:
           <select className="input" value={operacao} onChange={e => setOperacao(e.target.value)}>
             <option>Retângulo</option>
