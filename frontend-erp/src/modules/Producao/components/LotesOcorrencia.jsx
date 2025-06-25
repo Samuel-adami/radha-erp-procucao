@@ -7,22 +7,16 @@ import CadastroMotivos from "./CadastroMotivos";
 const LotesOcorrencia = () => {
   const [aba, setAba] = useState("lotes");
   const [lotes, setLotes] = useState([]);
-  const [motivos, setMotivos] = useState([]);
   const [lotesProducao, setLotesProducao] = useState([]);
   const [loteSel, setLoteSel] = useState("");
   const [pacoteSel, setPacoteSel] = useState("");
   const [pacotesDisponiveis, setPacotesDisponiveis] = useState([]);
-  const [pecasPacote, setPecasPacote] = useState([]);
-  const [selecionadas, setSelecionadas] = useState({});
-  const [motivosPeca, setMotivosPeca] = useState({});
   const [lotesLocais, setLotesLocais] = useState([]);
-  const [ocAtual, setOcAtual] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
-    fetchComAuth("/motivos-ocorrencias").then(setMotivos).catch(() => {});
     const lp = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     setLotesProducao(lp);
     const loc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
@@ -48,29 +42,6 @@ const LotesOcorrencia = () => {
     setPecasPacote([]);
   }, [loteSel, lotesProducao]);
 
-  useEffect(() => {
-    const loteObj = lotesProducao.find((l) => l.nome === loteSel);
-    const pacoteObj = loteObj?.pacotes?.[parseInt(pacoteSel)];
-    if (pacoteObj) {
-      const pecasComEdicoes = (pacoteObj.pecas || []).map((p) => {
-        const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
-        return dadosEdit ? { ...p, ...JSON.parse(dadosEdit) } : p;
-      });
-      setPecasPacote(pecasComEdicoes);
-      const sel = {};
-      const motSel = {};
-      (pacoteObj.pecas || []).forEach((p) => {
-        sel[p.id] = false;
-        motSel[p.id] = p.motivo_codigo || "";
-      });
-      setSelecionadas(sel);
-      setMotivosPeca(motSel);
-    } else {
-      setPecasPacote([]);
-      setSelecionadas({});
-      setMotivosPeca({});
-    }
-  }, [pacoteSel, loteSel, lotesProducao]);
 
   const salvarLotesLocais = (dados) => {
     setLotesLocais(dados);
@@ -89,91 +60,21 @@ const LotesOcorrencia = () => {
     const id = Date.now();
     const novo = { id, lote: loteSel, pacote: pacoteSel, pacoteData: copia };
     salvarLotesLocais([...lotesLocais, novo]);
-    setOcAtual(id);
-    const pecasComEdicoes = (copia.pecas || []).map((p) => {
-      const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
-      return dadosEdit ? { ...p, ...JSON.parse(dadosEdit) } : p;
-    });
-    setPecasPacote(pecasComEdicoes);
-    const sel = {};
-    const motSel = {};
-    (copia.pecas || []).forEach((p) => {
-      sel[p.id] = false;
-      motSel[p.id] = p.motivo_codigo || "";
-    });
-    setSelecionadas(sel);
-    setMotivosPeca(motSel);
+    navigate(`ocorrencias/pacote/${id}`);
   };
 
   const editarLoteLocal = (id) => {
     const l = lotesLocais.find((x) => x.id === id);
     if (!l) return;
-    setOcAtual(id);
-    const pecasComEdicoes = (l.pacoteData.pecas || []).map((p) => {
-      const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
-      return dadosEdit ? { ...p, ...JSON.parse(dadosEdit) } : p;
-    });
-    setPecasPacote(pecasComEdicoes);
-    const sel = {};
-    const motSel = {};
-    (l.pacoteData.pecas || []).forEach((p) => {
-      sel[p.id] = false;
-      motSel[p.id] = p.motivo_codigo || "";
-    });
-    setSelecionadas(sel);
-    setMotivosPeca(motSel);
+    navigate(`ocorrencias/pacote/${id}`);
   };
 
   const excluirLoteLocal = (id) => {
     if (!window.confirm("Excluir este lote local?")) return;
     const novos = lotesLocais.filter((l) => l.id !== id);
     salvarLotesLocais(novos);
-    if (ocAtual === id) {
-      setOcAtual(null);
-      setPecasPacote([]);
-    }
   };
 
-  const gerarOcorrencia = async () => {
-    const loteLocal = lotesLocais.find((l) => l.id === ocAtual);
-    if (!loteLocal) {
-      alert("Selecione um lote de ocorrência");
-      return;
-    }
-    const pecas = pecasPacote
-      .filter((p) => selecionadas[p.id])
-      .map((p) => {
-        const opsOc = localStorage.getItem("ocedit_op_" + p.id);
-        const ops = opsOc ? JSON.parse(opsOc) : JSON.parse(localStorage.getItem("op_producao_" + p.id) || "[]");
-        const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
-        const medidas = dadosEdit ? JSON.parse(dadosEdit) : {};
-        return {
-          ...p,
-          ...medidas,
-          motivo_codigo: motivosPeca[p.id],
-          operacoes: ops,
-        };
-      });
-    if (pecas.length === 0) {
-      alert("Selecione ao menos uma peça");
-      return;
-    }
-    const resp = await fetchComAuth("/lotes-ocorrencias", {
-      method: "POST",
-      body: JSON.stringify({ lote: loteLocal.lote, pacote: loteLocal.pacote, pecas }),
-    });
-    if (resp?.erro) {
-      alert(resp.erro);
-      return;
-    }
-    alert(`OC ${resp.oc_numero} gerada`);
-    pecas.forEach((p) => {
-      localStorage.removeItem("ocedit_op_" + p.id);
-      localStorage.removeItem("ocedit_dados_" + p.id);
-    });
-    excluirLoteLocal(loteLocal.id);
-    fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
-  };
 
   const excluirLote = async (id) => {
     if (!window.confirm("Excluir este lote de ocorrência?")) return;
@@ -278,53 +179,6 @@ const LotesOcorrencia = () => {
               </select>
               <Button onClick={clonarPacote}>Copiar Pacote</Button>
             </div>
-
-            {pecasPacote.length > 0 && (
-              <ul className="space-y-2 mb-4">
-                {pecasPacote.map((p) => (
-                  <li key={p.id} className="border p-2 rounded">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={!!selecionadas[p.id]}
-                        onChange={(e) =>
-                          setSelecionadas({
-                            ...selecionadas,
-                            [p.id]: e.target.checked,
-                          })
-                        }
-                      />
-                      <span className="flex-grow">
-                        ID {String(p.id).padStart(6, "0")} - {p.nome}
-                      </span>
-                      <select
-                        className="border p-1"
-                        value={motivosPeca[p.id] || ""}
-                        onChange={(e) =>
-                          setMotivosPeca({
-                            ...motivosPeca,
-                            [p.id]: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="">Motivo</option>
-                        {motivos.map((m) => (
-                          <option key={m.codigo} value={m.codigo}>
-                            {m.codigo}
-                          </option>
-                        ))}
-                      </select>
-                      <Button onClick={() => navigate(`/producao/lote/${loteSel}/peca/${p.id}`, { state: { origem: 'ocorrencia', ocId: ocAtual } })}>
-                        Editar
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Button onClick={gerarOcorrencia}>
-              Gerar arquivos finais da ocorrência
-            </Button>
           </div>
         </>
       )}
