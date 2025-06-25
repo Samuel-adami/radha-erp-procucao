@@ -27,3 +27,12 @@ Example usage specifying a custom path:
 RADHA_ERP_ROOT=/opt/radha/radha-erp ./start_radha_erp.sh
 RADHA_ERP_ROOT=/opt/radha/radha-erp ./update_github.sh
 ```
+
+## Troubleshooting
+
+If the browser only shows a loading message and the application does not open,
+check whether the backend services are running correctly. The
+`start_radha_erp.sh` script saves logs for each service inside the `logs`
+directory. Inspect `logs/startup_main.log` and the individual service logs for
+errors, ensuring that ports 8010, 8015 and 8020 are not in use by other
+processes.
