@@ -59,13 +59,13 @@ const LotesOcorrencia = () => {
     const id = Date.now();
     const novo = { id, lote: loteSel, pacote: pacoteSel, pacoteData: copia };
     salvarLotesLocais([...lotesLocais, novo]);
-    navigate(`ocorrencias/pacote/${id}`);
+    navigate(`pacote/${id}`);
   };
 
   const editarLoteLocal = (id) => {
     const l = lotesLocais.find((x) => x.id === id);
     if (!l) return;
-    navigate(`ocorrencias/pacote/${id}`);
+    navigate(`pacote/${id}`);
   };
 
   const excluirLoteLocal = (id) => {
