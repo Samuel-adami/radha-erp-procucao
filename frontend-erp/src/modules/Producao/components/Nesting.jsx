@@ -55,6 +55,7 @@ const Nesting = () => {
     JSON.parse(localStorage.getItem("ferramentasNesting") || "[]")
   );
   const [aguardarExecucao, setAguardarExecucao] = useState(false);
+  const [nestings, setNestings] = useState([]);
 
   useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
@@ -64,6 +65,9 @@ const Nesting = () => {
     fetchComAuth("/listar-lotes")
       .then((d) => setLotes(d?.lotes || []))
       .catch((e) => console.error("Falha ao carregar lotes", e));
+    fetchComAuth("/nestings")
+      .then((d) => setNestings(d?.nestings || []))
+      .catch((e) => console.error("Falha ao carregar nestings", e));
   }, []);
 
   useEffect(() => {
@@ -100,6 +104,9 @@ const Nesting = () => {
         alert(data.erro);
       } else if (data?.pasta_resultado) {
         setResultado(data.pasta_resultado);
+        if (data.id) {
+          setNestings((prev) => [...prev, { id: data.id, lote: pastaLote, pasta_resultado: data.pasta_resultado }]);
+        }
         if (Array.isArray(data.layers)) {
           const win = window.open("", "_blank", "width=600,height=400");
           if (win) {
@@ -169,6 +176,19 @@ const Nesting = () => {
     executarBackend();
   };
 
+  const removerNesting = async (n) => {
+    if (!window.confirm('Deseja remover esta otimização?')) return;
+    try {
+      await fetchComAuth('/remover-nesting', {
+        method: 'POST',
+        body: JSON.stringify({ id: n.id })
+      });
+      setNestings((prev) => prev.filter((x) => x.id !== n.id));
+    } catch (e) {
+      alert('Falha ao remover nesting');
+    }
+  };
+
   return (
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-semibold">Configuração de Nesting</h2>
@@ -182,7 +202,7 @@ const Nesting = () => {
           <option value="">Selecione...</option>
           {lotes.map((l) => (
             <option key={l} value={l}>
-              {l}
+              {l.split(/[/\\]/).pop()}
             </option>
           ))}
         </select>
@@ -212,6 +232,21 @@ const Nesting = () => {
       </div>
       {resultado && (
         <p className="text-sm">Arquivos gerados em: {resultado}</p>
+      )}
+      {nestings.length > 0 && (
+        <div className="mt-4">
+          <h3 className="font-semibold mb-2">Otimizações</h3>
+          <ul className="space-y-2">
+            {nestings.map((n) => (
+              <li key={n.id} className="flex justify-between items-center border p-2 rounded">
+                <span>{n.lote.split(/[/\\]/).pop()}</span>
+                <Button variant="destructive" size="sm" onClick={() => removerNesting(n)}>
+                  Excluir
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {layerAtual && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

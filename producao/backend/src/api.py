@@ -192,10 +192,17 @@ async def executar_nesting(request: Request):
             config_layers,
             config_maquina,
         )
+        with get_db_connection() as conn:
+            cur = conn.execute(
+                "INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES (?, ?, ?)",
+                (pasta_lote, pasta_resultado, datetime.now().isoformat()),
+            )
+            nid = cur.lastrowid
+            conn.commit()
         layers = coletar_layers(pasta_lote)
     except Exception as e:
         return {"erro": str(e)}
-    return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers}
+    return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers, "id": nid}
 
 
 @app.post("/coletar-layers")
@@ -224,6 +231,49 @@ async def listar_lotes():
     except Exception:
         lotes = []
     return {"lotes": lotes}
+
+
+@app.get("/nestings")
+async def listar_nestings():
+    """Retorna as otimizações de nesting registradas."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT id, lote, pasta_resultado, criado_em FROM nestings ORDER BY id DESC"
+            ).fetchall()
+            dados = [dict(r) for r in rows]
+    except Exception:
+        dados = []
+    return {"nestings": dados}
+
+
+@app.post("/remover-nesting")
+async def remover_nesting(request: Request):
+    """Exclui uma otimização de nesting e remove seus arquivos."""
+    dados = await request.json()
+    nid = dados.get("id")
+    pasta_resultado = dados.get("pasta_resultado")
+    try:
+        with get_db_connection() as conn:
+            if nid:
+                row = conn.execute(
+                    "SELECT pasta_resultado FROM nestings WHERE id=?",
+                    (nid,),
+                ).fetchone()
+                if row:
+                    pasta_resultado = pasta_resultado or row["pasta_resultado"]
+                conn.execute("DELETE FROM nestings WHERE id=?", (nid,))
+            elif pasta_resultado:
+                conn.execute(
+                    "DELETE FROM nestings WHERE pasta_resultado=?",
+                    (pasta_resultado,),
+                )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    if pasta_resultado:
+        shutil.rmtree(pasta_resultado, ignore_errors=True)
+    return {"status": "ok"}
 
 
 @app.post("/excluir-lote")

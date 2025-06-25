@@ -43,6 +43,14 @@ def init_db():
         )"""
     )
     cur.execute(
+        """CREATE TABLE IF NOT EXISTS nestings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lote TEXT,
+            pasta_resultado TEXT,
+            criado_em TEXT
+        )"""
+    )
+    cur.execute(
         """CREATE TABLE IF NOT EXISTS lotes_ocorrencias (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             lote TEXT,
