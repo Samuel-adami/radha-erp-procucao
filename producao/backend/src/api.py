@@ -153,6 +153,21 @@ async def gerar_lote_final(request: Request):
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
 
 
+@app.get("/carregar-lote-final")
+async def carregar_lote_final(pasta: str):
+    """Lê o lote final em 'pasta' e retorna os pacotes com suas peças."""
+    pasta_path = Path(pasta)
+    dxt_path = pasta_path / f"{pasta_path.name}.dxt"
+    if not dxt_path.exists():
+        return {"erro": "DXT nao encontrado"}
+    try:
+        root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
+        pacotes = parse_dxt_producao(root, dxt_path)
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"pacotes": pacotes}
+
+
 @app.post("/executar-nesting")
 async def executar_nesting(request: Request):
     dados = await request.json()
