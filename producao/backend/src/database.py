@@ -52,6 +52,26 @@ def init_db():
             criado_em TEXT
         )"""
     )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS motivos_ocorrencia (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT UNIQUE,
+            descricao TEXT,
+            tipo TEXT,
+            setor TEXT
+        )"""
+    )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS ocorrencias_pecas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            oc_id INTEGER,
+            peca_id INTEGER,
+            descricao_peca TEXT,
+            motivo_id TEXT,
+            FOREIGN KEY(oc_id) REFERENCES lotes_ocorrencias(id),
+            FOREIGN KEY(motivo_id) REFERENCES motivos_ocorrencia(codigo)
+        )"""
+    )
     conn.commit()
     conn.close()
 

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, ConfigMaquina } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, ConfigMaquina, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias } from './AppProducao';
 import CadastroChapas from './components/CadastroChapas';
 
 function ProducaoLayout() {
@@ -14,6 +14,8 @@ function ProducaoLayout() {
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
   const matchNesting = useMatch({ path: `${resolved.pathname}/nesting`, end: true });
   const matchChapas = useMatch({ path: `${resolved.pathname}/chapas`, end: true });
+  const matchOcorr = useMatch({ path: `${resolved.pathname}/ocorrencias`, end: false });
+  const matchRelatorio = useMatch({ path: `${resolved.pathname}/relatorios/ocorrencias`, end: false });
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
@@ -49,6 +51,18 @@ function ProducaoLayout() {
         >
           Chapas
         </Link>
+        <Link
+          to="ocorrencias"
+          className={`px-3 py-1 rounded ${matchOcorr ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Lotes Ocorrência
+        </Link>
+        <Link
+          to="relatorios/ocorrencias"
+          className={`px-3 py-1 rounded ${matchRelatorio ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Relatórios
+        </Link>
         {/* Adicionar mais links de navegação interna do módulo, se necessário */}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}
@@ -70,6 +84,9 @@ function Producao() {
         <Route path="nesting" element={<Nesting />} />
         <Route path="nesting/config-maquina" element={<ConfigMaquina />} />
         <Route path="chapas" element={<CadastroChapas />} />
+        <Route path="ocorrencias" element={<LotesOcorrencia />} />
+        <Route path="ocorrencias/motivos" element={<CadastroMotivos />} />
+        <Route path="relatorios/ocorrencias" element={<RelatorioOcorrencias />} />
       </Route>
     </Routes>
   );
