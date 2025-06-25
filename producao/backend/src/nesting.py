@@ -440,8 +440,7 @@ def _gerar_gcodes(
             'CMD_EXTRA': primeira_ferramenta.get('comandoExtra', '') if primeira_ferramenta else '',
         }
         linhas.extend(substituir(header_tpl, valores_header).splitlines())
-        camada_chapa = f"CHAPA_{math.floor(thickness):.1f}"
-        linhas.append(f"({camada_chapa})")
+        # A operação CHAPA não deve constar nas linhas de G-code
 
         last_tool = primeira_ferramenta
         tpl_troca = {'header': '', 'troca': config_maquina.get('trocaFerramenta', '') if config_maquina else ''}
@@ -464,7 +463,7 @@ def _gerar_gcodes(
                 etapa='furos',
                 ferramenta_atual=last_tool,
             )
-            linhas.extend(codigo.split('\n'))
+            linhas.extend(codigo.split('\n')[1:])
         if config_maquina and config_maquina.get('comandoFinalFuros') and last_tool and last_tool.get('tipo') == 'Broca':
             linhas.extend(str(config_maquina.get('comandoFinalFuros')).splitlines())
 
@@ -486,7 +485,7 @@ def _gerar_gcodes(
                 etapa='fresas',
                 ferramenta_atual=last_tool,
             )
-            linhas.extend(codigo.split('\n'))
+            linhas.extend(codigo.split('\n')[1:])
 
         # Contorno final das pecas
         for p in pecas:
