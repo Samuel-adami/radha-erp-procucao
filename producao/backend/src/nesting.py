@@ -87,8 +87,17 @@ def _gcode_peca(
     config_maquina: dict | None = None,
     templates: dict | None = None,
     tipo: str = "Peça",
-) -> str:
-    """Gera G-code para uma peça considerando múltiplas ferramentas."""
+    etapa: str = "todas",
+    ferramenta_atual: dict | None = None,
+):
+    """Gera G-code para uma peça.
+
+    O parametro ``etapa`` pode ser ``furos``, ``fresas`` ou ``contorno`` para
+    retornar apenas as operacoes correspondentes. ``ferramenta_atual`` indica a
+    ferramenta em uso antes de iniciar a geracao e a funcao retorna tambem a
+    ultima ferramenta utilizada junto com o codigo gerado e o conjunto de
+    ferramentas usadas.
+    """
 
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
@@ -167,14 +176,27 @@ def _gcode_peca(
     fresa_ops = [o for o in ops if o.get("tool", {}).get("tipo") != "Broca"]
 
     furos_ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
-    ops = furos_ops + fresa_ops
-    if contorno_op:
-        ops.append(contorno_op)
 
-    atual = None
-    furando = True
+    if etapa == "furos":
+        ops = furos_ops
+    elif etapa == "fresas":
+        ops = fresa_ops
+    elif etapa == "contorno":
+        ops = [contorno_op] if contorno_op else []
+    else:
+        ops = furos_ops + fresa_ops
+        if contorno_op:
+            ops.append(contorno_op)
+
+    atual = ferramenta_atual
+    usadas: list[str] = []
+
     for op in ops:
         tool = op["tool"]
+        if tool:
+            desc = f"{tool.get('codigo')} - {tool.get('descricao','')}"
+            if desc not in usadas:
+                usadas.append(desc)
         if tool and tool != atual:
             valores = {
                 "T": tool.get("codigo", ""),
@@ -184,50 +206,39 @@ def _gcode_peca(
                 "YH": config_maquina.get("yHoming", "") if config_maquina else "",
                 "CMD_EXTRA": tool.get("comandoExtra", ""),
             }
-            tpl = header_tpl or troca_tpl
+            tpl = header_tpl if atual is None and header_tpl else troca_tpl
             if tpl:
                 linhas.extend(substituir(tpl, valores).splitlines())
             else:
-                linhas.extend(
-                    [
-                        "G0 Z50.0",
-                        f"M6 T{tool.get('codigo', '')}",
-                        f"M3 S{tool.get('velocidadeRotacao', '20000')}",
-                    ]
-                )
+                linhas.extend([
+                    "G0 Z50.0",
+                    f"M6 T{tool.get('codigo', '')}",
+                    f"M3 S{tool.get('velocidadeRotacao', '20000')}",
+                ])
             atual = tool
 
-        if furando and (op.get("contorno") or tool.get("tipo") != "Broca"):
-            if config_maquina and config_maquina.get("comandoFinalFuros"):
-                linhas.extend(str(config_maquina.get("comandoFinalFuros")).splitlines())
-            furando = False
-
         if op.get("contorno"):
-            linhas.extend(
-                [
-                    f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
-                    f"G0 X{ox:.4f} Y{oy:.4f} Z{z_pre:.4f}",
-                    "(Step:1/1)",
-                    f"G1 X{ox + l:.4f} Y{oy:.4f} Z-0.2000 F3500.0",
-                    f"G1 X{ox + l:.4f} Y{oy + w:.4f} Z-0.2000 F7000.0",
-                    f"G1 X{ox:.4f} Y{oy + w:.4f} Z-0.2000",
-                    f"G1 X{ox:.4f} Y{oy:.4f} Z-0.2000",
-                    f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
-                ]
-            )
+            linhas.extend([
+                f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
+                f"G0 X{ox:.4f} Y{oy:.4f} Z{z_pre:.4f}",
+                "(Step:1/1)",
+                f"G1 X{ox + l:.4f} Y{oy:.4f} Z-0.2000 F3500.0",
+                f"G1 X{ox + l:.4f} Y{oy + w:.4f} Z-0.2000 F7000.0",
+                f"G1 X{ox:.4f} Y{oy + w:.4f} Z-0.2000",
+                f"G1 X{ox:.4f} Y{oy:.4f} Z-0.2000",
+                f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
+            ])
         else:
-            linhas.extend(
-                [
-                    f"({op['layer']})",
-                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
-                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_pre:.4f}",
-                    "(Step:1/1)",
-                    f"G1 X{op['x']:.4f} Y{op['y']:.4f} Z-{op['prof']:.4f} F5000.0",
-                    f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
-                ]
-            )
+            linhas.extend([
+                f"({op['layer']})",
+                f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
+                f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_pre:.4f}",
+                "(Step:1/1)",
+                f"G1 X{op['x']:.4f} Y{op['y']:.4f} Z-{op['prof']:.4f} F5000.0",
+                f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
+            ])
 
-    return "\n".join(linhas)
+    return "\n".join(linhas), atual, usadas
 
 
 def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
@@ -362,10 +373,27 @@ def _gerar_gcodes(
 
     data_criacao = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
 
-    lista_ferramentas = []
-    if ferramentas:
-        for f in ferramentas:
-            lista_ferramentas.append(f"{f.get('codigo')} - {f.get('descricao','')}")
+    def coletar_ferramentas(pecas: List[Dict]) -> list[str]:
+        usadas: list[str] = []
+        for p in pecas:
+            dxf_path = None
+            if pasta_lote and p.get("Filename"):
+                dxf_path = pasta_lote / p["Filename"]
+            _, _, used = _gcode_peca(
+                p,
+                p.get("x", 0),
+                p.get("y", 0),
+                ferramentas,
+                dxf_path,
+                config_layers,
+                config_maquina,
+                {"header": "", "troca": ""},
+                etapa="todas",
+            )
+            for u in used:
+                if u not in usadas:
+                    usadas.append(u)
+        return usadas
 
     intro_tpl = (
         "%\n"
@@ -389,6 +417,7 @@ def _gerar_gcodes(
         thickness = float(pecas[0].get('Thickness', 0)) if pecas else 0.0
         prefix = f"{i:03d}-MDF {thickness}mm {material}"
 
+        lista_ferramentas = coletar_ferramentas(pecas)
         valores_intro = {
             'CREATION_DATE_TIME': data_criacao,
             'POST_PROCESSOR_NAME': config_maquina.get('nome', '') if config_maquina else '',
@@ -414,26 +443,70 @@ def _gerar_gcodes(
         camada_chapa = f"CHAPA_{math.floor(thickness):.1f}"
         linhas.append(f"({camada_chapa})")
 
+        last_tool = primeira_ferramenta
+        tpl_troca = {'header': '', 'troca': config_maquina.get('trocaFerramenta', '') if config_maquina else ''}
+
+        # Furos em todas as peças
         for p in pecas:
             dxf_path = None
             if pasta_lote and p.get('Filename'):
                 dxf_path = pasta_lote / p['Filename']
-            linhas.extend(
-                _gcode_peca(
-                    p,
-                    p['x'],
-                    p['y'],
-                    ferramentas,
-                    dxf_path,
-                    config_layers,
-                    config_maquina,
-                    {
-                        'header': config_maquina.get('cabecalho', '') if config_maquina else '',
-                        'troca': config_maquina.get('trocaFerramenta', '') if config_maquina else '',
-                    },
-                    tipo='PECAS',
-                ).split('\n')
+            codigo, last_tool, _ = _gcode_peca(
+                p,
+                p['x'],
+                p['y'],
+                ferramentas,
+                dxf_path,
+                config_layers,
+                config_maquina,
+                tpl_troca,
+                tipo='PECAS',
+                etapa='furos',
+                ferramenta_atual=last_tool,
             )
+            linhas.extend(codigo.split('\n'))
+        if config_maquina and config_maquina.get('comandoFinalFuros') and last_tool and last_tool.get('tipo') == 'Broca':
+            linhas.extend(str(config_maquina.get('comandoFinalFuros')).splitlines())
+
+        # Usinagens com fresa (exceto contorno)
+        for p in pecas:
+            dxf_path = None
+            if pasta_lote and p.get('Filename'):
+                dxf_path = pasta_lote / p['Filename']
+            codigo, last_tool, _ = _gcode_peca(
+                p,
+                p['x'],
+                p['y'],
+                ferramentas,
+                dxf_path,
+                config_layers,
+                config_maquina,
+                tpl_troca,
+                tipo='PECAS',
+                etapa='fresas',
+                ferramenta_atual=last_tool,
+            )
+            linhas.extend(codigo.split('\n'))
+
+        # Contorno final das pecas
+        for p in pecas:
+            dxf_path = None
+            if pasta_lote and p.get('Filename'):
+                dxf_path = pasta_lote / p['Filename']
+            codigo, last_tool, _ = _gcode_peca(
+                p,
+                p['x'],
+                p['y'],
+                ferramentas,
+                dxf_path,
+                config_layers,
+                config_maquina,
+                tpl_troca,
+                tipo='PECAS',
+                etapa='contorno',
+                ferramenta_atual=last_tool,
+            )
+            linhas.extend(codigo.split('\n'))
 
         # Gerar sobras
         placa_poly = box(0, 0, largura_chapa, altura_chapa)
@@ -453,19 +526,20 @@ def _gerar_gcodes(
                     'x': minx,
                     'y': miny,
                 }
-                linhas.extend(
-                    _gcode_peca(
-                        sobra,
-                        sobra['x'],
-                        sobra['y'],
-                        ferramentas,
-                        None,
-                        None,
-                        config_maquina,
-                        {'header': '', 'troca': config_maquina.get('trocaFerramenta','') if config_maquina else ''},
-                        tipo='SOBRAS',
-                    ).split('\n')
+                codigo, last_tool, _ = _gcode_peca(
+                    sobra,
+                    sobra['x'],
+                    sobra['y'],
+                    ferramentas,
+                    None,
+                    None,
+                    config_maquina,
+                    tpl_troca,
+                    tipo='SOBRAS',
+                    etapa='contorno',
+                    ferramenta_atual=last_tool,
                 )
+                linhas.extend(codigo.split('\n'))
 
         linhas.extend(substituir(footer_tpl, valores_header).splitlines())
         (saida / f'{prefix}.nc').write_text('\n'.join(linhas), encoding='utf-8')
