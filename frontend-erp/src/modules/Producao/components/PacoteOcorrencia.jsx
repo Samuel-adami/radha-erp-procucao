@@ -122,11 +122,12 @@ const PacoteOcorrencia = () => {
                   ))}
                 </select>
                 <Button
-                  onClick={() =>
-                    navigate(`/producao/lote/${loteLocal.lote}/peca/${p.id}`, {
+                  onClick={() => {
+                    const nomeLote = loteLocal.lote.split(/[/\\\\]/).pop();
+                    navigate(`/producao/lote/${nomeLote}/peca/${p.id}`, {
                       state: { origem: "ocorrencia", ocId: loteLocal.id },
-                    })
-                  }
+                    });
+                  }}
                 >
                   Editar
                 </Button>
