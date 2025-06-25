@@ -159,6 +159,7 @@ const EditarPecaProducao = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const origemOcorrencia = location.state?.origem === "ocorrencia";
+  const ocId = location.state?.ocId;
 
   const [dadosPeca, setDadosPeca] = useState(null);
   const [operacoes, setOperacoes] = useState([]);
@@ -168,20 +169,26 @@ const EditarPecaProducao = () => {
   const [novaLargura, setNovaLargura] = useState("");
 
   useEffect(() => {
-    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     let pecaEncontrada = null;
 
-    for (const l of lotes) {
-      if (l.nome === nome) {
-        for (const pacote of l.pacotes || []) {
-          const p = pacote.pecas.find((p) => p.id === parseInt(pecaId));
-          if (p) {
-            pecaEncontrada = p;
-            break;
+    if (origemOcorrencia) {
+      const lotesOc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
+      const lote = lotesOc.find((l) => l.id === ocId);
+      pecaEncontrada = lote?.pacoteData?.pecas?.find((p) => p.id === parseInt(pecaId));
+    } else {
+      const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+      for (const l of lotes) {
+        if (l.nome === nome) {
+          for (const pacote of l.pacotes || []) {
+            const p = pacote.pecas.find((p) => p.id === parseInt(pecaId));
+            if (p) {
+              pecaEncontrada = p;
+              break;
+            }
           }
         }
+        if (pecaEncontrada) break;
       }
-      if (pecaEncontrada) break;
     }
 
     if (pecaEncontrada) {
@@ -197,7 +204,7 @@ const EditarPecaProducao = () => {
       setNovoComprimento(dadosEditados?.comprimento || pecaEncontrada.comprimento);
       setNovaLargura(dadosEditados?.largura || pecaEncontrada.largura);
     }
-  }, [pecaId, nome, origemOcorrencia]);
+  }, [pecaId, nome, origemOcorrencia, ocId]);
 
   const salvarOperacao = () => {
     const pos = form.posicao;
@@ -469,7 +476,16 @@ const EditarPecaProducao = () => {
         }
         <div className="flex gap-2 mt-4">
           <Button onClick={salvarOperacao}>Salvar Operação</Button>
-          <Button variant="outline" onClick={() => navigate(`/producao/lote/${nome}`)}>Finalizar</Button>
+          <Button
+            variant="outline"
+            onClick={() =>
+              origemOcorrencia
+                ? navigate('/producao/ocorrencias', { state: { ocId } })
+                : navigate(`/producao/lote/${nome}`)
+            }
+          >
+            Finalizar
+          </Button>
           <Button variant="destructive" onClick={excluirTodas}>Excluir Todas</Button>
         </div>
 
