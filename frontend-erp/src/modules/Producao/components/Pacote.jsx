@@ -1,21 +1,12 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 const Pacote = () => {
   const { nome, indice } = useParams();
   const navigate = useNavigate();
   const [filtroCampo, setFiltroCampo] = useState("nome");
   const [filtroTexto, setFiltroTexto] = useState("");
-  const [motivos, setMotivos] = useState([]);
-  const [editandoMotivo, setEditandoMotivo] = useState(null);
-  const [motivoSelecionado, setMotivoSelecionado] = useState("");
-
-  React.useEffect(() => {
-    fetchComAuth("/motivos-ocorrencias").then(setMotivos).catch(() => {});
-  }, []);
-
   const getPacoteFromStorage = () => {
     const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     const lote = lotes.find(l => l.nome === nome);
@@ -101,30 +92,7 @@ const Pacote = () => {
               {/* CORREÇÃO: Sintaxe de navegação para a peça corrigida */}
               <Button onClick={() => navigate(`/producao/lote/${nome}/peca/${p.id}`)}>Editar</Button>
               <Button variant="destructive" onClick={() => excluirPeca(p.id)}>Excluir</Button>
-              <Button onClick={() => { setEditandoMotivo(p.id); setMotivoSelecionado(p.motivo_codigo || ""); }}>Motivo</Button>
             </div>
-            {editandoMotivo === p.id && (
-              <div className="mt-2 space-x-2">
-                <select className="border p-1" value={motivoSelecionado} onChange={e => setMotivoSelecionado(e.target.value)}>
-                  <option value="">Escolha o Código do Motivo</option>
-                  {motivos.map(m => (
-                    <option key={m.codigo} value={m.codigo}>{m.codigo} - {m.descricao}</option>
-                  ))}
-                </select>
-                <Button onClick={() => {
-                  const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-                  const loteAlvo = lotes.find(l => l.nome === nome);
-                  if (!loteAlvo) return;
-                  const pacoteAlvo = loteAlvo.pacotes[parseInt(indice)];
-                  if (!pacoteAlvo) return;
-                  pacoteAlvo.pecas = pacoteAlvo.pecas.map(pc => pc.id === p.id ? { ...pc, motivo_codigo: motivoSelecionado } : pc);
-                  localStorage.setItem("lotesProducao", JSON.stringify(lotes));
-                  setPacote({ ...pacoteAlvo });
-                  setEditandoMotivo(null);
-                }}>Salvar</Button>
-                <Button variant="outline" onClick={() => setEditandoMotivo(null)}>Cancelar</Button>
-              </div>
-            )}
           </li>
         ))}
       </ul>

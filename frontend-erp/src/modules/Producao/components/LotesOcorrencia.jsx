@@ -15,6 +15,8 @@ const LotesOcorrencia = () => {
   const [pecasPacote, setPecasPacote] = useState([]);
   const [selecionadas, setSelecionadas] = useState({});
   const [motivosPeca, setMotivosPeca] = useState({});
+  const [lotesLocais, setLotesLocais] = useState([]);
+  const [ocAtual, setOcAtual] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -22,6 +24,8 @@ const LotesOcorrencia = () => {
     fetchComAuth("/motivos-ocorrencias").then(setMotivos).catch(() => {});
     const lp = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     setLotesProducao(lp);
+    const loc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
+    setLotesLocais(loc);
   }, []);
 
   useEffect(() => {
@@ -59,7 +63,74 @@ const LotesOcorrencia = () => {
     }
   }, [pacoteSel, loteSel, lotesProducao]);
 
+  const salvarLotesLocais = (dados) => {
+    setLotesLocais(dados);
+    localStorage.setItem("lotesOcorrenciaLocal", JSON.stringify(dados));
+  };
+
+  const clonarPacote = () => {
+    if (!loteSel || pacoteSel === "") {
+      alert("Escolha lote e pacote");
+      return;
+    }
+    const loteObj = lotesProducao.find((l) => l.nome === loteSel);
+    const pacoteObj = loteObj?.pacotes?.[parseInt(pacoteSel)];
+    if (!pacoteObj) return;
+    const copia = JSON.parse(JSON.stringify(pacoteObj));
+    const id = Date.now();
+    const novo = { id, lote: loteSel, pacote: pacoteSel, pacoteData: copia };
+    salvarLotesLocais([...lotesLocais, novo]);
+    setOcAtual(id);
+    const pecasComEdicoes = (copia.pecas || []).map((p) => {
+      const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
+      return dadosEdit ? { ...p, ...JSON.parse(dadosEdit) } : p;
+    });
+    setPecasPacote(pecasComEdicoes);
+    const sel = {};
+    const motSel = {};
+    (copia.pecas || []).forEach((p) => {
+      sel[p.id] = false;
+      motSel[p.id] = p.motivo_codigo || "";
+    });
+    setSelecionadas(sel);
+    setMotivosPeca(motSel);
+  };
+
+  const editarLoteLocal = (id) => {
+    const l = lotesLocais.find((x) => x.id === id);
+    if (!l) return;
+    setOcAtual(id);
+    const pecasComEdicoes = (l.pacoteData.pecas || []).map((p) => {
+      const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
+      return dadosEdit ? { ...p, ...JSON.parse(dadosEdit) } : p;
+    });
+    setPecasPacote(pecasComEdicoes);
+    const sel = {};
+    const motSel = {};
+    (l.pacoteData.pecas || []).forEach((p) => {
+      sel[p.id] = false;
+      motSel[p.id] = p.motivo_codigo || "";
+    });
+    setSelecionadas(sel);
+    setMotivosPeca(motSel);
+  };
+
+  const excluirLoteLocal = (id) => {
+    if (!window.confirm("Excluir este lote local?")) return;
+    const novos = lotesLocais.filter((l) => l.id !== id);
+    salvarLotesLocais(novos);
+    if (ocAtual === id) {
+      setOcAtual(null);
+      setPecasPacote([]);
+    }
+  };
+
   const gerarOcorrencia = async () => {
+    const loteLocal = lotesLocais.find((l) => l.id === ocAtual);
+    if (!loteLocal) {
+      alert("Selecione um lote de ocorrência");
+      return;
+    }
     const pecas = pecasPacote
       .filter((p) => selecionadas[p.id])
       .map((p) => {
@@ -74,13 +145,13 @@ const LotesOcorrencia = () => {
           operacoes: ops,
         };
       });
-    if (!loteSel || pacoteSel === "" || pecas.length === 0) {
-      alert("Selecione lote, pacote e pelo menos uma peça");
+    if (pecas.length === 0) {
+      alert("Selecione ao menos uma peça");
       return;
     }
     const resp = await fetchComAuth("/lotes-ocorrencias", {
       method: "POST",
-      body: JSON.stringify({ lote: loteSel, pacote: pacoteSel, pecas }),
+      body: JSON.stringify({ lote: loteLocal.lote, pacote: loteLocal.pacote, pecas }),
     });
     if (resp?.erro) {
       alert(resp.erro);
@@ -91,6 +162,7 @@ const LotesOcorrencia = () => {
       localStorage.removeItem("ocedit_op_" + p.id);
       localStorage.removeItem("ocedit_dados_" + p.id);
     });
+    excluirLoteLocal(loteLocal.id);
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
   };
 
@@ -146,6 +218,23 @@ const LotesOcorrencia = () => {
                   </div>
                 </li>
               ))}
+              {lotesLocais.map((l) => (
+                <li key={l.id} className="border p-2 rounded flex justify-between items-center gap-2 bg-gray-50">
+                  <span>
+                    OC LOCAL {l.id} - Lote {l.lote} - Pacote {l.pacote}
+                  </span>
+                  <div className="space-x-2">
+                    <Button size="sm" onClick={() => editarLoteLocal(l.id)}>Editar</Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => excluirLoteLocal(l.id)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -178,6 +267,7 @@ const LotesOcorrencia = () => {
                   </option>
                 ))}
               </select>
+              <Button onClick={clonarPacote}>Copiar Pacote</Button>
             </div>
 
             {pecasPacote.length > 0 && (
@@ -234,3 +324,4 @@ const LotesOcorrencia = () => {
 };
 
 export default LotesOcorrencia;
+
