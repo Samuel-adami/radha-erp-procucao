@@ -39,7 +39,11 @@ const LotesOcorrencia = () => {
     const loteObj = lotesProducao.find((l) => l.nome === loteSel);
     const pacoteObj = loteObj?.pacotes?.[parseInt(pacoteSel)];
     if (pacoteObj) {
-      setPecasPacote(pacoteObj.pecas || []);
+      const pecasComEdicoes = (pacoteObj.pecas || []).map((p) => {
+        const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
+        return dadosEdit ? { ...p, ...JSON.parse(dadosEdit) } : p;
+      });
+      setPecasPacote(pecasComEdicoes);
       const sel = {};
       const motSel = {};
       (pacoteObj.pecas || []).forEach((p) => {
@@ -58,13 +62,18 @@ const LotesOcorrencia = () => {
   const gerarOcorrencia = async () => {
     const pecas = pecasPacote
       .filter((p) => selecionadas[p.id])
-      .map((p) => ({
-        ...p,
-        motivo_codigo: motivosPeca[p.id],
-        operacoes: JSON.parse(
-          localStorage.getItem("op_producao_" + p.id) || "[]"
-        ),
-      }));
+      .map((p) => {
+        const opsOc = localStorage.getItem("ocedit_op_" + p.id);
+        const ops = opsOc ? JSON.parse(opsOc) : JSON.parse(localStorage.getItem("op_producao_" + p.id) || "[]");
+        const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
+        const medidas = dadosEdit ? JSON.parse(dadosEdit) : {};
+        return {
+          ...p,
+          ...medidas,
+          motivo_codigo: motivosPeca[p.id],
+          operacoes: ops,
+        };
+      });
     if (!loteSel || pacoteSel === "" || pecas.length === 0) {
       alert("Selecione lote, pacote e pelo menos uma peça");
       return;
@@ -78,6 +87,10 @@ const LotesOcorrencia = () => {
       return;
     }
     alert(`OC ${resp.oc_numero} gerada`);
+    pecas.forEach((p) => {
+      localStorage.removeItem("ocedit_op_" + p.id);
+      localStorage.removeItem("ocedit_dados_" + p.id);
+    });
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
   };
 
@@ -121,13 +134,16 @@ const LotesOcorrencia = () => {
                   <span>
                     OC {l.oc_numero} - Lote {l.lote} - Pacote {l.pacote}
                   </span>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => excluirLote(l.id)}
-                  >
-                    Excluir
-                  </Button>
+                  <div className="space-x-2">
+                    <Button size="sm" onClick={() => navigate(`ocorrencias/editar/${l.id}`)}>Editar</Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => excluirLote(l.id)}
+                    >
+                      Excluir
+                    </Button>
+                  </div>
                 </li>
               ))}
             </ul>
