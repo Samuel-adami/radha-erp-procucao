@@ -1,7 +1,10 @@
 from fastapi import FastAPI, Request
+from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse
 import httpx
+from typing import List
+from database import get_db_connection
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
@@ -88,6 +91,103 @@ async def login(request: Request):
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
             return JSONResponse({"detail": f"Erro de conexão com o backend de autenticação: {e}"}, status_code=503)
+
+
+# -------------------------
+# Cadastros - Empresas
+# -------------------------
+
+@app.post("/empresa")
+async def criar_empresa(request: Request):
+    """Registra uma nova empresa."""
+    form = await request.form()
+    logo_file = form.get("logo")
+    logo_bytes = await logo_file.read() if logo_file else None
+    fields = (
+        form.get("codigo"),
+        form.get("razaoSocial"),
+        form.get("nomeFantasia"),
+        form.get("cnpj"),
+        form.get("inscricaoEstadual"),
+        form.get("cep"),
+        form.get("rua"),
+        form.get("numero"),
+        form.get("bairro"),
+        form.get("cidade"),
+        form.get("estado"),
+        form.get("telefone1"),
+        form.get("telefone2"),
+        logo_bytes,
+    )
+    with get_db_connection() as conn:
+        cur = conn.execute(
+            """INSERT INTO empresa (
+                codigo, razao_social, nome_fantasia, cnpj,
+                inscricao_estadual, cep, rua, numero,
+                bairro, cidade, estado, telefone1,
+                telefone2, logo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            fields,
+        )
+        conn.commit()
+        new_id = cur.lastrowid
+    return {"id": new_id}
+
+
+@app.get("/empresa")
+async def listar_empresas():
+    """Lista todas as empresas cadastradas."""
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, codigo, razao_social, nome_fantasia, cnpj FROM empresa ORDER BY id"
+        ).fetchall()
+        empresas = [dict(row) for row in rows]
+    return {"empresas": empresas}
+
+
+@app.get("/empresa/{empresa_id}")
+async def obter_empresa(empresa_id: int):
+    with get_db_connection() as conn:
+        row = conn.execute("SELECT * FROM empresa WHERE id=?", (empresa_id,)).fetchone()
+        if not row:
+            return JSONResponse({"detail": "Empresa não encontrada"}, status_code=404)
+        return {"empresa": dict(row)}
+
+
+@app.put("/empresa/{empresa_id}")
+async def atualizar_empresa(empresa_id: int, request: Request):
+    form = await request.form()
+    logo_file = form.get("logo")
+    logo_bytes = await logo_file.read() if logo_file else None
+    fields = (
+        form.get("codigo"),
+        form.get("razaoSocial"),
+        form.get("nomeFantasia"),
+        form.get("cnpj"),
+        form.get("inscricaoEstadual"),
+        form.get("cep"),
+        form.get("rua"),
+        form.get("numero"),
+        form.get("bairro"),
+        form.get("cidade"),
+        form.get("estado"),
+        form.get("telefone1"),
+        form.get("telefone2"),
+        logo_bytes,
+        empresa_id,
+    )
+    with get_db_connection() as conn:
+        conn.execute(
+            """UPDATE empresa SET
+                codigo=?, razao_social=?, nome_fantasia=?, cnpj=?,
+                inscricao_estadual=?, cep=?, rua=?, numero=?,
+                bairro=?, cidade=?, estado=?, telefone1=?,
+                telefone2=?, logo=?
+            WHERE id=?""",
+            fields,
+        )
+        conn.commit()
+    return {"ok": True}
 
 @app.get("/auth/validate")
 async def validate_token(request: Request):

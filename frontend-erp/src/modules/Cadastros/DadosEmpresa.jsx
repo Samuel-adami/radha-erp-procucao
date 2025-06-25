@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
 import { fetchComAuth } from '../../utils/fetchComAuth';
+import { useParams } from 'react-router-dom';
 
 function gerarCodigo(nomeFantasia, sequencial) {
   if (!nomeFantasia) return '';
@@ -11,6 +12,7 @@ function gerarCodigo(nomeFantasia, sequencial) {
 }
 
 function DadosEmpresa() {
+  const { id } = useParams();
   const [sequencial, setSequencial] = useState(1);
   const [form, setForm] = useState({
     razaoSocial: '',
@@ -33,6 +35,32 @@ function DadosEmpresa() {
     const seq = parseInt(localStorage.getItem('empresaCodigoSeq') || '1', 10);
     setSequencial(seq);
   }, []);
+
+  useEffect(() => {
+    if (id) {
+      fetchComAuth(`/empresa/${id}`).then(dados => {
+        if (dados && dados.empresa) {
+          const e = dados.empresa;
+          setForm({
+            razaoSocial: e.razao_social || '',
+            nomeFantasia: e.nome_fantasia || '',
+            codigo: e.codigo || '',
+            cnpj: e.cnpj || '',
+            inscricaoEstadual: e.inscricao_estadual || '',
+            cep: e.cep || '',
+            rua: e.rua || '',
+            numero: e.numero || '',
+            bairro: e.bairro || '',
+            cidade: e.cidade || '',
+            estado: e.estado || '',
+            telefone1: e.telefone1 || '',
+            telefone2: e.telefone2 || '',
+            logo: null,
+          });
+        }
+      });
+    }
+  }, [id]);
 
   useEffect(() => {
     setForm(f => ({ ...f, codigo: gerarCodigo(f.nomeFantasia, sequencial) }));
@@ -71,11 +99,15 @@ function DadosEmpresa() {
       if (v) data.append(k, v);
     });
     try {
-      await fetchComAuth('/empresa', { method: 'POST', body: data });
-      localStorage.setItem('empresaCodigoSeq', String(sequencial + 1));
+      const url = id ? `/empresa/${id}` : '/empresa';
+      const method = id ? 'PUT' : 'POST';
+      await fetchComAuth(url, { method, body: data });
+      if (!id) {
+        localStorage.setItem('empresaCodigoSeq', String(sequencial + 1));
+        setSequencial(s => s+1);
+        setForm(f => ({ ...f, razaoSocial:'', nomeFantasia:'', codigo:'', cnpj:'', inscricaoEstadual:'', cep:'', rua:'', numero:'', bairro:'', cidade:'', estado:'', telefone1:'', telefone2:'', logo:null }));
+      }
       alert('Dados salvos');
-      setSequencial(s => s+1);
-      setForm(f => ({ ...f, razaoSocial:'', nomeFantasia:'', codigo:'', cnpj:'', inscricaoEstadual:'', cep:'', rua:'', numero:'', bairro:'', cidade:'', estado:'', telefone1:'', telefone2:'', logo:null }));
     } catch(err) {
       alert('Falha ao salvar');
     }
