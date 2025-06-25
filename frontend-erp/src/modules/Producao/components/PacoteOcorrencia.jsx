@@ -69,7 +69,7 @@ const PacoteOcorrencia = () => {
       alert(resp.erro);
       return;
     }
-    alert(`OC ${resp.oc_numero} gerada`);
+    alert(`OC ${String(resp.oc_numero).padStart(8, "0")} gerada`);
     pecas.forEach((p) => {
       localStorage.removeItem("ocedit_op_" + p.id);
       localStorage.removeItem("ocedit_dados_" + p.id);

@@ -77,7 +77,9 @@ const LotesOcorrencia = () => {
     });
     localStorage.setItem("globalPecaIdProducao", nextId);
     const id = Date.now();
-    const novo = { id, lote: loteSel, pacote: pacoteSel, pacoteData: copia };
+    const nomeBase = loteSel.split(/[/\\]/).pop();
+    const pacoteNome = pacoteObj.nome_pacote || `Pacote ${parseInt(pacoteSel) + 1}`;
+    const novo = { id, lote: nomeBase, pacote: pacoteNome, pacoteData: copia };
     salvarLotesLocais([...lotesLocais, novo]);
     navigate(`pacote/${id}`);
   };
@@ -133,7 +135,7 @@ const LotesOcorrencia = () => {
               {lotes.map((l) => (
                 <li key={l.id} className="border p-2 rounded flex justify-between items-center gap-2">
                   <span>
-                    OC {l.oc_numero} - Lote {l.lote} - Pacote {l.pacote}
+                    OC {String(l.oc_numero).padStart(8, "0")} - {l.lote} - {l.pacote}
                   </span>
                   <div className="space-x-2">
                     <Button size="sm" onClick={() => navigate(`ocorrencias/editar/${l.id}`)}>Editar</Button>
@@ -150,7 +152,7 @@ const LotesOcorrencia = () => {
               {lotesLocais.map((l) => (
                 <li key={l.id} className="border p-2 rounded flex justify-between items-center gap-2 bg-gray-50">
                   <span>
-                    OC LOCAL {l.id} - Lote {l.lote} - Pacote {l.pacote}
+                    OC LOCAL {l.id} - {l.lote} - {l.pacote}
                   </span>
                   <div className="space-x-2">
                     <Button size="sm" onClick={() => editarLoteLocal(l.id)}>Editar</Button>
