@@ -298,9 +298,14 @@ def parse_dxt_producao(root, dxt_path):
         try:
             descricao_item = item_data.get("PartName", "Sem Nome").strip().upper()
             dxf_da_peca = item_data.get("Filename")
-            if not dxf_da_peca: continue
-            caminho_dxf = pasta_base_dxf / dxf_da_peca
-            if not caminho_dxf.exists(): continue
+            if not dxf_da_peca:
+                continue
+
+            dxf_relativo = Path(dxf_da_peca.replace("\\", "/"))
+            caminho_dxf = (pasta_base_dxf / dxf_relativo).resolve()
+            if not caminho_dxf.exists():
+                print(f"      -> AVISO: Arquivo DXF não encontrado: {dxf_relativo}")
+                continue
 
             print(f"    -> Processando: {descricao_item} | DXF: {dxf_da_peca}")
             comprimento, largura, espessura = float(item_data.get("Length", 0)), float(item_data.get("Width", 0)), float(item_data.get("Thickness", 0))
