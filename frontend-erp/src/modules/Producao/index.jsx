@@ -8,7 +8,7 @@ import CadastroChapas from './components/CadastroChapas';
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
   const matchHome = useMatch({ path: `${resolved.pathname}`, end: true });
-  // Para o link "Início Produção" ser ativo quando estiver na raiz do módulo
+  // Para o link "Lotes Produção" ser ativo quando estiver na raiz do módulo
   const matchLote = useMatch(`${resolved.pathname}/lote/*`); // Matches /producao/lote/qualquer_nome
   const matchApontamento = useMatch({ path: `${resolved.pathname}/apontamento`, end: true });
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
@@ -25,7 +25,7 @@ function ProducaoLayout() {
           to="." // Relativo ao path do módulo (Producao)
           className={`px-3 py-1 rounded ${matchHome ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
         >
-          Início Produção
+          Lotes Produção
         </Link>
         <Link
           to="apontamento"

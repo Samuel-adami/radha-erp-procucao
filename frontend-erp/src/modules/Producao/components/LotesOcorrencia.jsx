@@ -7,7 +7,7 @@ import CadastroMotivos from "./CadastroMotivos";
 const LotesOcorrencia = () => {
   const [aba, setAba] = useState("lotes");
   const [lotes, setLotes] = useState([]);
-  const [lotesProducao, setLotesProducao] = useState([]);
+  const [lotesProducao, setLotesProducao] = useState([]); // [{pasta,nome}]
   const [loteSel, setLoteSel] = useState("");
   const [pacoteSel, setPacoteSel] = useState("");
   const [pacotesDisponiveis, setPacotesDisponiveis] = useState([]);
@@ -17,8 +17,15 @@ const LotesOcorrencia = () => {
 
   useEffect(() => {
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
-    const lp = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-    setLotesProducao(lp);
+    fetchComAuth("/listar-lotes")
+      .then((d) => {
+        const lista = (d?.lotes || []).map((p) => ({
+          pasta: p,
+          nome: p.split(/[/\\\\]/).pop(),
+        }));
+        setLotesProducao(lista);
+      })
+      .catch(() => {});
     const loc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
     setLotesLocais(loc);
   }, []);
@@ -32,14 +39,16 @@ const LotesOcorrencia = () => {
   }, [location.state]);
 
   useEffect(() => {
-    const loteObj = lotesProducao.find((l) => l.nome === loteSel);
-    if (loteObj) {
-      setPacotesDisponiveis(loteObj.pacotes || []);
-    } else {
+    if (!loteSel) {
       setPacotesDisponiveis([]);
+      setPacoteSel("");
+      return;
     }
+    fetchComAuth(`/carregar-lote-final?pasta=${encodeURIComponent(loteSel)}`)
+      .then((d) => setPacotesDisponiveis(d?.pacotes || []))
+      .catch(() => setPacotesDisponiveis([]));
     setPacoteSel("");
-  }, [loteSel, lotesProducao]);
+  }, [loteSel]);
 
 
   const salvarLotesLocais = (dados) => {
@@ -52,8 +61,7 @@ const LotesOcorrencia = () => {
       alert("Escolha lote e pacote");
       return;
     }
-    const loteObj = lotesProducao.find((l) => l.nome === loteSel);
-    const pacoteObj = loteObj?.pacotes?.[parseInt(pacoteSel)];
+    const pacoteObj = pacotesDisponiveis[parseInt(pacoteSel)];
     if (!pacoteObj) return;
     const copia = JSON.parse(JSON.stringify(pacoteObj));
     const id = Date.now();
@@ -159,7 +167,7 @@ const LotesOcorrencia = () => {
               >
                 <option value="">Escolha o lote</option>
                 {lotesProducao.map((l) => (
-                  <option key={l.nome} value={l.nome}>
+                  <option key={l.pasta} value={l.pasta}>
                     {l.nome}
                   </option>
                 ))}
