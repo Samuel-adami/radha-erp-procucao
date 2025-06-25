@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "./components/ui/button"; 
 import ImportarXML from "./components/ImportarXML";
 import VisualizacaoPeca from "./components/VisualizacaoPeca";
@@ -14,6 +14,7 @@ import CadastroChapas from "./components/CadastroChapas";
 import LotesOcorrencia from "./components/LotesOcorrencia";
 import CadastroMotivos from "./components/CadastroMotivos";
 import RelatorioOcorrencias from "./components/RelatorioOcorrencias";
+import EditarLoteOcorrencia from "./components/EditarLoteOcorrencia";
 import "./Producao.css";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -156,6 +157,8 @@ const LoteProducao = () => {
 const EditarPecaProducao = () => {
   const { nome, peca: pecaId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const origemOcorrencia = location.state?.origem === "ocorrencia";
 
   const [dadosPeca, setDadosPeca] = useState(null);
   const [operacoes, setOperacoes] = useState([]);
@@ -167,11 +170,11 @@ const EditarPecaProducao = () => {
   useEffect(() => {
     const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     let pecaEncontrada = null;
-    
+
     for (const l of lotes) {
       if (l.nome === nome) {
         for (const pacote of l.pacotes || []) {
-          const p = pacote.pecas.find(p => p.id === parseInt(pecaId));
+          const p = pacote.pecas.find((p) => p.id === parseInt(pecaId));
           if (p) {
             pecaEncontrada = p;
             break;
@@ -182,13 +185,19 @@ const EditarPecaProducao = () => {
     }
 
     if (pecaEncontrada) {
-      setDadosPeca(pecaEncontrada);
-      const operacoesSalvas = JSON.parse(localStorage.getItem("op_producao_" + pecaId) || "[]");
+      const dadosEditados = origemOcorrencia
+        ? JSON.parse(localStorage.getItem("ocedit_dados_" + pecaId) || "null")
+        : null;
+      setDadosPeca({ ...pecaEncontrada, ...(dadosEditados || {}) });
+      const chaveOp = origemOcorrencia
+        ? "ocedit_op_" + pecaId
+        : "op_producao_" + pecaId;
+      const operacoesSalvas = JSON.parse(localStorage.getItem(chaveOp) || "[]");
       setOperacoes(operacoesSalvas);
-      setNovoComprimento(pecaEncontrada.comprimento);
-      setNovaLargura(pecaEncontrada.largura);
+      setNovoComprimento(dadosEditados?.comprimento || pecaEncontrada.comprimento);
+      setNovaLargura(dadosEditados?.largura || pecaEncontrada.largura);
     }
-  }, [pecaId, nome]);
+  }, [pecaId, nome, origemOcorrencia]);
 
   const salvarOperacao = () => {
     const pos = form.posicao;
@@ -247,23 +256,26 @@ const EditarPecaProducao = () => {
         operacoes: []
       };
 
-      const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-      const lotesAtualizados = lotes.map(lote =>
-        lote.nome !== nome ? lote : {
-          ...lote,
-          pacotes: lote.pacotes.map(pacote => {
-            if (!pacote.pecas.some(p => p.id === parseInt(pecaId))) return pacote;
-            const pecasAtualizadas = pacote.pecas.map(p =>
-              p.id === parseInt(pecaId) ? { ...p, comprimento: novoComprimento, largura: novaLargura } : p
-            );
-            pecasAtualizadas.push(painelPuxador);
-            return { ...pacote, pecas: pecasAtualizadas };
-          })
-        }
-      );
-
-      localStorage.setItem("lotesProducao", JSON.stringify(lotesAtualizados));
-      localStorage.setItem(`op_producao_${newPecaId}`, JSON.stringify([]));
+      if (!origemOcorrencia) {
+        const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+        const lotesAtualizados = lotes.map((lote) =>
+          lote.nome !== nome
+            ? lote
+            : {
+                ...lote,
+                pacotes: lote.pacotes.map((pacote) => {
+                  if (!pacote.pecas.some((p) => p.id === parseInt(pecaId))) return pacote;
+                  const pecasAtualizadas = pacote.pecas.map((p) =>
+                    p.id === parseInt(pecaId) ? { ...p, comprimento: novoComprimento, largura: novaLargura } : p
+                  );
+                  pecasAtualizadas.push(painelPuxador);
+                  return { ...pacote, pecas: pecasAtualizadas };
+                }),
+              }
+        );
+        localStorage.setItem("lotesProducao", JSON.stringify(lotesAtualizados));
+        localStorage.setItem(`op_producao_${newPecaId}`, JSON.stringify([]));
+      }
 
       setDadosPeca(prev => ({ ...prev, comprimento: novoComprimento, largura: novaLargura }));
 
@@ -275,19 +287,22 @@ const EditarPecaProducao = () => {
     }
 
     setOperacoes(operacoesAtuais);
-    localStorage.setItem("op_producao_" + pecaId, JSON.stringify(operacoesAtuais));
+    const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
+    localStorage.setItem(chaveOp, JSON.stringify(operacoesAtuais));
     setForm({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C", face: "Face (F0)" });
   };
 
   const excluirTodas = () => {
     setOperacoes([]);
-    localStorage.removeItem("op_producao_" + pecaId);
+    const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
+    localStorage.removeItem(chaveOp);
   };
 
   const excluirUma = (index) => {
     const novas = operacoes.filter((_, i) => i !== index);
     setOperacoes(novas);
-    localStorage.setItem("op_producao_" + pecaId, JSON.stringify(novas));
+    const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
+    localStorage.setItem(chaveOp, JSON.stringify(novas));
   };
 
   const salvarMedidas = () => {
@@ -297,26 +312,49 @@ const EditarPecaProducao = () => {
       alert("Medidas inválidas");
       return;
     }
-    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-    const atualizados = lotes.map((l) =>
-      l.nome !== nome
-        ? l
-        : {
-            ...l,
-            pacotes: l.pacotes.map((pac) => {
-              if (!pac.pecas.some((p) => p.id === parseInt(pecaId))) return pac;
-              return {
-                ...pac,
-                pecas: pac.pecas.map((p) =>
-                  p.id === parseInt(pecaId)
-                    ? { ...p, comprimento: comp, largura: larg }
-                    : p
-                ),
-              };
-            }),
-          }
-    );
-    localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+
+    const fatorX = comp / parseFloat(dadosPeca.comprimento);
+    const fatorY = larg / parseFloat(dadosPeca.largura);
+    const opsEscaladas = operacoes.map((op) => {
+      const novo = { ...op };
+      if (novo.x !== undefined) novo.x *= fatorX;
+      if (novo.y !== undefined) novo.y *= fatorY;
+      if (novo.comprimento !== undefined) novo.comprimento *= fatorX;
+      if (novo.largura !== undefined) novo.largura *= fatorY;
+      return novo;
+    });
+    setOperacoes(opsEscaladas);
+    const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
+    localStorage.setItem(chaveOp, JSON.stringify(opsEscaladas));
+
+    if (origemOcorrencia) {
+      localStorage.setItem(
+        "ocedit_dados_" + pecaId,
+        JSON.stringify({ comprimento: comp, largura: larg })
+      );
+    } else {
+      const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+      const atualizados = lotes.map((l) =>
+        l.nome !== nome
+          ? l
+          : {
+              ...l,
+              pacotes: l.pacotes.map((pac) => {
+                if (!pac.pecas.some((p) => p.id === parseInt(pecaId))) return pac;
+                return {
+                  ...pac,
+                  pecas: pac.pecas.map((p) =>
+                    p.id === parseInt(pecaId)
+                      ? { ...p, comprimento: comp, largura: larg }
+                      : p
+                  ),
+                };
+              }),
+            }
+      );
+      localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+    }
+
     setDadosPeca((prev) => ({ ...prev, comprimento: comp, largura: larg }));
   };
 
@@ -463,4 +501,4 @@ const EditarPecaProducao = () => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, ConfigMaquina, CadastroChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, ConfigMaquina, CadastroChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia };
