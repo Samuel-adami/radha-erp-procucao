@@ -4,6 +4,24 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 import CadastroMotivos from "./CadastroMotivos";
 
+const espelharOperacoesY = (ops = [], largura) => {
+  const L = parseFloat(largura);
+  if (isNaN(L)) return ops;
+  return ops.map((op) => {
+    const novo = { ...op };
+    if (novo.y !== undefined) {
+      const y = parseFloat(novo.y);
+      if (["Retângulo", "Linha"].includes(novo.tipo)) {
+        const h = parseFloat(novo.largura || 0);
+        novo.y = L - y - h;
+      } else {
+        novo.y = L - y;
+      }
+    }
+    return novo;
+  });
+};
+
 const LotesOcorrencia = () => {
   const [aba, setAba] = useState("lotes");
   const [lotes, setLotes] = useState([]);
@@ -67,13 +85,14 @@ const LotesOcorrencia = () => {
     let nextId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
     copia.pecas = (copia.pecas || []).map((p) => {
       const novoId = nextId++;
+      const opsEspelhadas = espelharOperacoesY(p.operacoes || [], p.largura);
       if (p.operacoes) {
         localStorage.setItem(
           "op_producao_" + novoId,
-          JSON.stringify(p.operacoes)
+          JSON.stringify(opsEspelhadas)
         );
       }
-      return { ...p, id: novoId };
+      return { ...p, id: novoId, operacoes: opsEspelhadas };
     });
     localStorage.setItem("globalPecaIdProducao", nextId);
     const id = Date.now();
