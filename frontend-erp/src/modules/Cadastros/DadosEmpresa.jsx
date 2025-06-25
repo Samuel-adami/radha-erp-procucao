@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
 import { fetchComAuth } from '../../utils/fetchComAuth';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 function gerarCodigo(nomeFantasia, sequencial) {
   if (!nomeFantasia) return '';
@@ -13,6 +13,7 @@ function gerarCodigo(nomeFantasia, sequencial) {
 
 function DadosEmpresa() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [sequencial, setSequencial] = useState(1);
   const [form, setForm] = useState({
     razaoSocial: '',
@@ -173,7 +174,12 @@ function DadosEmpresa() {
           <input type="file" accept="image/jpeg,image/png,image/svg+xml" onChange={handle('logo')} />
         </label>
       </div>
-      <Button type="submit">Salvar</Button>
+      <div className="flex gap-2">
+        <Button type="submit">Salvar</Button>
+        <Button type="button" variant="secondary" onClick={() => navigate('lista')}>
+          Listar Empresas
+        </Button>
+      </div>
     </form>
   );
 }
