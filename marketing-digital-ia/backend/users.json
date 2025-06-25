@@ -29,7 +29,7 @@
     "email": "radha@radhamoveis.com.br",
     "nome": "Samuel Adami",
     "cargo": "Diretoria",
-    "permissoes": ["chat", "campanhas", "publicacoes", "publico", "marketing-ia", "producao"]
+    "permissoes": ["chat", "campanhas", "publicacoes", "publico", "marketing-ia", "producao", "cadastros"]
   },
   {
     "username": "Marcos",
