@@ -69,7 +69,7 @@ const RelatorioOcorrencias = () => {
         <tbody>
           {dados.map((d, i) => (
             <tr key={i}>
-              <td className="border px-2">{d.oc_numero}</td>
+              <td className="border px-2">{String(d.oc_numero).padStart(8, '0')}</td>
               <td className="border px-2">{d.lote}</td>
               <td className="border px-2">{d.pacote}</td>
               <td className="border px-2">{d.descricao_peca}</td>
