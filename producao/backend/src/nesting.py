@@ -254,7 +254,11 @@ def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
             ET.SubElement(cycle, 'Field', Name='Y', Value=str(p['y'] + p['Width']/2))
             ET.SubElement(cycle, 'Field', Name='R', Value='0')
         tree = ET.ElementTree(root)
-        tree.write(saida / f'{prefix}.cyc', encoding='utf-8', xml_declaration=False)
+        try:
+            ET.indent(tree, space="  ")  # Python 3.9+
+        except AttributeError:
+            pass
+        tree.write(saida / f"{prefix}.cyc", encoding="utf-8", xml_declaration=True)
 
 
 def _gerar_xml_chapas(
