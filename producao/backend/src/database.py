@@ -42,6 +42,16 @@ def init_db():
             criado_em TEXT
         )"""
     )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS lotes_ocorrencias (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lote TEXT,
+            pacote TEXT,
+            oc_numero INTEGER UNIQUE,
+            pasta TEXT,
+            criado_em TEXT
+        )"""
+    )
     conn.commit()
     conn.close()
 

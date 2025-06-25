@@ -20,6 +20,15 @@ import ezdxf
 
 init_db()
 
+
+def proximo_oc_numero() -> int:
+    """Retorna o próximo número sequencial de OC."""
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT MAX(oc_numero) as m FROM lotes_ocorrencias"
+        ).fetchone()
+        return (row["m"] or 0) + 1
+
 def coletar_layers(pasta_lote: str) -> list[str]:
     """Percorre os arquivos DXF do lote e coleta todos os nomes de layers."""
     pasta = Path(pasta_lote)
@@ -407,3 +416,113 @@ async def remover_chapa(chapa_id: int):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok"}
+
+
+# --------------------- Lotes de Ocorrências ---------------------
+
+
+@app.get("/lotes-ocorrencias")
+async def listar_lotes_ocorrencias():
+    """Retorna os lotes de ocorrências cadastrados."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT id, lote, pacote, oc_numero, pasta, criado_em FROM lotes_ocorrencias ORDER BY id"
+            ).fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+@app.post("/lotes-ocorrencias")
+async def gerar_lote_ocorrencia(request: Request):
+    """Gera um novo lote de ocorrência a partir das peças selecionadas."""
+    dados = await request.json()
+    lote = dados.get("lote")
+    pacote = dados.get("pacote")
+    pecas = dados.get("pecas", [])
+
+    numero_oc = proximo_oc_numero()
+    pasta_saida = os.path.join(
+        "saida", f"Lote_{lote}_OC{numero_oc}"
+    )
+    os.makedirs(pasta_saida, exist_ok=True)
+
+    todas = []
+    for p in pecas:
+        nome = f"{p['id']}.DXF"
+        comprimento = float(p['comprimento'])
+        largura = float(p['largura'])
+        caminho_saida = os.path.join(pasta_saida, nome)
+        gerar_dxf_base(comprimento, largura, caminho_saida)
+        for op in p.get("operacoes", []):
+            if op.get("face") in ["Topo (L1)", "Topo (L3)"]:
+                continue
+            aplicar_usinagem_retangular(caminho_saida, caminho_saida, op, p)
+        todas.append({
+            "Filename": nome,
+            "PartName": p.get('nome', ''),
+            "Length": comprimento,
+            "Width": largura,
+            "Thickness": 18,
+        })
+
+    caminho_dxt_final = os.path.join(
+        pasta_saida, f"Lote_{lote}_OC{numero_oc}.dxt"
+    )
+    with open(caminho_dxt_final, "w", encoding="utf-8") as f:
+        f.write("<?xml version=\"1.0\"?>\n<ListInformation>\n   <ApplicationData>\n")
+        f.write("     <Name />\n     <Version>1.0</Version>\n")
+        f.write(
+            f"     <Date>{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</Date>\n"
+        )
+        f.write("   </ApplicationData>\n   <PartData>\n")
+        for p in todas:
+            f.write("     <Part>\n")
+            for k, v in p.items():
+                tipo = "Text" if isinstance(v, str) else "Real"
+                f.write(
+                    f"       <Field><Name>{k}</Name><Type>{tipo}</Type><Value>{v}</Value></Field>\n"
+                )
+            f.write("     </Part>\n")
+        f.write("   </PartData>\n</ListInformation>\n")
+
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, pasta, criado_em) VALUES (?, ?, ?, ?, ?)",
+                (
+                    lote,
+                    pacote,
+                    numero_oc,
+                    pasta_saida,
+                    datetime.now().isoformat(),
+                ),
+            )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+
+    return {"status": "ok", "oc_numero": numero_oc}
+
+
+@app.delete("/lotes-ocorrencias/{oc_id}")
+async def excluir_lote_ocorrencia(oc_id: int):
+    """Remove um lote de ocorrência."""
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT pasta FROM lotes_ocorrencias WHERE id=?", (oc_id,)
+            ).fetchone()
+            if row:
+                pasta = Path(row["pasta"])
+                if pasta.is_dir():
+                    shutil.rmtree(pasta, ignore_errors=True)
+                conn.execute(
+                    "DELETE FROM lotes_ocorrencias WHERE id=?", (oc_id,)
+                )
+                conn.commit()
+                return {"status": "ok"}
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok", "mensagem": "Lote não encontrado"}
