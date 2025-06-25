@@ -64,6 +64,9 @@ const LotesOcorrencia = () => {
     const pacoteObj = pacotesDisponiveis[parseInt(pacoteSel)];
     if (!pacoteObj) return;
     const copia = JSON.parse(JSON.stringify(pacoteObj));
+    let nextId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
+    copia.pecas = (copia.pecas || []).map((p) => ({ ...p, id: nextId++ }));
+    localStorage.setItem("globalPecaIdProducao", nextId);
     const id = Date.now();
     const novo = { id, lote: loteSel, pacote: pacoteSel, pacoteData: copia };
     salvarLotesLocais([...lotesLocais, novo]);
