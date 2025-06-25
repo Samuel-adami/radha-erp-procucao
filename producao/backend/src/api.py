@@ -478,6 +478,14 @@ async def gerar_lote_ocorrencia(request: Request):
         nome = f"{p['id']}.DXF"
         comprimento = float(p['comprimento'])
         largura = float(p['largura'])
+        obs = p.get("observacoes", "")
+        cliente = p.get("cliente", "")
+        ambiente = p.get("ambiente", "")
+        material = p.get("material", "")
+
+        codigo_original = p.get("codigo_peca", "")
+        codigo_numerico = re.sub(r"\D", "", codigo_original)
+
         caminho_saida = os.path.join(pasta_saida, nome)
         gerar_dxf_base(comprimento, largura, caminho_saida)
         for op in p.get("operacoes", []):
@@ -486,10 +494,15 @@ async def gerar_lote_ocorrencia(request: Request):
             aplicar_usinagem_retangular(caminho_saida, caminho_saida, op, p)
         todas.append({
             "Filename": nome,
-            "PartName": p.get('nome', ''),
+            "PartName": p.get("nome", ""),
             "Length": comprimento,
             "Width": largura,
             "Thickness": 18,
+            "Material": material,
+            "Client": cliente,
+            "Project": ambiente,
+            "Program1": codigo_numerico,
+            "Comment": obs,
         })
 
     caminho_dxt_final = os.path.join(
