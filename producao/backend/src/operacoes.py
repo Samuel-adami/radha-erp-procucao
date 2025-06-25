@@ -297,15 +297,32 @@ def parse_dxt_producao(root, dxt_path):
     for item_data in all_parts_data:
         try:
             descricao_item = item_data.get("PartName", "Sem Nome").strip().upper()
-            dxf_da_peca = item_data.get("Filename")
+            dxf_da_peca = item_data.get("Filename", "").strip()
             if not dxf_da_peca:
                 continue
 
             dxf_relativo = Path(dxf_da_peca.replace("\\", "/"))
             caminho_dxf = (pasta_base_dxf / dxf_relativo).resolve()
+
             if not caminho_dxf.exists():
-                print(f"      -> AVISO: Arquivo DXF não encontrado: {dxf_relativo}")
-                continue
+                # tenta localizar o arquivo de forma case-insensitive
+                possivel = None
+                if caminho_dxf.parent.exists():
+                    nome_lower = dxf_relativo.name.lower()
+                    for f in caminho_dxf.parent.iterdir():
+                        if f.name.lower() == nome_lower:
+                            possivel = f
+                            break
+                if not possivel:
+                    for f in pasta_base_dxf.rglob('*'):
+                        if f.is_file() and f.name.lower() == dxf_relativo.name.lower():
+                            possivel = f
+                            break
+                if possivel:
+                    caminho_dxf = possivel
+                else:
+                    print(f"      -> AVISO: Arquivo DXF não encontrado: {dxf_relativo}")
+                    continue
 
             print(f"    -> Processando: {descricao_item} | DXF: {dxf_da_peca}")
             comprimento, largura, espessura = float(item_data.get("Length", 0)), float(item_data.get("Width", 0)), float(item_data.get("Thickness", 0))
