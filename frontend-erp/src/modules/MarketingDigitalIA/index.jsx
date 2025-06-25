@@ -17,29 +17,29 @@ function MarketingDigitalIALayout() {
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
-      <h2 className="text-xl font-bold mb-4 text-purple-700">Módulo: Marketing Digital IA</h2>
+      <h2 className="text-xl font-bold mb-4 text-blue-700">Módulo: Marketing Digital IA</h2>
       <nav className="flex gap-4 mb-4 border-b pb-2">
         <Link
           to="." // Relativo ao path do módulo (MarketingDigitalIA)
-          className={`px-3 py-1 rounded ${matchChat ? 'bg-purple-200 text-purple-800' : 'text-purple-600 hover:bg-purple-100'}`}
+          className={`px-3 py-1 rounded ${matchChat ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
         >
           Assistente Sara
         </Link>
         <Link
           to="nova-campanha" // Relativo ao path do módulo
-          className={`px-3 py-1 rounded ${matchCampanha ? 'bg-purple-200 text-purple-800' : 'text-purple-600 hover:bg-purple-100'}`}
+          className={`px-3 py-1 rounded ${matchCampanha ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
         >
           Nova Campanha
         </Link>
         <Link
           to="nova-publicacao" // Relativo ao path do módulo
-          className={`px-3 py-1 rounded ${matchPublicacao ? 'bg-purple-200 text-purple-800' : 'text-purple-600 hover:bg-purple-100'}`}
+          className={`px-3 py-1 rounded ${matchPublicacao ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
         >
           Nova Publicação
         </Link>
         <Link
           to="publicos-alvo" // Relativo ao path do módulo
-          className={`px-3 py-1 rounded ${matchPublicos ? 'bg-purple-200 text-purple-800' : 'text-purple-600 hover:bg-purple-100'}`}
+          className={`px-3 py-1 rounded ${matchPublicos ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
         >
           Públicos Alvo
         </Link>

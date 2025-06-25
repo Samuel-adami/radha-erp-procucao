@@ -7,36 +7,61 @@ import {
   Navigate,
   useNavigate,
   Outlet,
+  useMatch,
 } from "react-router-dom";
 
 import MarketingDigitalIA from "./modules/MarketingDigitalIA";
 import Producao from "./modules/Producao";
+import Cadastros from "./modules/Cadastros";
 import Login from "./pages/Login";
 import { fetchComAuth } from "./utils/fetchComAuth";
 
 // Componente de Layout: A "moldura" do ERP para um usuário logado
 function Layout({ usuario, onLogout }) {
-  const possuiPermissao = (modulo) => {
-    return usuario?.permissoes?.includes(modulo);
-  };
+  const possuiPermissao = (modulo) => usuario?.permissoes?.includes(modulo);
+
+  const matchCadastros = useMatch("/cadastros/*");
+  const matchMarketing = useMatch("/marketing-ia/*");
+  const matchProducao = useMatch("/producao/*");
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-    
-      <header className="bg-purple-900 text-white p-4 shadow-md flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Radha ERP</h1>
-        <nav className="flex space-x-4">
+    <div className="min-h-screen flex">
+      <aside className="bg-blue-900 text-white p-4 flex flex-col w-[20%] min-w-[200px]">
+        <h1 className="text-2xl font-bold mb-6">Radha ERP</h1>
+        <nav className="flex flex-col space-y-2 flex-grow">
+          {possuiPermissao("cadastros") && (
+            <Link
+              to="/cadastros"
+              className={`px-2 py-1 rounded ${matchCadastros ? "bg-blue-700" : "hover:bg-blue-700"}`}
+            >
+              Cadastros
+            </Link>
+          )}
           {possuiPermissao("marketing-ia") && (
-            <Link to="/marketing-ia" className="hover:underline">Marketing Digital IA</Link>
+            <Link
+              to="/marketing-ia"
+              className={`px-2 py-1 rounded ${matchMarketing ? "bg-blue-700" : "hover:bg-blue-700"}`}
+            >
+              Marketing Digital IA
+            </Link>
           )}
           {possuiPermissao("producao") && (
-            <Link to="/producao" className="hover:underline">Produção</Link>
+            <Link
+              to="/producao"
+              className={`px-2 py-1 rounded ${matchProducao ? "bg-blue-700" : "hover:bg-blue-700"}`}
+            >
+              Produção
+            </Link>
           )}
         </nav>
-        <button onClick={onLogout} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Sair</button>
-      </header>
-      <main className="flex-grow p-4">
-        {/* As páginas dos módulos (filhas da rota) serão renderizadas aqui */}
+        <button
+          onClick={onLogout}
+          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded mt-4"
+        >
+          Sair
+        </button>
+      </aside>
+      <main className="flex-grow p-4 bg-gray-100">
         <Outlet />
       </main>
     </div>
@@ -118,6 +143,7 @@ function App() {
           }
         >
           <Route index element={<p className="text-center text-lg mt-10">Bem-vindo ao ERP Radha. Selecione um módulo no menu.</p>} />
+          <Route path="cadastros/*" element={<Cadastros />} />
           <Route path="marketing-ia/*" element={<MarketingDigitalIA />} />
           <Route path="producao/*" element={<Producao />} />
         </Route>
