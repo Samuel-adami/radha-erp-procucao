@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 import CadastroMotivos from "./CadastroMotivos";
 
@@ -18,6 +18,7 @@ const LotesOcorrencia = () => {
   const [lotesLocais, setLotesLocais] = useState([]);
   const [ocAtual, setOcAtual] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
@@ -27,6 +28,14 @@ const LotesOcorrencia = () => {
     const loc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
     setLotesLocais(loc);
   }, []);
+
+  useEffect(() => {
+    const id = location.state?.ocId;
+    if (id) {
+      editarLoteLocal(id);
+      navigate('.', { replace: true, state: {} });
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const loteObj = lotesProducao.find((l) => l.nome === loteSel);
@@ -305,7 +314,7 @@ const LotesOcorrencia = () => {
                           </option>
                         ))}
                       </select>
-                      <Button onClick={() => navigate(`/producao/lote/${loteSel}/peca/${p.id}`)}>
+                      <Button onClick={() => navigate(`/producao/lote/${loteSel}/peca/${p.id}`, { state: { origem: 'ocorrencia', ocId: ocAtual } })}>
                         Editar
                       </Button>
                     </div>
