@@ -20,7 +20,7 @@ def gerar_dxf_base(comprimento, largura, saida_path):
     polyline.close(True)
 
     doc.saveas(saida_path)
-    print(f"📄 Arquivo DXT gerado em: {nome_arquivo}")
+    print(f"📄 Arquivo DXT gerado em: {saida_path}")
 
 def gerar_dxt_final(pecas, pasta_saida, nome_lote):
     nome_arquivo = os.path.join(pasta_saida, f"{nome_lote}.dxt")
