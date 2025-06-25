@@ -200,7 +200,12 @@ const EditarPecaProducao = () => {
       const chaveOp = origemOcorrencia
         ? "ocedit_op_" + pecaId
         : "op_producao_" + pecaId;
-      const operacoesSalvas = JSON.parse(localStorage.getItem(chaveOp) || "[]");
+      let operacoesSalvas = JSON.parse(localStorage.getItem(chaveOp) || "[]");
+      if (origemOcorrencia && operacoesSalvas.length === 0) {
+        operacoesSalvas = JSON.parse(
+          localStorage.getItem("op_producao_" + pecaId) || "[]"
+        );
+      }
       setOperacoes(operacoesSalvas);
       setNovoComprimento(dadosEditados?.comprimento || pecaEncontrada.comprimento);
       setNovaLargura(dadosEditados?.largura || pecaEncontrada.largura);
