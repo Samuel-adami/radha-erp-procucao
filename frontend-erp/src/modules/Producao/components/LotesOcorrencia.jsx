@@ -81,6 +81,18 @@ const LotesOcorrencia = () => {
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
   };
 
+  const excluirLote = async (id) => {
+    if (!window.confirm("Excluir este lote de ocorrência?")) return;
+    const resp = await fetchComAuth(`/lotes-ocorrencias/${id}`, {
+      method: "DELETE",
+    }).catch(() => ({}));
+    if (resp?.erro) {
+      alert(resp.erro);
+      return;
+    }
+    setLotes(lotes.filter((l) => l.id !== id));
+  };
+
   return (
     <div className="p-6 space-y-4">
       <div className="flex gap-2 mb-2">
@@ -105,8 +117,17 @@ const LotesOcorrencia = () => {
             <h2 className="text-xl font-semibold mb-2">Lotes de Ocorrência</h2>
             <ul className="space-y-2 mb-4">
               {lotes.map((l) => (
-                <li key={l.id} className="border p-2 rounded">
-                  OC {l.oc_numero} - Lote {l.lote} - Pacote {l.pacote}
+                <li key={l.id} className="border p-2 rounded flex justify-between items-center gap-2">
+                  <span>
+                    OC {l.oc_numero} - Lote {l.lote} - Pacote {l.pacote}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => excluirLote(l.id)}
+                  >
+                    Excluir
+                  </Button>
                 </li>
               ))}
             </ul>

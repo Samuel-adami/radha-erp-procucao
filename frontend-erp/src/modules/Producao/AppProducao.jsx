@@ -161,6 +161,8 @@ const EditarPecaProducao = () => {
   const [operacoes, setOperacoes] = useState([]);
   const [operacao, setOperacao] = useState("Retângulo");
   const [form, setForm] = useState({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C", face: "Face (F0)" });
+  const [novoComprimento, setNovoComprimento] = useState("");
+  const [novaLargura, setNovaLargura] = useState("");
 
   useEffect(() => {
     const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
@@ -183,6 +185,8 @@ const EditarPecaProducao = () => {
       setDadosPeca(pecaEncontrada);
       const operacoesSalvas = JSON.parse(localStorage.getItem("op_producao_" + pecaId) || "[]");
       setOperacoes(operacoesSalvas);
+      setNovoComprimento(pecaEncontrada.comprimento);
+      setNovaLargura(pecaEncontrada.largura);
     }
   }, [pecaId, nome]);
 
@@ -286,6 +290,36 @@ const EditarPecaProducao = () => {
     localStorage.setItem("op_producao_" + pecaId, JSON.stringify(novas));
   };
 
+  const salvarMedidas = () => {
+    const comp = parseFloat(novoComprimento);
+    const larg = parseFloat(novaLargura);
+    if (isNaN(comp) || isNaN(larg)) {
+      alert("Medidas inválidas");
+      return;
+    }
+    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+    const atualizados = lotes.map((l) =>
+      l.nome !== nome
+        ? l
+        : {
+            ...l,
+            pacotes: l.pacotes.map((pac) => {
+              if (!pac.pecas.some((p) => p.id === parseInt(pecaId))) return pac;
+              return {
+                ...pac,
+                pecas: pac.pecas.map((p) =>
+                  p.id === parseInt(pecaId)
+                    ? { ...p, comprimento: comp, largura: larg }
+                    : p
+                ),
+              };
+            }),
+          }
+    );
+    localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+    setDadosPeca((prev) => ({ ...prev, comprimento: comp, largura: larg }));
+  };
+
   if (!dadosPeca) return <p className="p-6">Peça não encontrada ou carregando...</p>;
 
   const orientacao = parseFloat(dadosPeca.comprimento) >= parseFloat(dadosPeca.largura) ? "horizontal" : "vertical";
@@ -352,6 +386,27 @@ const EditarPecaProducao = () => {
       <div className="border p-4 rounded bg-gray-50 overflow-x-auto w-full min-w-[620px]">
         <VisualizacaoPeca comprimento={dadosPeca.comprimento} largura={dadosPeca.largura} orientacao={orientacao} operacoes={operacoes} />
         <p className="mt-2">Medidas: {dadosPeca.comprimento}mm x {dadosPeca.largura}mm</p>
+        <div className="flex gap-2 mt-2">
+          <label className="block">
+            <span className="text-sm">Comprimento:</span>
+            <input
+              type="number"
+              className="input w-24"
+              value={novoComprimento}
+              onChange={(e) => setNovoComprimento(e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="text-sm">Largura:</span>
+            <input
+              type="number"
+              className="input w-24"
+              value={novaLargura}
+              onChange={(e) => setNovaLargura(e.target.value)}
+            />
+          </label>
+          <Button size="sm" className="self-end" onClick={salvarMedidas}>Salvar Medidas</Button>
+        </div>
         <label className="block mt-4">Operação:
           <select className="input" value={operacao} onChange={e => setOperacao(e.target.value)}>
             <option>Retângulo</option>
