@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 import CadastroMotivos from "./CadastroMotivos";
 
@@ -14,6 +15,7 @@ const LotesOcorrencia = () => {
   const [pecasPacote, setPecasPacote] = useState([]);
   const [selecionadas, setSelecionadas] = useState({});
   const [motivosPeca, setMotivosPeca] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
@@ -41,7 +43,7 @@ const LotesOcorrencia = () => {
       const sel = {};
       const motSel = {};
       (pacoteObj.pecas || []).forEach((p) => {
-        sel[p.id] = true;
+        sel[p.id] = false;
         motSel[p.id] = p.motivo_codigo || "";
       });
       setSelecionadas(sel);
@@ -176,6 +178,9 @@ const LotesOcorrencia = () => {
                           </option>
                         ))}
                       </select>
+                      <Button onClick={() => navigate(`/producao/lote/${loteSel}/peca/${p.id}`)}>
+                        Editar
+                      </Button>
                     </div>
                   </li>
                 ))}
