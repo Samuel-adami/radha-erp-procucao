@@ -27,7 +27,11 @@ def proximo_oc_numero() -> int:
         row = conn.execute(
             "SELECT MAX(oc_numero) as m FROM lotes_ocorrencias"
         ).fetchone()
-        return (row["m"] or 0) + 1
+        try:
+            max_val = int(row["m"]) if row["m"] is not None else 0
+        except (ValueError, TypeError):
+            max_val = 0
+        return max_val + 1
 
 def coletar_layers(pasta_lote: str) -> list[str]:
     """Percorre os arquivos DXF do lote e coleta todos os nomes de layers."""

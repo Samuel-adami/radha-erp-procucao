@@ -325,9 +325,16 @@ def parse_dxt_producao(root, dxt_path):
                     continue
 
             print(f"    -> Processando: {descricao_item} | DXF: {dxf_da_peca}")
-            comprimento, largura, espessura = float(item_data.get("Length", 0)), float(item_data.get("Width", 0)), float(item_data.get("Thickness", 0))
+            comprimento = float(item_data.get("Length", 0))
+            largura = float(item_data.get("Width", 0))
+            espessura = float(item_data.get("Thickness", 0))
 
-            operacoes_dxf = processar_dxf_producao(caminho_dxf, {'comprimento': comprimento, 'largura': largura})
+            is_porta = "PORTA" in descricao_item or "FRENTE" in descricao_item
+            operacoes_dxf = processar_dxf_producao(
+                caminho_dxf,
+                {"comprimento": comprimento, "largura": largura},
+                is_porta=is_porta,
+            )
 
             operacoes_bpp = []
             caminho_bpp = caminho_dxf.with_suffix('.bpp')
@@ -477,9 +484,11 @@ def parse_xml_producao(root, xml_path):
                 largura_xml = float(atributos.get("PROFUNDIDADE", "0"))
                 espessura = float(atributos.get("ALTURA", "0"))
 
+                is_porta = "PORTA" in descricao or "FRENTE" in descricao
                 operacoes_dxf = processar_dxf_producao(
                     caminho_dxf,
                     {"comprimento": comprimento_xml, "largura": largura_xml},
+                    is_porta=is_porta,
                 )
 
                 operacoes_bpp = []

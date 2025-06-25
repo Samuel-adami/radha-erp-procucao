@@ -47,6 +47,7 @@ def aplicar_usinagem_retangular(caminho_entrada, caminho_saida, cmd, info_peca):
 
     doc.saveas(caminho_saida)
 
+
 def gerar_dxf_base(nome_arquivo, largura, altura, caminho_saida):
     doc = ezdxf.new(setup=True)
     msp = doc.modelspace()
