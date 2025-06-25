@@ -11,6 +11,9 @@ import EditarFerragem from "./components/EditarFerragem";
 import Nesting from "./components/Nesting";
 import ConfigMaquina from "./components/ConfigMaquina";
 import CadastroChapas from "./components/CadastroChapas";
+import LotesOcorrencia from "./components/LotesOcorrencia";
+import CadastroMotivos from "./components/CadastroMotivos";
+import RelatorioOcorrencias from "./components/RelatorioOcorrencias";
 import "./Producao.css";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -405,4 +408,4 @@ const EditarPecaProducao = () => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, ConfigMaquina, CadastroChapas };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, ConfigMaquina, CadastroChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias };

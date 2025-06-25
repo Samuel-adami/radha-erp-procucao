@@ -442,6 +442,12 @@ async def gerar_lote_ocorrencia(request: Request):
     pacote = dados.get("pacote")
     pecas = dados.get("pecas", [])
 
+    for p in pecas:
+        if not p.get("motivo_codigo"):
+            return {
+                "erro": f"Insira o motivo na peça {p.get('id')} - {p.get('nome', '')}"
+            }
+
     numero_oc = proximo_oc_numero()
     pasta_saida = os.path.join(
         "saida", f"Lote_{lote}_OC{numero_oc}"
@@ -499,6 +505,12 @@ async def gerar_lote_ocorrencia(request: Request):
                     datetime.now().isoformat(),
                 ),
             )
+            oc_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            for p in pecas:
+                conn.execute(
+                    "INSERT INTO ocorrencias_pecas (oc_id, peca_id, descricao_peca, motivo_id) VALUES (?, ?, ?, ?)",
+                    (oc_id, p.get('id'), p.get('nome', ''), p.get('motivo_codigo')),
+                )
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
@@ -526,3 +538,85 @@ async def excluir_lote_ocorrencia(oc_id: int):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok", "mensagem": "Lote não encontrado"}
+
+
+@app.get("/motivos-ocorrencias")
+async def listar_motivos():
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT codigo, descricao, tipo, setor FROM motivos_ocorrencia ORDER BY codigo"
+            ).fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+@app.post("/motivos-ocorrencias")
+async def salvar_motivo(request: Request):
+    dados = await request.json()
+    codigo = dados.get("codigo")
+    if not codigo:
+        return {"erro": "codigo obrigatorio"}
+    descricao = dados.get("descricao", "")
+    tipo = dados.get("tipo", "")
+    setor = dados.get("setor", "")
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                "INSERT INTO motivos_ocorrencia (codigo, descricao, tipo, setor) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(codigo) DO UPDATE SET descricao=excluded.descricao, tipo=excluded.tipo, setor=excluded.setor",
+                (codigo, descricao, tipo, setor),
+            )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.delete("/motivos-ocorrencias/{codigo}")
+async def deletar_motivo(codigo: str):
+    try:
+        with get_db_connection() as conn:
+            conn.execute("DELETE FROM motivos_ocorrencia WHERE codigo=?", (codigo,))
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.get("/relatorio-ocorrencias")
+async def relatorio_ocorrencias(request: Request):
+    params = request.query_params
+    query = """
+        SELECT o.oc_numero, o.lote, o.pacote, o.criado_em,
+               p.peca_id, p.descricao_peca,
+               m.codigo as motivo_codigo, m.descricao as motivo_descricao, m.tipo, m.setor
+        FROM ocorrencias_pecas p
+        JOIN lotes_ocorrencias o ON o.id = p.oc_id
+        LEFT JOIN motivos_ocorrencia m ON m.codigo = p.motivo_id
+        WHERE 1=1
+    """
+    params_list = []
+    if params.get("data_inicio"):
+        query += " AND o.criado_em >= ?"
+        params_list.append(params.get("data_inicio"))
+    if params.get("data_fim"):
+        query += " AND o.criado_em <= ?"
+        params_list.append(params.get("data_fim"))
+    if params.get("motivo"):
+        query += " AND m.codigo = ?"
+        params_list.append(params.get("motivo"))
+    if params.get("tipo"):
+        query += " AND m.tipo = ?"
+        params_list.append(params.get("tipo"))
+    if params.get("setor"):
+        query += " AND m.setor = ?"
+        params_list.append(params.get("setor"))
+    query += " ORDER BY o.oc_numero, p.peca_id"
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(query, params_list).fetchall()
+            return [dict(row) for row in rows]
+    except Exception as e:
+        return {"erro": str(e)}
