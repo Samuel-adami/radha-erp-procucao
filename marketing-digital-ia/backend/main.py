@@ -17,7 +17,11 @@ app.include_router(publicacao.router, prefix="/nova-publicacao")
 app.include_router(publicos.router, prefix="/publicos")
 app.include_router(conhecimento.router, prefix="/conhecimento")
 app.include_router(auth.router, prefix="/auth")
-app.include_router(usuarios.router, prefix="/usuarios")
+# A rota de usuarios ja define um prefixo, portanto nao precisamos
+# adicionar outro aqui. Mantendo apenas o include simples evita que a
+# rota final fique "/usuarios/usuarios" e resolvemos erros 404 ao
+# acessar via gateway.
+app.include_router(usuarios.router)
 
 
 @app.get("/")
