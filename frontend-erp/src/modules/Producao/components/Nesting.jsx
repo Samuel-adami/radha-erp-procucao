@@ -338,6 +338,7 @@ const Nesting = () => {
                     <option>Por Dentro</option>
                     <option>Por Fora</option>
                     <option>Desbaste</option>
+                    <option>Linha</option>
                   </select>
                 </label>
               </>
