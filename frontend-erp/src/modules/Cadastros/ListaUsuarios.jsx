@@ -23,7 +23,12 @@ const ListaUsuarios = () => {
           <li key={u.id} className="border rounded p-2 flex justify-between items-center">
             <span>{u.username} - {u.cargo}</span>
             <div className="space-x-2">
-              <Link className="text-blue-600 hover:underline" to={`../editar/${u.id}`}>Editar</Link>
+              <Link
+                className="text-blue-600 hover:underline"
+                to={`/cadastros/usuarios/editar/${u.id}`}
+              >
+                Editar
+              </Link>
               <button className="text-red-600 hover:underline" onClick={() => excluir(u.id)}>Excluir</button>
             </div>
           </li>
