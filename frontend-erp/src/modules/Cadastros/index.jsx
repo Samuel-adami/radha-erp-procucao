@@ -9,6 +9,7 @@ import Fornecedores from './Fornecedores';
 import ListaFornecedores from './ListaFornecedores';
 import Usuarios from './Usuarios';
 import ListaUsuarios from './ListaUsuarios';
+import CadastroMenu from './CadastroMenu';
 import './Cadastros.css';
 
 function CadastrosLayout() {
@@ -68,13 +69,27 @@ function Cadastros() {
         <Route index element={<DadosEmpresa />} />
         <Route path="lista" element={<ListaEmpresas />} />
         <Route path="editar/:id" element={<DadosEmpresa />} />
-        <Route path="clientes" element={<Clientes />} />
+        <Route
+          path="clientes"
+          element={<CadastroMenu basePath="clientes" ListaComponente={ListaClientes} />}
+        />
+        <Route path="clientes/novo" element={<Clientes />} />
         <Route path="clientes/lista" element={<ListaClientes />} />
         <Route path="clientes/editar/:id" element={<Clientes />} />
-        <Route path="fornecedores" element={<Fornecedores />} />
+
+        <Route
+          path="fornecedores"
+          element={<CadastroMenu basePath="fornecedores" ListaComponente={ListaFornecedores} />}
+        />
+        <Route path="fornecedores/novo" element={<Fornecedores />} />
         <Route path="fornecedores/lista" element={<ListaFornecedores />} />
         <Route path="fornecedores/editar/:id" element={<Fornecedores />} />
-        <Route path="usuarios" element={<Usuarios />} />
+
+        <Route
+          path="usuarios"
+          element={<CadastroMenu basePath="usuarios" ListaComponente={ListaUsuarios} />}
+        />
+        <Route path="usuarios/novo" element={<Usuarios />} />
         <Route path="usuarios/lista" element={<ListaUsuarios />} />
         <Route path="usuarios/editar/:id" element={<Usuarios />} />
       </Route>
