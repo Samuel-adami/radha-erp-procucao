@@ -28,6 +28,23 @@ def init_db():
         )"""
     )
     conn.commit()
+
+    # Create a default admin user on first run
+    exists = cur.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    if exists == 0:
+        cur.execute(
+            "INSERT INTO users (username, password, email, nome, cargo, permissoes)"
+            " VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                os.getenv("RADHA_ADMIN_USER", "admin"),
+                os.getenv("RADHA_ADMIN_PASS", "admin"),
+                "admin@example.com",
+                "Administrador",
+                "admin",
+                "[\"chat\", \"campanhas\", \"publicacoes\", \"publico\", \"marketing-ia\", \"producao\", \"cadastros\"]",
+            ),
+        )
+        conn.commit()
     conn.close()
 
 
