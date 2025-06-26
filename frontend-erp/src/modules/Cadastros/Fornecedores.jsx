@@ -49,6 +49,9 @@ function Fornecedores() {
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
+        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+          Cancelar
+        </Button>
         <Button type="button" variant="secondary" onClick={() => navigate('lista')}>Listar Fornecedores</Button>
       </div>
     </form>

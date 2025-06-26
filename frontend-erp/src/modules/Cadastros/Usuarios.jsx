@@ -55,6 +55,15 @@ function Usuarios() {
         : prev.permissoes.filter(p => p !== perm)
     }));
   };
+  const toggleGrupo = (grupo, checked) => {
+    const permissoes = PERMISSOES_DISPONIVEIS[grupo];
+    setForm(prev => ({
+      ...prev,
+      permissoes: checked
+        ? Array.from(new Set([...prev.permissoes, ...permissoes]))
+        : prev.permissoes.filter(p => !permissoes.includes(p))
+    }));
+  };
 
   const salvar = async e => {
     e.preventDefault();
@@ -80,29 +89,43 @@ function Usuarios() {
         <label className="block md:col-span-2">
           <span className="text-sm">Permissões</span>
           <div className="border rounded p-2 max-h-40 overflow-y-auto space-y-2">
-            {Object.entries(PERMISSOES_DISPONIVEIS).map(([grupo, permissoes]) => (
-              <fieldset key={grupo} className="border-b last:border-b-0 pb-1">
-                <legend className="font-medium">{grupo}</legend>
-                <div className="flex flex-col pl-2">
-                  {permissoes.map(p => (
-                    <label key={p} className="inline-flex items-center gap-1">
-                      <input
-                        type="checkbox"
-                        value={p}
-                        checked={form.permissoes.includes(p)}
-                        onChange={e => togglePermissao(p, e.target.checked)}
-                      />
-                      <span>{p}</span>
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
+            {Object.entries(PERMISSOES_DISPONIVEIS).map(([grupo, permissoes]) => {
+              const [pai, ...filhos] = permissoes;
+              const todosMarcados = permissoes.every(p => form.permissoes.includes(p));
+              return (
+                <fieldset key={grupo} className="border-b last:border-b-0 pb-1">
+                  <label className="inline-flex items-center gap-1 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={todosMarcados}
+                      onChange={e => toggleGrupo(grupo, e.target.checked)}
+                    />
+                    {grupo}
+                  </label>
+                  <div className="flex flex-col pl-4">
+                    {filhos.map(p => (
+                      <label key={p} className="inline-flex items-center gap-1">
+                        <input
+                          type="checkbox"
+                          value={p}
+                          checked={form.permissoes.includes(p)}
+                          onChange={e => togglePermissao(p, e.target.checked)}
+                        />
+                        <span>{p}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              );
+            })}
           </div>
         </label>
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
+        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+          Cancelar
+        </Button>
         <Button type="button" variant="secondary" onClick={() => navigate('lista')}>Listar Usuários</Button>
       </div>
     </form>

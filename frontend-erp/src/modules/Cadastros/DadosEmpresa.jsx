@@ -1,24 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
 import { fetchComAuth } from '../../utils/fetchComAuth';
-import { useParams, useNavigate } from 'react-router-dom';
-
-function gerarCodigo(nomeFantasia, sequencial) {
-  if (!nomeFantasia) return '';
-  const prefixo = nomeFantasia.trim().substring(0,3);
-  if (!prefixo) return '';
-  const formatado = prefixo[0].toUpperCase() + prefixo.slice(1).toLowerCase();
-  return `${formatado}${String(sequencial).padStart(3,'0')}`;
-}
+import { useNavigate } from 'react-router-dom';
 
 function DadosEmpresa() {
-  const { id } = useParams();
   const navigate = useNavigate();
-  const [sequencial, setSequencial] = useState(1);
   const initialForm = {
     razaoSocial: '',
     nomeFantasia: '',
-    codigo: '',
     cnpj: '',
     inscricaoEstadual: '',
     cep: '',
@@ -34,39 +23,9 @@ function DadosEmpresa() {
   const [form, setForm] = useState(initialForm);
 
   useEffect(() => {
-    const seq = parseInt(localStorage.getItem('empresaCodigoSeq') || '1', 10);
-    setSequencial(seq);
+    const existente = JSON.parse(localStorage.getItem('empresa') || 'null');
+    if (existente) setForm({ ...initialForm, ...existente });
   }, []);
-
-  useEffect(() => {
-    if (id) {
-      fetchComAuth(`/empresa/${id}`).then(dados => {
-        if (dados && dados.empresa) {
-          const e = dados.empresa;
-          setForm({
-            razaoSocial: e.razao_social || '',
-            nomeFantasia: e.nome_fantasia || '',
-            codigo: e.codigo || '',
-            cnpj: e.cnpj || '',
-            inscricaoEstadual: e.inscricao_estadual || '',
-            cep: e.cep || '',
-            rua: e.rua || '',
-            numero: e.numero || '',
-            bairro: e.bairro || '',
-            cidade: e.cidade || '',
-            estado: e.estado || '',
-            telefone1: e.telefone1 || '',
-            telefone2: e.telefone2 || '',
-            logo: null,
-          });
-        }
-      });
-    }
-  }, [id]);
-
-  useEffect(() => {
-    setForm(f => ({ ...f, codigo: gerarCodigo(f.nomeFantasia, sequencial) }));
-  }, [form.nomeFantasia, sequencial]);
 
   const handle = campo => e => {
     const value = campo === 'logo' ? e.target.files[0] : e.target.value;
@@ -95,31 +54,17 @@ function DadosEmpresa() {
 
   const salvar = async (e) => {
     e.preventDefault();
-    // Exemplo de envio ao backend - ajusta conforme API
     const data = new FormData();
-    Object.entries(form).forEach(([k,v]) => {
+    Object.entries(form).forEach(([k, v]) => {
       if (v) data.append(k, v);
     });
     try {
-      const url = id ? `/empresa/${id}` : '/empresa';
-      const method = id ? 'PUT' : 'POST';
-      await fetchComAuth(url, { method, body: data });
-    } catch(err) {
+      await fetchComAuth('/empresa', { method: 'PUT', body: data });
+    } catch (err) {
       console.warn('Falha ao salvar remotamente, usando localStorage', err);
     }
 
-    const lista = JSON.parse(localStorage.getItem('empresas') || '[]');
-    if (id) {
-      const idx = lista.findIndex(e => String(e.id) === String(id));
-      if (idx >= 0) lista[idx] = { ...form, id };
-    } else {
-      const novo = { ...form, id: Date.now() };
-      lista.push(novo);
-      localStorage.setItem('empresaCodigoSeq', String(sequencial + 1));
-      setSequencial(s => s + 1);
-    }
-    localStorage.setItem('empresas', JSON.stringify(lista));
-    if (!id) setForm(f => ({ ...f, ...initialForm }));
+    localStorage.setItem('empresa', JSON.stringify(form));
     alert('Dados salvos');
   };
 
@@ -133,10 +78,6 @@ function DadosEmpresa() {
         <label className="block">
           <span className="text-sm">Nome Fantasia</span>
           <input className="input" value={form.nomeFantasia} onChange={handle('nomeFantasia')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Código</span>
-          <input className="input bg-gray-100" value={form.codigo} readOnly />
         </label>
         <label className="block">
           <span className="text-sm">CNPJ</span>
@@ -185,6 +126,9 @@ function DadosEmpresa() {
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
+        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+          Cancelar
+        </Button>
         <Button type="button" variant="secondary" onClick={() => navigate('lista')}>
           Listar Empresas
         </Button>

@@ -15,6 +15,7 @@ import Producao from "./modules/Producao";
 import Cadastros from "./modules/Cadastros";
 import Login from "./pages/Login";
 import { fetchComAuth } from "./utils/fetchComAuth";
+import { UserContext } from "./UserContext";
 
 // Componente de Layout: A "moldura" do ERP para um usuário logado
 function Layout({ usuario, onLogout }) {
@@ -27,7 +28,8 @@ function Layout({ usuario, onLogout }) {
   return (
     <div className="min-h-screen flex">
       <aside className="bg-blue-900 text-white p-4 flex flex-col w-[20%] min-w-[200px]">
-        <h1 className="text-2xl font-bold mb-6">Radha ERP</h1>
+        <h1 className="text-2xl font-bold">Radha ERP</h1>
+        <p className="text-sm mb-4">Usuário: {usuario?.nome}</p>
         <nav className="flex flex-col space-y-2 flex-grow">
           {possuiPermissao("cadastros") && (
             <Link
@@ -62,7 +64,9 @@ function Layout({ usuario, onLogout }) {
         </button>
       </aside>
       <main className="flex-grow p-4 bg-gray-100">
-        <Outlet />
+        <UserContext.Provider value={usuario}>
+          <Outlet />
+        </UserContext.Provider>
       </main>
     </div>
   );

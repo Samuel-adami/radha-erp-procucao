@@ -1,6 +1,7 @@
 // radha-erp/frontend-erp/src/modules/Producao/index.jsx
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
+import { useUsuario } from '../../UserContext';
 // Importa os componentes renomeados do AppProducao.jsx
 import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, ConfigMaquina, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia } from './AppProducao';
 import CadastroChapas from './components/CadastroChapas';
@@ -16,53 +17,69 @@ function ProducaoLayout() {
   const matchChapas = useMatch({ path: `${resolved.pathname}/chapas`, end: true });
   const matchOcorr = useMatch({ path: `${resolved.pathname}/ocorrencias`, end: false });
   const matchRelatorio = useMatch({ path: `${resolved.pathname}/relatorios/ocorrencias`, end: false });
+  const usuario = useUsuario();
+  const possuiPermissao = p => usuario?.permissoes?.includes(p);
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-blue-700">Módulo: Produção</h2>
       <nav className="flex gap-4 mb-4 border-b pb-2">
-        <Link
-          to="." // Relativo ao path do módulo (Producao)
-          className={`px-3 py-1 rounded ${matchHome ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Lotes Produção
-        </Link>
-        <Link
-          to="apontamento"
-          className={`px-3 py-1 rounded ${matchApontamento ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Apontamento
-        </Link>
-        <Link
-          to="apontamento-volume"
-          className={`px-3 py-1 rounded ${matchVolume ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Apontamento Volume
-        </Link>
-        <Link
-          to="nesting"
-          className={`px-3 py-1 rounded ${matchNesting ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Nesting
-        </Link>
-        <Link
-          to="chapas"
-          className={`px-3 py-1 rounded ${matchChapas ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Chapas
-        </Link>
-        <Link
-          to="ocorrencias"
-          className={`px-3 py-1 rounded ${matchOcorr ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Lotes Ocorrência
-        </Link>
-        <Link
-          to="relatorios/ocorrencias"
-          className={`px-3 py-1 rounded ${matchRelatorio ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Relatórios
-        </Link>
+        {possuiPermissao('producao') && (
+          <Link
+            to="." // Relativo ao path do módulo (Producao)
+            className={`px-3 py-1 rounded ${matchHome ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Lotes Produção
+          </Link>
+        )}
+        {possuiPermissao('producao/apontamento') && (
+          <Link
+            to="apontamento"
+            className={`px-3 py-1 rounded ${matchApontamento ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Apontamento
+          </Link>
+        )}
+        {possuiPermissao('producao/apontamento-volume') && (
+          <Link
+            to="apontamento-volume"
+            className={`px-3 py-1 rounded ${matchVolume ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Apontamento Volume
+          </Link>
+        )}
+        {possuiPermissao('producao/nesting') && (
+          <Link
+            to="nesting"
+            className={`px-3 py-1 rounded ${matchNesting ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Nesting
+          </Link>
+        )}
+        {possuiPermissao('producao/chapas') && (
+          <Link
+            to="chapas"
+            className={`px-3 py-1 rounded ${matchChapas ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Chapas
+          </Link>
+        )}
+        {possuiPermissao('producao/ocorrencias') && (
+          <Link
+            to="ocorrencias"
+            className={`px-3 py-1 rounded ${matchOcorr ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Lotes Ocorrência
+          </Link>
+        )}
+        {possuiPermissao('producao/relatorios/ocorrencias') && (
+          <Link
+            to="relatorios/ocorrencias"
+            className={`px-3 py-1 rounded ${matchRelatorio ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Relatórios
+          </Link>
+        )}
         {/* Adicionar mais links de navegação interna do módulo, se necessário */}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}

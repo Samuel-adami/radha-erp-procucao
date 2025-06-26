@@ -1,6 +1,7 @@
 // radha-erp/frontend-erp/src/modules/MarketingDigitalIA/index.jsx
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
+import { useUsuario } from '../../UserContext';
 import Chat from './pages/Chat';
 import NovaCampanha from './pages/NovaCampanha';
 import NovaPublicacao from './pages/NovaPublicacao';
@@ -14,35 +15,45 @@ function MarketingDigitalIALayout() {
   const matchCampanha = useMatch(`${resolved.pathname}/nova-campanha`);
   const matchPublicacao = useMatch(`${resolved.pathname}/nova-publicacao`);
   const matchPublicos = useMatch(`${resolved.pathname}/publicos-alvo`);
+  const usuario = useUsuario();
+  const possuiPermissao = p => usuario?.permissoes?.includes(p);
 
   return (
     <div className="p-4 bg-white rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-blue-700">Módulo: Marketing Digital IA</h2>
       <nav className="flex gap-4 mb-4 border-b pb-2">
-        <Link
-          to="." // Relativo ao path do módulo (MarketingDigitalIA)
-          className={`px-3 py-1 rounded ${matchChat ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Assistente Sara
-        </Link>
-        <Link
-          to="nova-campanha" // Relativo ao path do módulo
-          className={`px-3 py-1 rounded ${matchCampanha ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Nova Campanha
-        </Link>
-        <Link
-          to="nova-publicacao" // Relativo ao path do módulo
-          className={`px-3 py-1 rounded ${matchPublicacao ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Nova Publicação
-        </Link>
-        <Link
-          to="publicos-alvo" // Relativo ao path do módulo
-          className={`px-3 py-1 rounded ${matchPublicos ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-        >
-          Públicos Alvo
-        </Link>
+        {possuiPermissao('marketing-ia/chat') && (
+          <Link
+            to="." // Relativo ao path do módulo (MarketingDigitalIA)
+            className={`px-3 py-1 rounded ${matchChat ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Assistente Sara
+          </Link>
+        )}
+        {possuiPermissao('marketing-ia/nova-campanha') && (
+          <Link
+            to="nova-campanha" // Relativo ao path do módulo
+            className={`px-3 py-1 rounded ${matchCampanha ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Nova Campanha
+          </Link>
+        )}
+        {possuiPermissao('marketing-ia/nova-publicacao') && (
+          <Link
+            to="nova-publicacao" // Relativo ao path do módulo
+            className={`px-3 py-1 rounded ${matchPublicacao ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Nova Publicação
+          </Link>
+        )}
+        {possuiPermissao('marketing-ia/publicos-alvo') && (
+          <Link
+            to="publicos-alvo" // Relativo ao path do módulo
+            className={`px-3 py-1 rounded ${matchPublicos ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Públicos Alvo
+          </Link>
+        )}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}
     </div>
