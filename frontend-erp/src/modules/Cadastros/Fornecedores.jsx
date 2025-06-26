@@ -7,6 +7,7 @@ function Fornecedores() {
   const { id } = useParams();
   const initialForm = { nome: '', contato: '' };
   const [form, setForm] = useState(initialForm);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -18,10 +19,10 @@ function Fornecedores() {
 
   const handle = campo => e => {
     setForm(prev => ({ ...prev, [campo]: e.target.value }));
+    setDirty(true);
   };
 
-  const salvar = e => {
-    e.preventDefault();
+  const salvar = () => {
     const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]');
     if (id) {
       const idx = lista.findIndex(f => String(f.id) === String(id));
@@ -33,10 +34,30 @@ function Fornecedores() {
     localStorage.setItem('fornecedores', JSON.stringify(lista));
     alert('Fornecedor salvo');
     if (!id) setForm(initialForm);
+    setDirty(false);
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    salvar();
+  };
+
+  const cancelar = () => {
+    setForm(initialForm);
+    setDirty(false);
+  };
+
+  const sair = () => {
+    if (dirty) {
+      if (window.confirm('Deseja salvar as informações adicionadas?')) {
+        salvar();
+      }
+    }
+    navigate('..');
   };
 
   return (
-    <form onSubmit={salvar} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm">Nome</span>
@@ -49,10 +70,10 @@ function Fornecedores() {
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
-        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+        <Button type="button" variant="secondary" onClick={cancelar}>
           Cancelar
         </Button>
-        <Button type="button" variant="secondary" onClick={() => navigate('lista')}>Listar Fornecedores</Button>
+        <Button type="button" variant="secondary" onClick={sair}>Sair</Button>
       </div>
     </form>
   );

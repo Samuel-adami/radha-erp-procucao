@@ -21,6 +21,7 @@ function DadosEmpresa() {
     logo: null,
   };
   const [form, setForm] = useState(initialForm);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     const existente = JSON.parse(localStorage.getItem('empresa') || 'null');
@@ -30,6 +31,7 @@ function DadosEmpresa() {
   const handle = campo => e => {
     const value = campo === 'logo' ? e.target.files[0] : e.target.value;
     setForm(prev => ({ ...prev, [campo]: value }));
+    setDirty(true);
   };
 
   const buscarCEP = async () => {
@@ -52,8 +54,7 @@ function DadosEmpresa() {
     }
   };
 
-  const salvar = async (e) => {
-    e.preventDefault();
+  const salvar = async () => {
     const data = new FormData();
     Object.entries(form).forEach(([k, v]) => {
       if (v) data.append(k, v);
@@ -66,10 +67,30 @@ function DadosEmpresa() {
 
     localStorage.setItem('empresa', JSON.stringify(form));
     alert('Dados salvos');
+    setDirty(false);
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    salvar();
+  };
+
+  const cancelar = () => {
+    setForm(initialForm);
+    setDirty(false);
+  };
+
+  const sair = async () => {
+    if (dirty) {
+      if (window.confirm('Deseja salvar as informações adicionadas?')) {
+        await salvar();
+      }
+    }
+    navigate('..');
   };
 
   return (
-    <form onSubmit={salvar} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm">Razão Social</span>
@@ -126,11 +147,11 @@ function DadosEmpresa() {
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
-        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+        <Button type="button" variant="secondary" onClick={cancelar}>
           Cancelar
         </Button>
-        <Button type="button" variant="secondary" onClick={() => navigate('lista')}>
-          Listar Empresas
+        <Button type="button" variant="secondary" onClick={sair}>
+          Sair
         </Button>
       </div>
     </form>
