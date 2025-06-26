@@ -29,6 +29,12 @@ RADHA_ERP_ROOT=/opt/radha/radha-erp ./update_github.sh
 See `rodar_ambientes.txt` for the commands used to launch each backend and the frontend. You can adapt these into a systemd unit like the example `radha-erp.service` provided in the repository.
 The `start_services.sh` script offers a simple way to run every component locally.
 
+### Default credentials
+When the application is started for the first time and the user database is empty,
+it will create a default administrator account. You can override the username and
+password using the `RADHA_ADMIN_USER` and `RADHA_ADMIN_PASS` environment
+variables. The default values are `admin` / `admin`.
+
 
 ## Troubleshooting
 
