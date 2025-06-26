@@ -35,6 +35,7 @@ function Usuarios() {
   const { id } = useParams();
   const initialForm = { username: '', password: '', email: '', nome: '', cargo: '', permissoes: [] };
   const [form, setForm] = useState(initialForm);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -46,7 +47,10 @@ function Usuarios() {
         .catch(() => {});
     }
   }, [id]);
-  const handle = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
+  const handle = campo => e => {
+    setForm(prev => ({ ...prev, [campo]: e.target.value }));
+    setDirty(true);
+  };
   const togglePermissao = (perm, checked) => {
     setForm(prev => ({
       ...prev,
@@ -54,6 +58,7 @@ function Usuarios() {
         ? [...prev.permissoes, perm]
         : prev.permissoes.filter(p => p !== perm)
     }));
+    setDirty(true);
   };
   const toggleGrupo = (grupo, checked) => {
     const permissoes = PERMISSOES_DISPONIVEIS[grupo];
@@ -63,10 +68,10 @@ function Usuarios() {
         ? Array.from(new Set([...prev.permissoes, ...permissoes]))
         : prev.permissoes.filter(p => !permissoes.includes(p))
     }));
+    setDirty(true);
   };
 
-  const salvar = async e => {
-    e.preventDefault();
+  const salvar = async () => {
     const url = id ? `/usuarios/${id}` : '/usuarios';
     const metodo = id ? 'PUT' : 'POST';
     await fetchComAuth(url, { method: metodo, body: JSON.stringify(form) });
@@ -76,10 +81,30 @@ function Usuarios() {
       setForm(initialForm);
     }
     alert('Usuário salvo');
+    setDirty(false);
+  };
+
+  const handleSubmit = e => {
+    e.preventDefault();
+    salvar();
+  };
+
+  const cancelar = () => {
+    setForm(initialForm);
+    setDirty(false);
+  };
+
+  const sair = async () => {
+    if (dirty) {
+      if (window.confirm('Deseja salvar as informações adicionadas?')) {
+        await salvar();
+      }
+    }
+    navigate('..');
   };
 
   return (
-    <form onSubmit={salvar} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block"><span className="text-sm">Usuário</span><input className="input" value={form.username} onChange={handle('username')} /></label>
         <label className="block"><span className="text-sm">Senha</span><input type="text" className="input" value={form.password} onChange={handle('password')} /></label>
@@ -123,10 +148,10 @@ function Usuarios() {
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
-        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+        <Button type="button" variant="secondary" onClick={cancelar}>
           Cancelar
         </Button>
-        <Button type="button" variant="secondary" onClick={() => navigate('lista')}>Listar Usuários</Button>
+        <Button type="button" variant="secondary" onClick={sair}>Sair</Button>
       </div>
     </form>
   );

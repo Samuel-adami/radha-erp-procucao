@@ -64,6 +64,7 @@ function Clientes() {
     email: '',
   };
   const [form, setForm] = useState(initialForm);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     const seq = parseInt(localStorage.getItem('clienteCodigoSeq') || '1', 10);
@@ -96,6 +97,7 @@ function Clientes() {
       value = formatCEP(value);
     }
     setForm(prev => ({ ...prev, [campo]: value }));
+    setDirty(true);
   };
 
   const buscarCEP = async () => {
@@ -118,8 +120,7 @@ function Clientes() {
     }
   };
 
-  const salvar = e => {
-    e.preventDefault();
+  const salvar = () => {
     const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
     if (id) {
       const idx = lista.findIndex(c => String(c.id) === String(id));
@@ -133,14 +134,34 @@ function Clientes() {
     localStorage.setItem('clientes', JSON.stringify(lista));
     alert('Cliente salvo');
     if (!id) setForm(initialForm);
+    setDirty(false);
   };
 
   const estados = [
     'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
   ];
 
+  const handleSubmit = e => {
+    e.preventDefault();
+    salvar();
+  };
+
+  const cancelar = () => {
+    setForm(initialForm);
+    setDirty(false);
+  };
+
+  const sair = () => {
+    if (dirty) {
+      if (window.confirm('Deseja salvar as informações adicionadas?')) {
+        salvar();
+      }
+    }
+    navigate('..');
+  };
+
   return (
-    <form onSubmit={salvar} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm">Procedência</span>
@@ -264,11 +285,11 @@ function Clientes() {
       </div>
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
-        <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+        <Button type="button" variant="secondary" onClick={cancelar}>
           Cancelar
         </Button>
-        <Button type="button" variant="secondary" onClick={() => navigate('lista')}>
-          Listar Clientes
+        <Button type="button" variant="secondary" onClick={sair}>
+          Sair
         </Button>
       </div>
     </form>
