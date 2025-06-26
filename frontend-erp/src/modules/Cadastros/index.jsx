@@ -5,6 +5,7 @@ import ListaEmpresas from './ListaEmpresas';
 import Clientes from './Clientes';
 import ListaClientes from './ListaClientes';
 import Fornecedores from './Fornecedores';
+import ListaFornecedores from './ListaFornecedores';
 import Usuarios from './Usuarios';
 import ListaUsuarios from './ListaUsuarios';
 import './Cadastros.css';
