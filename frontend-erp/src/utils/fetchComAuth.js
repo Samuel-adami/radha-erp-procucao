@@ -23,8 +23,8 @@ export async function fetchComAuth(url, options = {}) {
           finalUrl = `${GATEWAY_URL}/marketing-ia${url}`; // Rotas do Marketing Digital IA via Gateway
         } else if (url.startsWith('/importar-xml') || url.startsWith('/gerar-lote-final') || url.startsWith('/carregar-lote-final') || url.startsWith('/executar-nesting') || url.startsWith('/listar-lotes') || url.startsWith('/excluir-lote') || url.startsWith('/config-maquina') || url.startsWith('/config-ferramentas') || url.startsWith('/config-cortes') || url.startsWith('/config-layers') || url.startsWith('/chapas') || url.startsWith('/coletar-layers') || url.startsWith('/lotes-ocorrencias') || url.startsWith('/motivos-ocorrencias') || url.startsWith('/relatorio-ocorrencias') || url.startsWith('/nestings') || url.startsWith('/remover-nesting')) {
             finalUrl = `${GATEWAY_URL}/producao${url}`; // Rotas de Produção via Gateway
-        } else if (url.startsWith('/auth')) {
-          finalUrl = `${GATEWAY_URL}${url}`; // Endpoints de autenticação direto no Gateway
+        } else if (url.startsWith('/auth') || url.startsWith('/usuarios') || url.startsWith('/empresa')) {
+          finalUrl = `${GATEWAY_URL}${url}`; // Endpoints atendidos diretamente pelo Gateway
       }
   } else {
     // Se a URL já for absoluta e não começar com a porta do gateway, precisamos ajustá-la
