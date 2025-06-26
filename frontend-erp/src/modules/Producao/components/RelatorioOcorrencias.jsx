@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
 const RelatorioOcorrencias = () => {
   const [filtro, setFiltro] = useState({ data_inicio: "", data_fim: "", motivo: "", tipo: "", setor: "" });
@@ -19,8 +21,25 @@ const RelatorioOcorrencias = () => {
     setDados(res || []);
   };
 
+  const imprimir = () => {
+    window.print();
+  };
+
+  const baixarPDF = () => {
+    const element = document.getElementById('relatorio-ocorrencias');
+    if (!element) return;
+    html2canvas(element).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('relatorio_ocorrencias.pdf');
+    });
+  };
+
   return (
-    <div className="p-6">
+    <div className="p-6" id="relatorio-ocorrencias">
       <h2 className="text-xl font-semibold mb-4">Relatório de Ocorrências</h2>
       <div className="flex flex-wrap gap-2 mb-4 text-sm items-end">
         <div>
@@ -53,6 +72,8 @@ const RelatorioOcorrencias = () => {
           <input className="border p-1" value={filtro.setor} onChange={(e) => setFiltro({ ...filtro, setor: e.target.value })} />
         </div>
         <button className="bg-blue-600 text-white px-2 h-8" onClick={consultar}>Filtrar</button>
+        <button className="bg-green-600 text-white px-2 h-8" onClick={imprimir}>Imprimir</button>
+        <button className="bg-green-600 text-white px-2 h-8" onClick={baixarPDF}>Baixar PDF</button>
       </div>
       <table className="w-full text-sm">
         <thead>
