@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Button } from '../Producao/components/ui/button';
 import { Link } from 'react-router-dom';
 
-function CadastroMenu({ basePath, ListaComponente }) {
+function CadastroMenu({ ListaComponente }) {
   const [mostrarLista, setMostrarLista] = useState(false);
 
   return (
     <div className="space-y-2">
       <Button asChild>
-        <Link to={`${basePath}/novo`}>Novo Cadastro</Link>
+        <Link to="novo">Novo Cadastro</Link>
       </Button>
       <Button
         type="button"
