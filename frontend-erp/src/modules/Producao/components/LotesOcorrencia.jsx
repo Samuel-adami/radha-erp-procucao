@@ -92,19 +92,16 @@ const LotesOcorrencia = () => {
     const pacoteObj = pacotesDisponiveis[parseInt(pacoteSel)];
     if (!pacoteObj) return;
     const copia = JSON.parse(JSON.stringify(pacoteObj));
-    let nextId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
     copia.pecas = (copia.pecas || []).map((p) => {
-      const novoId = nextId++;
       const opsEspelhadas = espelharOperacoesY(p.operacoes || [], p.largura);
       if (p.operacoes) {
         localStorage.setItem(
-          "op_producao_" + novoId,
+          "op_producao_" + p.id,
           JSON.stringify(opsEspelhadas)
         );
       }
-      return { ...p, id: novoId, operacoes: opsEspelhadas };
+      return { ...p, operacoes: opsEspelhadas };
     });
-    localStorage.setItem("globalPecaIdProducao", nextId);
     const id = Date.now();
     const nomeBase = loteSel.split(/[/\\]/).pop();
     const pacoteNome = pacoteObj.nome_pacote || `Pacote ${parseInt(pacoteSel) + 1}`;

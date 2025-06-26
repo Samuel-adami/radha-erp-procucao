@@ -578,6 +578,10 @@ async def gerar_lote_ocorrencia(request: Request):
     try:
         with get_db_connection() as conn:
             conn.execute(
+                "INSERT OR IGNORE INTO lotes (pasta, criado_em) VALUES (?, ?)",
+                (str(pasta_saida), datetime.now().isoformat()),
+            )
+            conn.execute(
                 "INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, pasta, criado_em) VALUES (?, ?, ?, ?, ?)",
                 (
                     lote,

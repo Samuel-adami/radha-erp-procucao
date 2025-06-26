@@ -38,8 +38,8 @@ const PacoteOcorrencia = () => {
     localStorage.setItem("lotesOcorrenciaLocal", JSON.stringify(dados));
   };
 
-  const excluirLoteLocal = () => {
-    if (!window.confirm("Excluir este lote local?")) return;
+  const excluirLoteLocal = (perguntar = true) => {
+    if (perguntar && !window.confirm("Excluir este lote local?")) return;
     const lotes = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
     const novos = lotes.filter((l) => l.id !== parseInt(id));
     salvarLotesLocais(novos);
@@ -48,15 +48,27 @@ const PacoteOcorrencia = () => {
 
   const gerarOcorrencia = async () => {
     if (!loteLocal) return;
+    let nextId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
     const pecas = pecasPacote
       .filter((p) => selecionadas[p.id])
       .map((p) => {
         const opsOc = localStorage.getItem("ocedit_op_" + p.id);
-        const ops = opsOc ? JSON.parse(opsOc) : JSON.parse(localStorage.getItem("op_producao_" + p.id) || "[]");
+        const ops = opsOc
+          ? JSON.parse(opsOc)
+          : JSON.parse(localStorage.getItem("op_producao_" + p.id) || "[]");
         const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
         const medidas = dadosEdit ? JSON.parse(dadosEdit) : {};
-        return { ...p, ...medidas, motivo_codigo: motivosPeca[p.id], operacoes: ops };
+        const novoId = nextId++;
+        localStorage.setItem("op_producao_" + novoId, JSON.stringify(ops));
+        return {
+          ...p,
+          ...medidas,
+          motivo_codigo: motivosPeca[p.id],
+          operacoes: ops,
+          id: novoId,
+        };
       });
+    localStorage.setItem("globalPecaIdProducao", nextId);
     if (pecas.length === 0) {
       alert("Selecione ao menos uma peça");
       return;
@@ -70,11 +82,20 @@ const PacoteOcorrencia = () => {
       return;
     }
     alert(`OC ${String(resp.oc_numero).padStart(8, "0")} gerada`);
+    const nomeLoteFinal = `Lote_${loteLocal.lote}_OC${resp.oc_numero}`;
+    const lotesProd = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+    lotesProd.push({
+      nome: nomeLoteFinal,
+      pacotes: [
+        { nome_pacote: loteLocal.pacote, pecas },
+      ],
+    });
+    localStorage.setItem("lotesProducao", JSON.stringify(lotesProd));
     pecas.forEach((p) => {
       localStorage.removeItem("ocedit_op_" + p.id);
       localStorage.removeItem("ocedit_dados_" + p.id);
     });
-    excluirLoteLocal();
+    excluirLoteLocal(false);
   };
 
   if (!loteLocal) {
