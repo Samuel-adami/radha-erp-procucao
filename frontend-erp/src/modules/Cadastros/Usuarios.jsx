@@ -34,9 +34,13 @@ function Usuarios() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ username: '', password: '', email: '', nome: '', cargo: '', permissoes: [] });
   const handle = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
-  const handlePermissoes = e => {
-    const selecionados = Array.from(e.target.selectedOptions).map(o => o.value);
-    setForm(prev => ({ ...prev, permissoes: selecionados }));
+  const togglePermissao = (perm, checked) => {
+    setForm(prev => ({
+      ...prev,
+      permissoes: checked
+        ? [...prev.permissoes, perm]
+        : prev.permissoes.filter(p => p !== perm)
+    }));
   };
 
   const salvar = async e => {
@@ -56,15 +60,26 @@ function Usuarios() {
         <label className="block"><span className="text-sm">Cargo</span><input className="input" value={form.cargo} onChange={handle('cargo')} /></label>
         <label className="block md:col-span-2">
           <span className="text-sm">Permissões</span>
-          <select multiple className="input" value={form.permissoes} onChange={handlePermissoes}>
+          <div className="border rounded p-2 max-h-40 overflow-y-auto space-y-2">
             {Object.entries(PERMISSOES_DISPONIVEIS).map(([grupo, permissoes]) => (
-              <optgroup key={grupo} label={grupo}>
-                {permissoes.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </optgroup>
+              <fieldset key={grupo} className="border-b last:border-b-0 pb-1">
+                <legend className="font-medium">{grupo}</legend>
+                <div className="flex flex-col pl-2">
+                  {permissoes.map(p => (
+                    <label key={p} className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        value={p}
+                        checked={form.permissoes.includes(p)}
+                        onChange={e => togglePermissao(p, e.target.checked)}
+                      />
+                      <span>{p}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             ))}
-          </select>
+          </div>
         </label>
       </div>
       <div className="flex gap-2">
