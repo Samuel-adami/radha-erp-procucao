@@ -115,11 +115,76 @@ def processar_dxf_producao(caminho_dxf, dimensoes_xml, is_porta=False):
                 y_final = larg_peca - y_rel
 
                 operacoes.append({
-                    "tipo": "Furo", "x": round(x_rel, 2), "y": round(y_final, 2),
-                    "diametro": diametro_op, "profundidade": profundidade_op, 
-                    "face": "Face (F0)" 
+                    "tipo": "Furo",
+                    "x": round(x_rel, 2),
+                    "y": round(y_final, 2),
+                    "diametro": diametro_op,
+                    "profundidade": profundidade_op,
+                    "face": "Face (F0)"
                 })
-            except: pass
+            except Exception:
+                pass
+
+        match_usinar = re.search(r"USINAR_([\d\.\-]+)_([\w\-]+)", layer_nome)
+        if match_usinar:
+            try:
+                profundidade = float(match_usinar.group(1).replace('-', '.'))
+                estrategia = match_usinar.group(2)
+                entity_type = entidade.dxftype()
+
+                if entity_type == 'CIRCLE':
+                    raio = float(entidade.dxf.radius)
+                    diametro = raio * 2
+                    abs_center = entidade.dxf.center
+                    x_abs = round(abs_center.x, 2)
+                    y_abs = round(abs_center.y, 2)
+                    x_rel = comp_peca + x_abs if x_abs < 0 else x_abs
+                    y_rel = larg_peca + y_abs if y_abs < 0 else y_abs
+                    y_final = larg_peca - y_rel
+                    operacoes.append({
+                        "tipo": "Círculo",
+                        "x": round(x_rel, 2),
+                        "y": round(y_final, 2),
+                        "diametro": round(diametro, 2),
+                        "profundidade": profundidade,
+                        "estrategia": estrategia,
+                        "face": "Face (F0)"
+                    })
+                else:
+                    points = []
+                    if entity_type == 'LINE':
+                        points = [entidade.dxf.start, entidade.dxf.end]
+                    elif entity_type in ['LWPOLYLINE', 'POLYLINE']:
+                        points = [v.dxf.location for v in entidade.vertices] if entity_type == 'POLYLINE' else list(entidade.get_points('xy'))
+
+                    if not points:
+                        continue
+
+                    bbox = BoundingBox(points)
+                    min_x, min_y, _ = bbox.extmin
+                    max_x, max_y, _ = bbox.extmax
+
+                    rect_x = min_x
+                    rect_y = min_y
+                    rect_comprimento = max_x - min_x
+                    rect_largura = max_y - min_y
+
+                    x_rel = comp_peca + rect_x if rect_x < 0 else rect_x
+                    y_rel = larg_peca + rect_y if rect_y < 0 else rect_y
+                    y_final = larg_peca - (y_rel + rect_largura)
+
+                    operacoes.append({
+                        "tipo": "Retângulo",
+                        "x": round(x_rel, 2),
+                        "y": round(y_final, 2),
+                        "comprimento": round(rect_comprimento, 2),
+                        "largura": round(rect_largura, 2),
+                        "profundidade": profundidade,
+                        "estrategia": estrategia,
+                        "face": "Face (F0)"
+                    })
+            except Exception:
+                pass
 
     return operacoes
 
