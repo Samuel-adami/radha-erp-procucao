@@ -50,7 +50,9 @@ def decodificar_token(token: str) -> Optional[dict]:
 
 def listar_usuarios() -> List[dict]:
     conn = get_db_connection()
-    rows = conn.execute("SELECT id, username, email, nome, cargo, permissoes FROM users ORDER BY id").fetchall()
+    rows = conn.execute(
+        "SELECT id, username, password, email, nome, cargo, permissoes FROM users ORDER BY id"
+    ).fetchall()
     conn.close()
     return [_row_to_user(r) for r in rows]
 
