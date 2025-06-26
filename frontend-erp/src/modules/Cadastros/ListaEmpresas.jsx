@@ -27,7 +27,12 @@ const ListaEmpresas = () => {
           <li key={e.id} className="flex justify-between items-center border rounded p-2">
             <span>{e.codigo} - {e.nomeFantasia || e.nome_fantasia}</span>
             <div className="space-x-2">
-              <Link className="text-blue-600 hover:underline" to={`../editar/${e.id}`}>Editar</Link>
+              <Link
+                className="text-blue-600 hover:underline"
+                to={`/cadastros/editar/${e.id}`}
+              >
+                Editar
+              </Link>
               <button className="text-red-600 hover:underline" onClick={() => excluir(e.id)}>Excluir</button>
             </div>
           </li>
