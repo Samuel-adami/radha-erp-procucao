@@ -1,7 +1,11 @@
 import sqlite3
+import os
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent / "gateway.db"
+# Allow custom data directory via RADHA_DATA_DIR
+DATA_DIR = Path(os.environ.get("RADHA_DATA_DIR", Path(__file__).resolve().parent))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "gateway.db"
 
 
 def get_db_connection():
