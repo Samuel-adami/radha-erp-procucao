@@ -409,13 +409,25 @@ def parse_dxt_producao(root, dxt_path):
             material_node = item_data.get("Material")
             material = material_node if material_node is not None else "Desconhecido"
 
+            id_raw = item_data.get("Program1") or Path(dxf_da_peca).stem
+            try:
+                peca_id = int(str(id_raw).lstrip("0") or "0")
+            except (ValueError, TypeError):
+                peca_id = None
+
             pecas_importadas.append({
-                "nome": descricao_item, "codigo_peca": Path(dxf_da_peca).stem,
-                "comprimento": comprimento, "largura": largura, "espessura": espessura,
-                "material": material, "cliente": nome_do_cliente,
-                "ambiente": nome_do_projeto, "observacoes": item_data.get("Comment", ""),
+                "id": peca_id,
+                "nome": descricao_item,
+                "codigo_peca": Path(dxf_da_peca).stem,
+                "comprimento": comprimento,
+                "largura": largura,
+                "espessura": espessura,
+                "material": material,
+                "cliente": nome_do_cliente,
+                "ambiente": nome_do_projeto,
+                "observacoes": item_data.get("Comment", ""),
                 "orientacao": "horizontal" if comprimento > largura else "vertical",
-                "operacoes": operacoes_dxf + operacoes_bpp
+                "operacoes": operacoes_dxf + operacoes_bpp,
             })
         except Exception as e:
             print(f"⚠️ Erro inesperado ao processar '{item_data.get('PartName', '')}': {e}.")
