@@ -36,13 +36,23 @@ const LotesOcorrencia = () => {
   useEffect(() => {
     fetchComAuth("/lotes-ocorrencias")
       .then((d) => {
+        let lista = [];
         if (Array.isArray(d)) {
-          setLotes(d);
+          lista = d;
         } else if (d && Array.isArray(d.lotes)) {
-          setLotes(d.lotes);
-        } else {
-          setLotes([]);
+          lista = d.lotes;
         }
+        const lotesProd = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+        const ocNums = new Set(
+          lotesProd
+            .map((lp) => {
+              const m = String(lp.nome || "").match(/OC(\d+)/);
+              return m ? parseInt(m[1]) : null;
+            })
+            .filter((n) => n !== null)
+        );
+        lista = lista.filter((l) => !ocNums.has(parseInt(l.oc_numero)));
+        setLotes(lista);
       })
       .catch(() => setLotes([]));
     fetchComAuth("/listar-lotes")
