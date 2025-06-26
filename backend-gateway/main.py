@@ -207,6 +207,12 @@ async def validate_token(request: Request):
 # Cadastros - Usuarios
 # -------------------------
 
+@app.api_route("/usuarios", methods=["GET", "POST", "PUT", "DELETE"])
+async def usuarios_proxy_root(request: Request):
+    """Repasse para o backend de usuarios na raiz do endpoint."""
+    return await usuarios_proxy("", request)
+
+
 @app.api_route("/usuarios/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def usuarios_proxy(path: str = "", request: Request = None):
     async with httpx.AsyncClient() as client:
