@@ -34,7 +34,17 @@ const LotesOcorrencia = () => {
   const location = useLocation();
 
   useEffect(() => {
-    fetchComAuth("/lotes-ocorrencias").then(setLotes).catch(() => {});
+    fetchComAuth("/lotes-ocorrencias")
+      .then((d) => {
+        if (Array.isArray(d)) {
+          setLotes(d);
+        } else if (d && Array.isArray(d.lotes)) {
+          setLotes(d.lotes);
+        } else {
+          setLotes([]);
+        }
+      })
+      .catch(() => setLotes([]));
     fetchComAuth("/listar-lotes")
       .then((d) => {
         const lista = (d?.lotes || []).map((p) => ({
