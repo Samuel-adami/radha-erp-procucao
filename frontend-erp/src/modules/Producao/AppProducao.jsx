@@ -165,7 +165,7 @@ const EditarPecaProducao = () => {
   const [dadosPeca, setDadosPeca] = useState(null);
   const [operacoes, setOperacoes] = useState([]);
   const [operacao, setOperacao] = useState("Retângulo");
-  const [form, setForm] = useState({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C", face: "Face (F0)" });
+  const [form, setForm] = useState({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C1", face: "Face (F0)" });
   const [novoComprimento, setNovoComprimento] = useState("");
   const [novaLargura, setNovaLargura] = useState("");
 
@@ -224,7 +224,7 @@ const EditarPecaProducao = () => {
       const ajuste = 25;
       let painelLargura;
 
-      if (pos === 'C') {
+      if (pos.startsWith('C')) {
         novaLargura -= ajuste;
         painelLargura = originalComprimento;
       } else {
@@ -235,13 +235,16 @@ const EditarPecaProducao = () => {
       operacoesAtuais = operacoes.map(op => {
         let opAjustada = { ...op };
         if (pos.startsWith('L') && op.x > originalComprimento / 2) { opAjustada.x -= ajuste; }
-        if (pos === 'C' && op.y > originalLargura / 2) { opAjustada.y -= ajuste; }
+        if (pos.startsWith('C') && op.y > originalLargura / 2) { opAjustada.y -= ajuste; }
         return opAjustada;
       });
 
-      if (pos === "C") {
+      if (pos === "C1") {
         operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         operacoesAtuais.push({ tipo: "Linha", x: 0, y: 0, largura: 1, comprimento: originalComprimento, profundidade: 18.2, estrategia: "Linha" });
+      } else if (pos === "C2") {
+        operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        operacoesAtuais.push({ tipo: "Linha", x: 0, y: originalLargura - 1, largura: 1, comprimento: originalComprimento, profundidade: 18.2, estrategia: "Linha" });
       } else {
         let x_rect1 = 0;
         let x_line1 = 0;
@@ -293,8 +296,13 @@ const EditarPecaProducao = () => {
       setDadosPeca(prev => ({ ...prev, comprimento: novoComprimento, largura: novaLargura }));
 
     } else if (operacao === "Corte 45 graus") {
-        if (pos === "L") { operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: dadosPeca.largura, comprimento: 2, profundidade: 18.2, estrategia: "Por Dentro" }); }
-        else { operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: 2, comprimento: dadosPeca.comprimento, profundidade: 18.2, estrategia: "Por Dentro" }); }
+        if (pos.startsWith("L")) {
+          const x = pos === "L3" ? dadosPeca.comprimento - 1 : 0;
+          operacoesAtuais.push({ tipo: "Linha", x, y: 0, largura: dadosPeca.largura, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+        } else {
+          const y = pos === "C2" ? dadosPeca.largura - 1 : 0;
+          operacoesAtuais.push({ tipo: "Linha", x: 0, y, largura: 1, comprimento: dadosPeca.comprimento, profundidade: 18.2, estrategia: "Linha" });
+        }
     } else {
       operacoesAtuais.push({ ...form, tipo: operacao });
     }
@@ -302,7 +310,7 @@ const EditarPecaProducao = () => {
     setOperacoes(operacoesAtuais);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(operacoesAtuais));
-    setForm({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C", face: "Face (F0)" });
+    setForm({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C1", face: "Face (F0)" });
   };
 
   const excluirTodas = () => {
@@ -381,7 +389,8 @@ const EditarPecaProducao = () => {
       return (
         <label className="block mt-2">Extremidade:
           <select className="input" value={form.posicao} onChange={e => setForm({ ...form, posicao: e.target.value })}>
-            <option value="C">Comprimento (C)</option>
+            <option value="C1">Comprimento (C1)</option>
+            <option value="C2">Comprimento (C2)</option>
             <option value="L1">Largura (L1)</option>
             <option value="L3">Largura (L3)</option>
           </select></label>
@@ -478,7 +487,7 @@ const EditarPecaProducao = () => {
                 <option>Por Dentro</option>
                 <option>Por Fora</option>
                 <option>Desbaste</option>
-                {operacao === "Linha" && <option>Linha</option>}
+                <option>Linha</option>
               </select></label>
           ))
         }
