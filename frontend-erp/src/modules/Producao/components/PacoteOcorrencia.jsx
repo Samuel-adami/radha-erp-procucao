@@ -82,7 +82,7 @@ const PacoteOcorrencia = () => {
       return;
     }
     alert(`OC ${String(resp.oc_numero).padStart(8, "0")} gerada`);
-    const nomeLoteFinal = `Lote_${loteLocal.lote}_OC${resp.oc_numero}`;
+    const nomeLoteFinal = `${loteLocal.lote}_OC${resp.oc_numero}`;
     const lotesProd = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
     lotesProd.push({
       nome: nomeLoteFinal,
