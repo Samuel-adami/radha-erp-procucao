@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
 const RelatorioOcorrencias = () => {
