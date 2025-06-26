@@ -91,23 +91,26 @@ const LotesOcorrencia = () => {
     }
     const pacoteObj = pacotesDisponiveis[parseInt(pacoteSel)];
     if (!pacoteObj) return;
+    let nextId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
     const copia = JSON.parse(JSON.stringify(pacoteObj));
     copia.pecas = (copia.pecas || []).map((p) => {
       const opsEspelhadas = espelharOperacoesY(p.operacoes || [], p.largura);
+      const id = p.id !== undefined ? p.id : nextId++;
       if (p.operacoes) {
         localStorage.setItem(
-          "op_producao_" + p.id,
+          "op_producao_" + id,
           JSON.stringify(opsEspelhadas)
         );
       }
-      return { ...p, operacoes: opsEspelhadas };
+      return { ...p, operacoes: opsEspelhadas, id };
     });
-    const id = Date.now();
+    localStorage.setItem("globalPecaIdProducao", nextId);
+    const loteId = Date.now();
     const nomeBase = loteSel.split(/[/\\]/).pop();
     const pacoteNome = pacoteObj.nome_pacote || `Pacote ${parseInt(pacoteSel) + 1}`;
-    const novo = { id, lote: nomeBase, pacote: pacoteNome, pacoteData: copia };
+    const novo = { id: loteId, lote: nomeBase, pacote: pacoteNome, pacoteData: copia };
     salvarLotesLocais([...lotesLocais, novo]);
-    navigate(`pacote/${id}`);
+    navigate(`pacote/${loteId}`);
   };
 
   const editarLoteLocal = (id) => {
