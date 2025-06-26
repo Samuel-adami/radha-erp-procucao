@@ -59,8 +59,10 @@ function Cadastros() {
         <Route path="editar/:id" element={<DadosEmpresa />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="clientes/lista" element={<ListaClientes />} />
+        <Route path="clientes/editar/:id" element={<Clientes />} />
         <Route path="fornecedores" element={<Fornecedores />} />
         <Route path="fornecedores/lista" element={<ListaFornecedores />} />
+        <Route path="fornecedores/editar/:id" element={<Fornecedores />} />
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="usuarios/lista" element={<ListaUsuarios />} />
       </Route>

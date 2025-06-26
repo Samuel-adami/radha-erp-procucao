@@ -15,7 +15,7 @@ function DadosEmpresa() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [sequencial, setSequencial] = useState(1);
-  const [form, setForm] = useState({
+  const initialForm = {
     razaoSocial: '',
     nomeFantasia: '',
     codigo: '',
@@ -30,7 +30,8 @@ function DadosEmpresa() {
     telefone1: '',
     telefone2: '',
     logo: null,
-  });
+  };
+  const [form, setForm] = useState(initialForm);
 
   useEffect(() => {
     const seq = parseInt(localStorage.getItem('empresaCodigoSeq') || '1', 10);
@@ -103,15 +104,23 @@ function DadosEmpresa() {
       const url = id ? `/empresa/${id}` : '/empresa';
       const method = id ? 'PUT' : 'POST';
       await fetchComAuth(url, { method, body: data });
-      if (!id) {
-        localStorage.setItem('empresaCodigoSeq', String(sequencial + 1));
-        setSequencial(s => s+1);
-        setForm(f => ({ ...f, razaoSocial:'', nomeFantasia:'', codigo:'', cnpj:'', inscricaoEstadual:'', cep:'', rua:'', numero:'', bairro:'', cidade:'', estado:'', telefone1:'', telefone2:'', logo:null }));
-      }
-      alert('Dados salvos');
     } catch(err) {
-      alert('Falha ao salvar');
+      console.warn('Falha ao salvar remotamente, usando localStorage', err);
     }
+
+    const lista = JSON.parse(localStorage.getItem('empresas') || '[]');
+    if (id) {
+      const idx = lista.findIndex(e => String(e.id) === String(id));
+      if (idx >= 0) lista[idx] = { ...form, id };
+    } else {
+      const novo = { ...form, id: Date.now() };
+      lista.push(novo);
+      localStorage.setItem('empresaCodigoSeq', String(sequencial + 1));
+      setSequencial(s => s + 1);
+    }
+    localStorage.setItem('empresas', JSON.stringify(lista));
+    if (!id) setForm(f => ({ ...f, ...initialForm }));
+    alert('Dados salvos');
   };
 
   return (

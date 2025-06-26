@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function gerarCodigo(nome, seq) {
   if (!nome) return '';
@@ -38,8 +38,9 @@ function formatCEP(valor) {
 
 function Clientes() {
   const navigate = useNavigate();
+  const { id } = useParams();
   const [sequencial, setSequencial] = useState(1);
-  const [form, setForm] = useState({
+  const initialForm = {
     procedencia: '',
     estadoImovel: '',
     previsaoFechamento: '',
@@ -61,7 +62,8 @@ function Clientes() {
     complemento: '',
     bairro: '',
     email: '',
-  });
+  };
+  const [form, setForm] = useState(initialForm);
 
   useEffect(() => {
     const seq = parseInt(localStorage.getItem('clienteCodigoSeq') || '1', 10);
@@ -69,8 +71,20 @@ function Clientes() {
   }, []);
 
   useEffect(() => {
-    setForm(f => ({ ...f, codigo: gerarCodigo(f.nome, sequencial) }));
-  }, [form.nome, sequencial]);
+    if (id) {
+      const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
+      const existente = lista.find(c => String(c.id) === String(id));
+      if (existente) {
+        setForm(existente);
+      }
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) {
+      setForm(f => ({ ...f, codigo: gerarCodigo(f.nome, sequencial) }));
+    }
+  }, [form.nome, sequencial, id]);
 
   const handle = campo => e => {
     let value = e.target.value;
@@ -106,32 +120,19 @@ function Clientes() {
 
   const salvar = e => {
     e.preventDefault();
-    alert('Cliente salvo (exemplo).');
-    localStorage.setItem('clienteCodigoSeq', String(sequencial + 1));
-    setSequencial(s => s + 1);
-    setForm({
-      procedencia: '',
-      estadoImovel: '',
-      previsaoFechamento: '',
-      codigo: '',
-      nome: '',
-      documento: '',
-      rgIe: '',
-      sexo: '',
-      dataNascimento: '',
-      telefone1: '',
-      telefone2: '',
-      pais: 'Brasil',
-      profissao: '',
-      cep: '',
-      cidade: '',
-      estado: '',
-      endereco: '',
-      numero: '',
-      complemento: '',
-      bairro: '',
-      email: '',
-    });
+    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
+    if (id) {
+      const idx = lista.findIndex(c => String(c.id) === String(id));
+      if (idx >= 0) lista[idx] = { ...form, id };
+    } else {
+      const novo = { ...form, id: Date.now() };
+      lista.push(novo);
+      localStorage.setItem('clienteCodigoSeq', String(sequencial + 1));
+      setSequencial(s => s + 1);
+    }
+    localStorage.setItem('clientes', JSON.stringify(lista));
+    alert('Cliente salvo');
+    if (!id) setForm(initialForm);
   };
 
   const estados = [

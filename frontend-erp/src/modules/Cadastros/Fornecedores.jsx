@@ -1,10 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function Fornecedores() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ nome: '', contato: '' });
+  const { id } = useParams();
+  const initialForm = { nome: '', contato: '' };
+  const [form, setForm] = useState(initialForm);
+
+  useEffect(() => {
+    if (id) {
+      const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]');
+      const existente = lista.find(f => String(f.id) === String(id));
+      if (existente) setForm(existente);
+    }
+  }, [id]);
 
   const handle = campo => e => {
     setForm(prev => ({ ...prev, [campo]: e.target.value }));
@@ -12,9 +22,17 @@ function Fornecedores() {
 
   const salvar = e => {
     e.preventDefault();
-    // Placeholder para envio futuro
-    alert('Fornecedor salvo (exemplo).');
-    setForm({ nome: '', contato: '' });
+    const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]');
+    if (id) {
+      const idx = lista.findIndex(f => String(f.id) === String(id));
+      if (idx >= 0) lista[idx] = { ...form, id };
+    } else {
+      const novo = { ...form, id: Date.now() };
+      lista.push(novo);
+    }
+    localStorage.setItem('fornecedores', JSON.stringify(lista));
+    alert('Fornecedor salvo');
+    if (!id) setForm(initialForm);
   };
 
   return (
