@@ -202,3 +202,27 @@ async def validate_token(request: Request):
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
             return JSONResponse({"detail": f"Erro de conexão com o backend de autenticação: {e}"}, status_code=503)
+
+# -------------------------
+# Cadastros - Usuarios
+# -------------------------
+
+@app.api_route("/usuarios/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def usuarios_proxy(path: str = "", request: Request = None):
+    async with httpx.AsyncClient() as client:
+        url = f"{MARKETING_IA_BACKEND_URL}/usuarios/{path}"
+        try:
+            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                params=request.query_params,
+                content=await request.body(),
+            )
+            response.raise_for_status()
+            return JSONResponse(response.json(), status_code=response.status_code)
+        except httpx.HTTPStatusError as e:
+            return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
+        except httpx.RequestError as e:
+            return JSONResponse({"detail": f"Erro de conexão com backend de usuários: {e}"}, status_code=503)

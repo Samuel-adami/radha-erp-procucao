@@ -1,51 +1,103 @@
 import json
 import os
-from typing import Optional
+from typing import Optional, List
 from jose import jwt
 from datetime import datetime, timedelta
+from database import get_db_connection
 
-# ⚙️ Configuração do JWT
-SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")  # Use variável de ambiente
+SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")
 ALGORITHM = "HS256"
 EXPIRATION_MINUTES = 60
 
-# 🔍 Carregar usuários do JSON
-def carregar_usuarios():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    users_path = os.path.join(base_dir, "..", "users.json")
-    users_path = os.path.normpath(users_path)
-    with open(users_path, "r", encoding="utf-8") as f:
-        return json.load(f)
 
-# ✅ Validar login
+def _row_to_user(row) -> dict:
+    user = dict(row)
+    user["permissoes"] = json.loads(user.get("permissoes", "[]"))
+    return user
+
+
 def autenticar(username: str, password: str) -> Optional[dict]:
-    usuarios = carregar_usuarios()
-    for user in usuarios:
-        if user["username"] == username and user["password"] == password:
-            return user
-    return None
+    conn = get_db_connection()
+    row = conn.execute(
+        "SELECT * FROM users WHERE username=? AND password=?",
+        (username, password),
+    ).fetchone()
+    conn.close()
+    return _row_to_user(row) if row else None
 
-# 🧾 Gerar token e retorno completo
+
 def criar_token(usuario: dict) -> dict:
-    token = jwt.encode({
-        "sub": usuario["username"],
-        "nome": usuario["nome"],
-        "cargo": usuario["cargo"],
-        "permissoes": usuario.get("permissoes", []),
-        "exp": datetime.utcnow() + timedelta(minutes=EXPIRATION_MINUTES)
-    }, SECRET_KEY, algorithm=ALGORITHM)
+    token = jwt.encode(
+        {
+            "sub": usuario["username"],
+            "nome": usuario.get("nome"),
+            "cargo": usuario.get("cargo"),
+            "permissoes": usuario.get("permissoes", []),
+            "exp": datetime.utcnow() + timedelta(minutes=EXPIRATION_MINUTES),
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM,
+    )
+    return {"access_token": token, "usuario": {"username": usuario["username"], "permissoes": usuario.get("permissoes", [])}}
 
-    return {
-        "access_token": token,
-        "usuario": {
-            "username": usuario["username"],
-            "permissoes": usuario.get("permissoes", [])
-        }
-    }
 
-# 🔍 Decodificar token
 def decodificar_token(token: str) -> Optional[dict]:
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except Exception:
         return None
+
+
+def listar_usuarios() -> List[dict]:
+    conn = get_db_connection()
+    rows = conn.execute("SELECT id, username, email, nome, cargo, permissoes FROM users ORDER BY id").fetchall()
+    conn.close()
+    return [_row_to_user(r) for r in rows]
+
+
+def criar_usuario(data: dict) -> int:
+    conn = get_db_connection()
+    cur = conn.execute(
+        "INSERT INTO users (username, password, email, nome, cargo, permissoes) VALUES (?, ?, ?, ?, ?, ?)",
+        (
+            data.get("username"),
+            data.get("password"),
+            data.get("email"),
+            data.get("nome"),
+            data.get("cargo"),
+            json.dumps(data.get("permissoes", [])),
+        ),
+    )
+    conn.commit()
+    new_id = cur.lastrowid
+    conn.close()
+    return new_id
+
+
+def atualizar_usuario(user_id: int, data: dict) -> bool:
+    conn = get_db_connection()
+    cur = conn.execute(
+        "UPDATE users SET username=?, password=?, email=?, nome=?, cargo=?, permissoes=? WHERE id=?",
+        (
+            data.get("username"),
+            data.get("password"),
+            data.get("email"),
+            data.get("nome"),
+            data.get("cargo"),
+            json.dumps(data.get("permissoes", [])),
+            user_id,
+        ),
+    )
+    conn.commit()
+    updated = cur.rowcount
+    conn.close()
+    return updated > 0
+
+
+def excluir_usuario(user_id: int) -> bool:
+    conn = get_db_connection()
+    cur = conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+    conn.commit()
+    deleted = cur.rowcount
+    conn.close()
+    return deleted > 0

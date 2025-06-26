@@ -5,7 +5,8 @@ import ListaEmpresas from './ListaEmpresas';
 import Clientes from './Clientes';
 import ListaClientes from './ListaClientes';
 import Fornecedores from './Fornecedores';
-import ListaFornecedores from './ListaFornecedores';
+import Usuarios from './Usuarios';
+import ListaUsuarios from './ListaUsuarios';
 import './Cadastros.css';
 
 function CadastrosLayout() {
@@ -13,6 +14,7 @@ function CadastrosLayout() {
   const matchDados = useMatch({ path: `${resolved.pathname}`, end: true });
   const matchClientes = useMatch(`${resolved.pathname}/clientes`);
   const matchFornecedores = useMatch(`${resolved.pathname}/fornecedores`);
+  const matchUsuarios = useMatch(`${resolved.pathname}/usuarios`);
   return (
     <div className="p-4 bg-white rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-blue-700">Módulo: Cadastros</h2>
@@ -35,6 +37,12 @@ function CadastrosLayout() {
         >
           Fornecedores
         </Link>
+        <Link
+          to="usuarios"
+          className={`px-3 py-1 rounded ${matchUsuarios ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Usuários
+        </Link>
       </nav>
       <Outlet />
     </div>
@@ -52,6 +60,8 @@ function Cadastros() {
         <Route path="clientes/lista" element={<ListaClientes />} />
         <Route path="fornecedores" element={<Fornecedores />} />
         <Route path="fornecedores/lista" element={<ListaFornecedores />} />
+        <Route path="usuarios" element={<Usuarios />} />
+        <Route path="usuarios/lista" element={<ListaUsuarios />} />
       </Route>
     </Routes>
   );

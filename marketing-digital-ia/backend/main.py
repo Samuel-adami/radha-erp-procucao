@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from routes import auth
+from routes import auth, usuarios
 from routes import chat, campanha, publicacao, publicos, conhecimento
 import os
 import uvicorn
@@ -17,6 +17,7 @@ app.include_router(publicacao.router, prefix="/nova-publicacao")
 app.include_router(publicos.router, prefix="/publicos")
 app.include_router(conhecimento.router, prefix="/conhecimento")
 app.include_router(auth.router, prefix="/auth")
+app.include_router(usuarios.router, prefix="/usuarios")
 
 
 @app.get("/")
