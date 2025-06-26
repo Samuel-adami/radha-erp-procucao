@@ -522,7 +522,10 @@ async def gerar_lote_ocorrencia(request: Request):
             }
 
     numero_oc = proximo_oc_numero()
-    pasta_saida = SAIDA_DIR / f"Lote_{lote}_OC{numero_oc}"
+    lote_nome = str(lote)
+    if not lote_nome.startswith("Lote_"):
+        lote_nome = f"Lote_{lote_nome}"
+    pasta_saida = SAIDA_DIR / f"{lote_nome}_OC{numero_oc}"
     os.makedirs(pasta_saida, exist_ok=True)
 
     todas = []
@@ -557,7 +560,7 @@ async def gerar_lote_ocorrencia(request: Request):
             "Comment": obs,
         })
 
-    caminho_dxt_final = pasta_saida / f"Lote_{lote}_OC{numero_oc}.dxt"
+    caminho_dxt_final = pasta_saida / f"{lote_nome}_OC{numero_oc}.dxt"
     with open(caminho_dxt_final, "w", encoding="utf-8") as f:
         f.write("<?xml version=\"1.0\"?>\n<ListInformation>\n   <ApplicationData>\n")
         f.write("     <Name />\n     <Version>1.0</Version>\n")
