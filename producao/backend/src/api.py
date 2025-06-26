@@ -20,6 +20,10 @@ import ezdxf
 
 init_db()
 
+# Diretório base para arquivos de saída
+BASE_DIR = Path(__file__).resolve().parent
+SAIDA_DIR = BASE_DIR / "saida"
+
 
 def proximo_oc_numero() -> int:
     """Retorna o próximo número sequencial de OC."""
@@ -96,13 +100,13 @@ async def importar_xml(files: list[UploadFile] = File(...)):
 async def gerar_lote_final(request: Request):
     dados = await request.json()
     numero_lote = dados.get('lote', 'sem_nome')
-    pasta_saida = os.path.join('saida', f"Lote_{numero_lote}")
+    pasta_saida = SAIDA_DIR / f"Lote_{numero_lote}"
     os.makedirs(pasta_saida, exist_ok=True)
     try:
         with get_db_connection() as conn:
             conn.execute(
                 "INSERT OR IGNORE INTO lotes (pasta, criado_em) VALUES (?, ?)",
-                (pasta_saida, datetime.now().isoformat()),
+                (str(pasta_saida), datetime.now().isoformat()),
             )
             conn.commit()
     except Exception:
@@ -120,13 +124,13 @@ async def gerar_lote_final(request: Request):
         codigo_original = p.get('codigo_peca', '')
         codigo_numerico = re.sub(r'\D', '', codigo_original)
 
-        caminho_saida = os.path.join(pasta_saida, nome)
-        gerar_dxf_base(comprimento, largura, caminho_saida)
+        caminho_saida = pasta_saida / nome
+        gerar_dxf_base(comprimento, largura, str(caminho_saida))
 
         for op in p.get("operacoes", []):
             if op.get("face") in ["Topo (L1)", "Topo (L3)"]:
                 continue
-            aplicar_usinagem_retangular(caminho_saida, caminho_saida, op, p)
+            aplicar_usinagem_retangular(str(caminho_saida), str(caminho_saida), op, p)
 
         todas.append({
             "Filename": nome,
@@ -141,7 +145,7 @@ async def gerar_lote_final(request: Request):
             "Comment": obs,
         })
 
-    caminho_dxt_final = os.path.join(pasta_saida, f"Lote_{numero_lote}.dxt")
+    caminho_dxt_final = pasta_saida / f"Lote_{numero_lote}.dxt"
     with open(caminho_dxt_final, 'w', encoding='utf-8') as f:
         f.write('<?xml version="1.0"?>\n<ListInformation>\n   <ApplicationData>\n')
         f.write('     <Name />\n     <Version>1.0</Version>\n')
@@ -283,7 +287,7 @@ async def excluir_lote(request: Request):
     numero_lote = dados.get("lote")
     if not numero_lote:
         return {"erro": "Parâmetro 'lote' não informado."}
-    pasta = Path("saida") / f"Lote_{numero_lote}"
+    pasta = SAIDA_DIR / f"Lote_{numero_lote}"
     if pasta.is_dir():
         shutil.rmtree(pasta, ignore_errors=True)
     try:
@@ -518,9 +522,7 @@ async def gerar_lote_ocorrencia(request: Request):
             }
 
     numero_oc = proximo_oc_numero()
-    pasta_saida = os.path.join(
-        "saida", f"Lote_{lote}_OC{numero_oc}"
-    )
+    pasta_saida = SAIDA_DIR / f"Lote_{lote}_OC{numero_oc}"
     os.makedirs(pasta_saida, exist_ok=True)
 
     todas = []
@@ -536,12 +538,12 @@ async def gerar_lote_ocorrencia(request: Request):
         codigo_original = p.get("codigo_peca", "")
         codigo_numerico = re.sub(r"\D", "", codigo_original)
 
-        caminho_saida = os.path.join(pasta_saida, nome)
-        gerar_dxf_base(comprimento, largura, caminho_saida)
+        caminho_saida = pasta_saida / nome
+        gerar_dxf_base(comprimento, largura, str(caminho_saida))
         for op in p.get("operacoes", []):
             if op.get("face") in ["Topo (L1)", "Topo (L3)"]:
                 continue
-            aplicar_usinagem_retangular(caminho_saida, caminho_saida, op, p)
+            aplicar_usinagem_retangular(str(caminho_saida), str(caminho_saida), op, p)
         todas.append({
             "Filename": nome,
             "PartName": p.get("nome", ""),
@@ -555,9 +557,7 @@ async def gerar_lote_ocorrencia(request: Request):
             "Comment": obs,
         })
 
-    caminho_dxt_final = os.path.join(
-        pasta_saida, f"Lote_{lote}_OC{numero_oc}.dxt"
-    )
+    caminho_dxt_final = pasta_saida / f"Lote_{lote}_OC{numero_oc}.dxt"
     with open(caminho_dxt_final, "w", encoding="utf-8") as f:
         f.write("<?xml version=\"1.0\"?>\n<ListInformation>\n   <ApplicationData>\n")
         f.write("     <Name />\n     <Version>1.0</Version>\n")
@@ -583,7 +583,7 @@ async def gerar_lote_ocorrencia(request: Request):
                     lote,
                     pacote,
                     numero_oc,
-                    pasta_saida,
+                    str(pasta_saida),
                     datetime.now().isoformat(),
                 ),
             )
