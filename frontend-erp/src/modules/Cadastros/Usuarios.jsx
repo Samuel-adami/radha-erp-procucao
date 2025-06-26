@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { fetchComAuth } from '../../utils/fetchComAuth';
 
 const PERMISSOES_DISPONIVEIS = {
@@ -32,7 +32,20 @@ const PERMISSOES_DISPONIVEIS = {
 
 function Usuarios() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: '', password: '', email: '', nome: '', cargo: '', permissoes: [] });
+  const { id } = useParams();
+  const initialForm = { username: '', password: '', email: '', nome: '', cargo: '', permissoes: [] };
+  const [form, setForm] = useState(initialForm);
+
+  useEffect(() => {
+    if (id) {
+      fetchComAuth('/usuarios')
+        .then(d => {
+          const u = (d?.usuarios || []).find(x => String(x.id) === String(id));
+          if (u) setForm({ ...u, password: '' });
+        })
+        .catch(() => {});
+    }
+  }, [id]);
   const handle = campo => e => setForm(prev => ({ ...prev, [campo]: e.target.value }));
   const togglePermissao = (perm, checked) => {
     setForm(prev => ({
@@ -45,8 +58,14 @@ function Usuarios() {
 
   const salvar = async e => {
     e.preventDefault();
-    await fetchComAuth('/usuarios', { method: 'POST', body: JSON.stringify(form) });
-    setForm({ username: '', password: '', email: '', nome: '', cargo: '', permissoes: [] });
+    const url = id ? `/usuarios/${id}` : '/usuarios';
+    const metodo = id ? 'PUT' : 'POST';
+    await fetchComAuth(url, { method: metodo, body: JSON.stringify(form) });
+    if (id) {
+      navigate('../lista');
+    } else {
+      setForm(initialForm);
+    }
     alert('Usuário salvo');
   };
 

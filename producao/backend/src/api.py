@@ -229,12 +229,19 @@ async def listar_lotes():
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT pasta FROM lotes ORDER BY id"
+                "SELECT id, pasta FROM lotes ORDER BY id"
             ).fetchall()
-            lotes = [row["pasta"] for row in rows]
+            lotes_validos = []
+            for row in rows:
+                pasta = Path(row["pasta"])
+                if pasta.is_dir():
+                    lotes_validos.append(str(pasta))
+                else:
+                    conn.execute("DELETE FROM lotes WHERE id=?", (row["id"],))
+            conn.commit()
     except Exception:
-        lotes = []
-    return {"lotes": lotes}
+        lotes_validos = []
+    return {"lotes": lotes_validos}
 
 
 @app.get("/nestings")
