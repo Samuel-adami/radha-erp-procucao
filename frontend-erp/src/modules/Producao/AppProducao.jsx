@@ -216,13 +216,15 @@ const EditarPecaProducao = () => {
     const pos = form.posicao;
     let operacoesAtuais = [...operacoes];
 
-    if (operacao === "Puxador Cava") {
+    if (operacao === "Puxador Cava" || operacao === "Puxador Cava Curvo") {
+      const isCurvo = operacao === "Puxador Cava Curvo";
       const originalComprimento = parseFloat(dadosPeca.comprimento);
       const originalLargura = parseFloat(dadosPeca.largura);
       let novoComprimento = originalComprimento;
       let novaLargura = originalLargura;
       const ajuste = 25;
       let painelLargura;
+      const descontoLinha = isCurvo ? 75 : 0;
 
       if (pos.startsWith('C')) {
         novaLargura -= ajuste;
@@ -241,10 +243,12 @@ const EditarPecaProducao = () => {
 
       if (pos === "C1") {
         operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-        operacoesAtuais.push({ tipo: "Linha", x: 0, y: 0, largura: 1, comprimento: originalComprimento, profundidade: 18.2, estrategia: "Linha" });
+        operacoesAtuais.push({ tipo: "Linha", x: 0, y: 0, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos, raio: 51 });
       } else if (pos === "C2") {
         operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-        operacoesAtuais.push({ tipo: "Linha", x: 0, y: originalLargura - 1, largura: 1, comprimento: originalComprimento, profundidade: 18.2, estrategia: "Linha" });
+        operacoesAtuais.push({ tipo: "Linha", x: 0, y: originalLargura - 1, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos, raio: 51 });
       } else {
         let x_rect1 = 0;
         let x_line1 = 0;
@@ -253,7 +257,8 @@ const EditarPecaProducao = () => {
             x_line1 = novoComprimento - 1;
         }
         operacoesAtuais.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
-        operacoesAtuais.push({ tipo: "Linha", x: x_line1, y: 0, largura: originalLargura, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+        operacoesAtuais.push({ tipo: "Linha", x: x_line1, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos, raio: 51 });
       }
 
       let newPecaId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -385,7 +390,7 @@ const EditarPecaProducao = () => {
   const cores = ["blue", "green", "orange", "purple"];
 
   const campos = () => {
-    if (["Puxador Cava", "Corte 45 graus"].includes(operacao)) {
+    if (["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus"].includes(operacao)) {
       return (
         <label className="block mt-2">Extremidade:
           <select className="input" value={form.posicao} onChange={e => setForm({ ...form, posicao: e.target.value })}>
@@ -476,12 +481,13 @@ const EditarPecaProducao = () => {
             <option>Furo</option>
             <option>Linha</option>
             <option>Puxador Cava</option>
+            <option>Puxador Cava Curvo</option>
             <option>Corte 45 graus</option>
           </select></label>
 
         {campos()}
 
-        { !["Puxador Cava", "Corte 45 graus"].includes(operacao) && (operacao === "Furo" ? <p className="mt-2">Estratégia: Por Dentro</p> : (
+        { !["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus"].includes(operacao) && (operacao === "Furo" ? <p className="mt-2">Estratégia: Por Dentro</p> : (
             <label className="block mt-2">Estratégia:
               <select className="input" value={form.estrategia} onChange={e => setForm({ ...form, estrategia: e.target.value })}>
                 <option>Por Dentro</option>
