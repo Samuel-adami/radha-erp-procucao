@@ -34,6 +34,10 @@ When the application is started for the first time and the user database is empt
 it will create a default administrator account. You can override the username and
 password using the `RADHA_ADMIN_USER` and `RADHA_ADMIN_PASS` environment
 variables. The default values are `admin` / `admin`.
+The default admin receives access to all modules, including the recently added
+`comercial` section. If your database was created before this permission was
+added, update the `permissoes` field for the admin user to include
+`comercial`.
 
 
 ## Troubleshooting
