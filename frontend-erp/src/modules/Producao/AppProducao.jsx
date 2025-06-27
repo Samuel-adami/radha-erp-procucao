@@ -214,10 +214,11 @@ const EditarPecaProducao = () => {
   }, [pecaId, nome, origemOcorrencia, ocId]);
 
   const salvarOperacao = () => {
-    let pos = form.posicao;
+    const pos = form.posicao;
+    let posLinha = pos;
     if (operacao === "Puxador Cava Curvo" && espelhar) {
       const map = { C1: "C2", C2: "C1", L1: "L3", L3: "L1" };
-      pos = map[pos] || pos;
+      posLinha = map[pos] || pos;
     }
     let operacoesAtuais = [...operacoes];
 
@@ -248,23 +249,21 @@ const EditarPecaProducao = () => {
 
       if (pos === "C1") {
         operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-        operacoesAtuais.push({ tipo: "Linha", x: 0, y: 0, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos, raio: 51 });
-      } else if (pos === "C2") {
-        operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-        operacoesAtuais.push({ tipo: "Linha", x: 0, y: originalLargura - 1, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos, raio: 51 });
-      } else {
-        let x_rect1 = 0;
-        let x_line1 = 0;
-        if (pos === 'L3') {
-            x_rect1 = novoComprimento - 55;
-            x_line1 = novoComprimento - 1;
+        const yLinha = posLinha === "C2" ? originalLargura - 1 : 0;
+        operacoesAtuais.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+        } else if (pos === "C2") {
+          operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+          const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
+          operacoesAtuais.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+          if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+        } else {
+          let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
+          const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
+          operacoesAtuais.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
+          operacoesAtuais.push({ tipo: "Linha", x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+          if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
         }
-        operacoesAtuais.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
-        operacoesAtuais.push({ tipo: "Linha", x: x_line1, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos, raio: 51 });
-      }
 
       let newPecaId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
       localStorage.setItem("globalPecaIdProducao", newPecaId + 1);
