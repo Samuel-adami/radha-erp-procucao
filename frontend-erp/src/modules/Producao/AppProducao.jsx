@@ -213,29 +213,49 @@ const EditarPecaProducao = () => {
     }
   }, [pecaId, nome, origemOcorrencia, ocId]);
 
-  const espelharPuxadorCurvo = (ops = [], largura) => {
-    const L = parseFloat(largura);
-    if (isNaN(L)) return ops;
-    return ops.map((op) => {
-      const novo = { ...op };
+const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
+  const M = parseFloat(medida);
+  if (isNaN(M)) return ops;
+  return ops.map(op => {
+    const novo = { ...op };
+    if (eixo === 'X') {
+      if (novo.x !== undefined) {
+        const x = parseFloat(novo.x);
+        if (["Retângulo", "Linha"].includes(novo.tipo)) {
+          const w = parseFloat(novo.comprimento || 0);
+          novo.x = M - x - w;
+        } else {
+          novo.x = M - x;
+        }
+      }
+      if (novo.tipo === 'Raio' && novo.pos === 'C1') {
+        novo.pos = 'L1';
+      }
+    } else {
       if (novo.y !== undefined) {
         const y = parseFloat(novo.y);
         if (["Retângulo", "Linha"].includes(novo.tipo)) {
           const h = parseFloat(novo.largura || 0);
-          novo.y = L - y - h;
+          novo.y = M - y - h;
         } else {
-          novo.y = L - y;
+          novo.y = M - y;
         }
       }
-      if (novo.tipo === "Raio" && novo.pos) {
-        if (novo.pos === "L1") novo.pos = "L3";
-        else if (novo.pos === "L3") novo.pos = "C1";
-        else if (novo.pos === "C1") novo.pos = "C2";
-        else if (novo.pos === "C2") novo.pos = "C1";
+      if (novo.tipo === 'Raio' && novo.pos) {
+        if (novo.pos === 'L1') {
+          // permanece em L1 para manter a extremidade
+        } else if (novo.pos === 'L3') {
+          novo.pos = 'C1';
+        } else if (novo.pos === 'C1') {
+          novo.pos = 'C2';
+        } else if (novo.pos === 'C2') {
+          novo.pos = 'C1';
+        }
       }
-      return novo;
-    });
-  };
+    }
+    return novo;
+  });
+};
 
   const salvarOperacao = () => {
     const pos = form.posicao;
@@ -286,7 +306,15 @@ const EditarPecaProducao = () => {
         if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
       }
 
-      const opsFinal = isCurvo && espelhar ? espelharPuxadorCurvo(novasOps, originalLargura) : novasOps;
+      let opsFinal = novasOps;
+      if (isCurvo && espelhar) {
+        if (pos === 'C1') {
+          opsFinal = espelharPuxadorCurvo(novasOps, originalComprimento, 'X');
+        } else {
+          const medida = pos.startsWith('C') ? originalLargura : originalComprimento;
+          opsFinal = espelharPuxadorCurvo(novasOps, medida, 'Y');
+        }
+      }
       operacoesAtuais.push(...opsFinal);
 
       let newPecaId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -425,7 +453,9 @@ const EditarPecaProducao = () => {
           <label className="block mt-2">Extremidade:
             <select className="input" value={form.posicao} onChange={e => setForm({ ...form, posicao: e.target.value })}>
               <option value="C1">Comprimento (C1)</option>
-              <option value="C2">Comprimento (C2)</option>
+              {operacao !== "Puxador Cava Curvo" && (
+                <option value="C2">Comprimento (C2)</option>
+              )}
               <option value="L1">Largura (L1)</option>
               <option value="L3">Largura (L3)</option>
             </select>
