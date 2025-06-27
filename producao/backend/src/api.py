@@ -125,9 +125,25 @@ async def gerar_lote_final(request: Request):
         codigo_numerico = re.sub(r'\D', '', codigo_original)
 
         caminho_saida = pasta_saida / nome
-        gerar_dxf_base(comprimento, largura, str(caminho_saida))
 
+        raios = {}
+        ops_sem_raio = []
         for op in p.get("operacoes", []):
+            if op.get("tipo") == "Raio":
+                pos = op.get("pos")
+                valor = float(op.get("raio", 0))
+                if pos == "L1":
+                    raios["topLeft"] = valor
+                elif pos in ("C2", "L3"):
+                    raios["topRight"] = valor
+                elif pos == "C1":
+                    raios["bottomRight"] = valor
+            else:
+                ops_sem_raio.append(op)
+
+        gerar_dxf_base(comprimento, largura, str(caminho_saida), raios)
+
+        for op in ops_sem_raio:
             if op.get("face") in ["Topo (L1)", "Topo (L3)"]:
                 continue
             aplicar_usinagem_retangular(str(caminho_saida), str(caminho_saida), op, p)
@@ -549,8 +565,23 @@ async def gerar_lote_ocorrencia(request: Request):
         codigo_numerico = re.sub(r"\D", "", codigo_original)
 
         caminho_saida = pasta_saida / nome
-        gerar_dxf_base(comprimento, largura, str(caminho_saida))
+        raios = {}
+        ops_sem_raio = []
         for op in p.get("operacoes", []):
+            if op.get("tipo") == "Raio":
+                pos = op.get("pos")
+                valor = float(op.get("raio", 0))
+                if pos == "L1":
+                    raios["topLeft"] = valor
+                elif pos in ("C2", "L3"):
+                    raios["topRight"] = valor
+                elif pos == "C1":
+                    raios["bottomRight"] = valor
+            else:
+                ops_sem_raio.append(op)
+
+        gerar_dxf_base(comprimento, largura, str(caminho_saida), raios)
+        for op in ops_sem_raio:
             if op.get("face") in ["Topo (L1)", "Topo (L3)"]:
                 continue
             aplicar_usinagem_retangular(str(caminho_saida), str(caminho_saida), op, p)
