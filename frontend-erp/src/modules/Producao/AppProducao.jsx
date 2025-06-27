@@ -300,13 +300,19 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
         novasOps.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
         novasOps.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+        if (isCurvo) {
+          const subPos = espelhar ? "inferior" : "superior";
+          novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
+        }
       } else {
         let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
         const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
         novasOps.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
         novasOps.push({ tipo: "Linha", x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+        if (isCurvo) {
+          const subPos = espelhar ? "inferior" : "superior";
+          novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
+        }
       }
 
       let opsFinal = novasOps;
@@ -314,7 +320,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
         if (pos === 'C1') {
           opsFinal = espelharPuxadorCurvo(novasOps, originalComprimento, 'X');
         } else {
-          const medida = pos.startsWith('C') ? originalLargura : originalComprimento;
+          const medida = originalLargura;
           opsFinal = espelharPuxadorCurvo(novasOps, medida, 'Y');
         }
       }
