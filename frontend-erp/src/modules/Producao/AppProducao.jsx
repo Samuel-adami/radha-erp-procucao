@@ -216,7 +216,7 @@ const EditarPecaProducao = () => {
   const espelharPuxadorCurvo = (ops = [], largura) => {
     const L = parseFloat(largura);
     if (isNaN(L)) return ops;
-    return ops.map(op => {
+    return ops.map((op) => {
       const novo = { ...op };
       if (novo.y !== undefined) {
         const y = parseFloat(novo.y);
@@ -227,8 +227,11 @@ const EditarPecaProducao = () => {
           novo.y = L - y;
         }
       }
-      // Para o raio seguir o mesmo eixo da linha, nao trocamos a extremidade
-      // apenas mantemos a posicao original
+      if (novo.tipo === "Raio" && novo.pos) {
+        if (novo.pos === "L3") novo.pos = "C1";
+        else if (novo.pos === "C1") novo.pos = "C2";
+        else if (novo.pos === "C2") novo.pos = "C1";
+      }
       return novo;
     });
   };
