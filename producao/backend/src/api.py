@@ -131,13 +131,27 @@ async def gerar_lote_final(request: Request):
         for op in p.get("operacoes", []):
             if op.get("tipo") == "Raio":
                 pos = op.get("pos")
+                sub = op.get("subPos")
                 valor = float(op.get("raio", 0))
                 if pos == "L1":
-                    raios["topLeft"] = valor
+                    if sub == "inferior":
+                        raios["bottomLeft"] = valor
+                    else:
+                        raios["topLeft"] = valor
                 elif pos in ("C2", "L3"):
-                    raios["topRight"] = valor
+                    if sub == "inferior":
+                        raios["bottomRight"] = valor
+                    else:
+                        raios["topRight"] = valor
                 elif pos == "C1":
-                    raios["bottomRight"] = valor
+                    if sub == "T1":
+                        raios["bottomLeft"] = valor
+                    elif sub == "T2":
+                        raios["topLeft"] = valor
+                    elif sub == "T3":
+                        raios["topRight"] = valor
+                    else:
+                        raios["bottomRight"] = valor
             else:
                 ops_sem_raio.append(op)
 
@@ -570,13 +584,27 @@ async def gerar_lote_ocorrencia(request: Request):
         for op in p.get("operacoes", []):
             if op.get("tipo") == "Raio":
                 pos = op.get("pos")
+                sub = op.get("subPos")
                 valor = float(op.get("raio", 0))
                 if pos == "L1":
-                    raios["topLeft"] = valor
+                    if sub == "inferior":
+                        raios["bottomLeft"] = valor
+                    else:
+                        raios["topLeft"] = valor
                 elif pos in ("C2", "L3"):
-                    raios["topRight"] = valor
+                    if sub == "inferior":
+                        raios["bottomRight"] = valor
+                    else:
+                        raios["topRight"] = valor
                 elif pos == "C1":
-                    raios["bottomRight"] = valor
+                    if sub == "T1":
+                        raios["bottomLeft"] = valor
+                    elif sub == "T2":
+                        raios["topLeft"] = valor
+                    elif sub == "T3":
+                        raios["topRight"] = valor
+                    else:
+                        raios["bottomRight"] = valor
             else:
                 ops_sem_raio.append(op)
 

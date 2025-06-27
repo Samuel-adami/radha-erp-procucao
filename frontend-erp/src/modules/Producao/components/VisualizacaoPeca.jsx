@@ -31,9 +31,22 @@ const VisualizacaoPeca = ({ comprimento, largura, orientacao, operacoes = [] }) 
   let raios = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
   operacoes = operacoes.filter(op => {
     if (op.tipo === 'Raio') {
-      if (op.pos === 'L1') raios.topLeft = parseFloat(op.raio || 0) * escala;
-      if (op.pos === 'C1') raios.bottomRight = parseFloat(op.raio || 0) * escala;
-      if (op.pos === 'C2' || op.pos === 'L3') raios.topRight = parseFloat(op.raio || 0) * escala;
+      const valor = parseFloat(op.raio || 0) * escala;
+      if (op.pos === 'L1') {
+        if (op.subPos === 'inferior') raios.bottomLeft = valor;
+        else raios.topLeft = valor;
+      } else if (op.pos === 'C2' || op.pos === 'L3') {
+        if (op.subPos === 'inferior') raios.bottomRight = valor;
+        else raios.topRight = valor;
+      } else if (op.pos === 'C1') {
+        switch(op.subPos) {
+          case 'T1': raios.bottomLeft = valor; break;
+          case 'T2': raios.topLeft = valor; break;
+          case 'T3': raios.topRight = valor; break;
+          case 'T4':
+          default: raios.bottomRight = valor; break;
+        }
+      }
       return false;
     }
     return true;

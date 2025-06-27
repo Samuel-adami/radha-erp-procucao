@@ -292,7 +292,10 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
         novasOps.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C2" ? originalLargura - 1 : 0;
         novasOps.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+        if (isCurvo) {
+          const subPos = espelhar ? "T1" : "T4";
+          novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
+        }
       } else if (pos === "C2") {
         novasOps.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
