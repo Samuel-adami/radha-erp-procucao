@@ -166,6 +166,7 @@ const EditarPecaProducao = () => {
   const [operacoes, setOperacoes] = useState([]);
   const [operacao, setOperacao] = useState("Retângulo");
   const [form, setForm] = useState({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C1", face: "Face (F0)" });
+  const [espelhar, setEspelhar] = useState(false);
   const [novoComprimento, setNovoComprimento] = useState("");
   const [novaLargura, setNovaLargura] = useState("");
 
@@ -213,7 +214,11 @@ const EditarPecaProducao = () => {
   }, [pecaId, nome, origemOcorrencia, ocId]);
 
   const salvarOperacao = () => {
-    const pos = form.posicao;
+    let pos = form.posicao;
+    if (operacao === "Puxador Cava Curvo" && espelhar) {
+      const map = { C1: "C2", C2: "C1", L1: "L3", L3: "L1" };
+      pos = map[pos] || pos;
+    }
     let operacoesAtuais = [...operacoes];
 
     if (operacao === "Puxador Cava" || operacao === "Puxador Cava Curvo") {
@@ -316,6 +321,7 @@ const EditarPecaProducao = () => {
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(operacoesAtuais));
     setForm({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C1", face: "Face (F0)" });
+    setEspelhar(false);
   };
 
   const excluirTodas = () => {
@@ -392,13 +398,22 @@ const EditarPecaProducao = () => {
   const campos = () => {
     if (["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus"].includes(operacao)) {
       return (
-        <label className="block mt-2">Extremidade:
-          <select className="input" value={form.posicao} onChange={e => setForm({ ...form, posicao: e.target.value })}>
-            <option value="C1">Comprimento (C1)</option>
-            <option value="C2">Comprimento (C2)</option>
-            <option value="L1">Largura (L1)</option>
-            <option value="L3">Largura (L3)</option>
-          </select></label>
+        <>
+          <label className="block mt-2">Extremidade:
+            <select className="input" value={form.posicao} onChange={e => setForm({ ...form, posicao: e.target.value })}>
+              <option value="C1">Comprimento (C1)</option>
+              <option value="C2">Comprimento (C2)</option>
+              <option value="L1">Largura (L1)</option>
+              <option value="L3">Largura (L3)</option>
+            </select>
+          </label>
+          {operacao === "Puxador Cava Curvo" && (
+            <label className="block mt-2">
+              <input type="checkbox" className="mr-1" checked={espelhar} onChange={e => setEspelhar(e.target.checked)} />
+              Espelhar
+            </label>
+          )}
+        </>
       );
     }
     if (["Retângulo", "Círculo", "Furo", "Linha"].includes(operacao)) {
