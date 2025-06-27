@@ -13,6 +13,7 @@ import {
 import MarketingDigitalIA from "./modules/MarketingDigitalIA";
 import Producao from "./modules/Producao";
 import Cadastros from "./modules/Cadastros";
+import Comercial from "./modules/Comercial";
 import Login from "./pages/Login";
 import { fetchComAuth } from "./utils/fetchComAuth";
 import { UserContext } from "./UserContext";
@@ -24,6 +25,7 @@ function Layout({ usuario, onLogout }) {
   const matchCadastros = useMatch("/cadastros/*");
   const matchMarketing = useMatch("/marketing-ia/*");
   const matchProducao = useMatch("/producao/*");
+  const matchComercial = useMatch("/comercial/*");
 
   return (
     <div className="min-h-screen flex">
@@ -53,6 +55,14 @@ function Layout({ usuario, onLogout }) {
               className={`px-2 py-1 rounded ${matchProducao ? "bg-blue-700" : "hover:bg-blue-700"}`}
             >
               Produção
+            </Link>
+          )}
+          {possuiPermissao("comercial") && (
+            <Link
+              to="/comercial"
+              className={`px-2 py-1 rounded ${matchComercial ? "bg-blue-700" : "hover:bg-blue-700"}`}
+            >
+              Comercial
             </Link>
           )}
         </nav>
@@ -150,6 +160,7 @@ function App() {
           <Route path="cadastros/*" element={<Cadastros />} />
           <Route path="marketing-ia/*" element={<MarketingDigitalIA />} />
           <Route path="producao/*" element={<Producao />} />
+          <Route path="comercial/*" element={<Comercial />} />
         </Route>
 
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />

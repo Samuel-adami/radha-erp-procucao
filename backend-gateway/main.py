@@ -27,6 +27,7 @@ app.add_middleware(
 # Ajuste as URLs conforme onde seus módulos de backend rodarão
 MARKETING_IA_BACKEND_URL = "http://localhost:8015"
 PRODUCAO_BACKEND_URL = "http://localhost:8020"
+COMERCIAL_BACKEND_URL = "http://localhost:8030"
 
 @app.get("/")
 async def read_root():
@@ -77,6 +78,27 @@ async def call_producao_backend(path: str, request: Request):
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
             return JSONResponse({"detail": f"Erro de conexão com o backend de Produção: {e}"}, status_code=503)
+
+# Rota para o módulo Comercial
+@app.api_route("/comercial/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def call_comercial_backend(path: str, request: Request):
+    async with httpx.AsyncClient() as client:
+        url = f"{COMERCIAL_BACKEND_URL}/{path}"
+        try:
+            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                params=request.query_params,
+                content=await request.body(),
+            )
+            response.raise_for_status()
+            return JSONResponse(response.json(), status_code=response.status_code)
+        except httpx.HTTPStatusError as e:
+            return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
+        except httpx.RequestError as e:
+            return JSONResponse({"detail": f"Erro de conexão com o backend Comercial: {e}"}, status_code=503)
 
 # Rotas de Autenticação (do assistente-radha)
 @app.post("/auth/login")
