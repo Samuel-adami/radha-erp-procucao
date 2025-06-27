@@ -27,6 +27,10 @@ const PERMISSOES_DISPONIVEIS = {
     'cadastros/clientes',
     'cadastros/fornecedores',
     'cadastros/usuarios'
+  ],
+  'Comercial': [
+    'comercial',
+    'comercial/atendimentos'
   ]
 };
 
