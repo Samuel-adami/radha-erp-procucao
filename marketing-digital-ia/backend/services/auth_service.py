@@ -38,7 +38,15 @@ def criar_token(usuario: dict) -> dict:
         SECRET_KEY,
         algorithm=ALGORITHM,
     )
-    return {"access_token": token, "usuario": {"username": usuario["username"], "permissoes": usuario.get("permissoes", [])}}
+    return {
+        "access_token": token,
+        "usuario": {
+            "username": usuario["username"],
+            "nome": usuario.get("nome"),
+            "cargo": usuario.get("cargo"),
+            "permissoes": usuario.get("permissoes", []),
+        },
+    }
 
 
 def decodificar_token(token: str) -> Optional[dict]:
