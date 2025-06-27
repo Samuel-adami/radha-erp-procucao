@@ -28,18 +28,51 @@ const VisualizacaoPeca = ({ comprimento, largura, orientacao, operacoes = [] }) 
     }
   }
 
+  let raios = { topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 };
+  operacoes = operacoes.filter(op => {
+    if (op.tipo === 'Raio') {
+      if (op.pos === 'L1') raios.topLeft = parseFloat(op.raio || 0) * escala;
+      if (op.pos === 'C1') raios.bottomRight = parseFloat(op.raio || 0) * escala;
+      if (op.pos === 'C2' || op.pos === 'L3') raios.topRight = parseFloat(op.raio || 0) * escala;
+      return false;
+    }
+    return true;
+  });
+
+  const pathD = () => {
+    const rTL = raios.topLeft || 0;
+    const rTR = raios.topRight || 0;
+    const rBR = raios.bottomRight || 0;
+    const rBL = raios.bottomLeft || 0;
+    let d = `M ${offsetX + rTL} ${offsetY}`;
+    d += ` H ${offsetX + larguraSVG - rTR}`;
+    if (rTR) d += ` A ${rTR} ${rTR} 0 0 1 ${offsetX + larguraSVG} ${offsetY + rTR}`;
+    d += ` V ${offsetY + alturaSVG - rBR}`;
+    if (rBR) d += ` A ${rBR} ${rBR} 0 0 1 ${offsetX + larguraSVG - rBR} ${offsetY + alturaSVG}`;
+    d += ` H ${offsetX + rBL}`;
+    if (rBL) d += ` A ${rBL} ${rBL} 0 0 1 ${offsetX} ${offsetY + alturaSVG - rBL}`;
+    d += ` V ${offsetY + rTL}`;
+    if (rTL) d += ` A ${rTL} ${rTL} 0 0 1 ${offsetX + rTL} ${offsetY}`;
+    d += ' Z';
+    return d;
+  };
+
   return (
     <svg width={viewWidth} height={viewHeight} viewBox={`0 0 ${viewWidth} ${viewHeight}`}>
       {/* Peça principal */}
-      <rect
-        x={offsetX}
-        y={offsetY}
-        width={larguraSVG}
-        height={alturaSVG}
-        fill="none"
-        stroke="#000"
-        strokeWidth={2}
-      />
+      { (raios.topLeft || raios.topRight || raios.bottomRight || raios.bottomLeft) ? (
+        <path d={pathD()} fill="none" stroke="#000" strokeWidth={2} />
+      ) : (
+        <rect
+          x={offsetX}
+          y={offsetY}
+          width={larguraSVG}
+          height={alturaSVG}
+          fill="none"
+          stroke="#000"
+          strokeWidth={2}
+        />
+      ) }
 
       {/* Face 1 com novo nome */}
       <rect
