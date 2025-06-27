@@ -229,7 +229,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
         }
       }
       if (novo.tipo === 'Raio' && novo.pos === 'C1') {
-        novo.pos = 'L3';
+        // mantém a posição original para espelhar dentro da extremidade C1
       }
     } else {
       if (novo.y !== undefined) {
