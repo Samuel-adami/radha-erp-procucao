@@ -213,13 +213,31 @@ const EditarPecaProducao = () => {
     }
   }, [pecaId, nome, origemOcorrencia, ocId]);
 
+  const espelharPuxadorCurvo = (ops = [], largura) => {
+    const L = parseFloat(largura);
+    if (isNaN(L)) return ops;
+    const map = { C1: "C2", C2: "C1", L1: "L3", L3: "L1" };
+    return ops.map(op => {
+      const novo = { ...op };
+      if (novo.y !== undefined) {
+        const y = parseFloat(novo.y);
+        if (["Retângulo", "Linha"].includes(novo.tipo)) {
+          const h = parseFloat(novo.largura || 0);
+          novo.y = L - y - h;
+        } else {
+          novo.y = L - y;
+        }
+      }
+      if (novo.tipo === "Raio") {
+        novo.pos = map[novo.pos] || novo.pos;
+      }
+      return novo;
+    });
+  };
+
   const salvarOperacao = () => {
     const pos = form.posicao;
     let posLinha = pos;
-    if (operacao === "Puxador Cava Curvo" && espelhar) {
-      const map = { C1: "C2", C2: "C1", L1: "L3", L3: "L1" };
-      posLinha = map[pos] || pos;
-    }
     let operacoesAtuais = [...operacoes];
 
     if (operacao === "Puxador Cava" || operacao === "Puxador Cava Curvo") {
@@ -247,23 +265,27 @@ const EditarPecaProducao = () => {
         return opAjustada;
       });
 
+      const novasOps = [];
       if (pos === "C1") {
-        operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C2" ? originalLargura - 1 : 0;
-        operacoesAtuais.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
-        if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
-        } else if (pos === "C2") {
-          operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-          const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
-          operacoesAtuais.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
-          if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
-        } else {
-          let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
-          const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
-          operacoesAtuais.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
-          operacoesAtuais.push({ tipo: "Linha", x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
-          if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
-        }
+        novasOps.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+      } else if (pos === "C2") {
+        novasOps.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
+        novasOps.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+      } else {
+        let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
+        const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
+        novasOps.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Linha", x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+        if (isCurvo) novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51 });
+      }
+
+      const opsFinal = isCurvo && espelhar ? espelharPuxadorCurvo(novasOps, originalLargura) : novasOps;
+      operacoesAtuais.push(...opsFinal);
 
       let newPecaId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
       localStorage.setItem("globalPecaIdProducao", newPecaId + 1);
