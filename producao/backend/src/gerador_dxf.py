@@ -4,20 +4,75 @@ import os
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-def gerar_dxf_base(comprimento, largura, saida_path):
+def gerar_dxf_base(comprimento, largura, saida_path, raios=None):
+    """Gera um DXF base com o contorno da peça.
+
+    O contorno padrão é um retângulo, mas é possível informar raios nos
+    cantos através do dicionário ``raios``. As chaves aceitas são
+    ``topLeft``, ``topRight``, ``bottomRight`` e ``bottomLeft``.
+    """
+
+    raios = raios or {}
+    r_tl = float(raios.get("topLeft", 0))
+    r_tr = float(raios.get("topRight", 0))
+    r_br = float(raios.get("bottomRight", 0))
+    r_bl = float(raios.get("bottomLeft", 0))
+
     doc = ezdxf.new()
     msp = doc.modelspace()
+    layer = {"layer": "borda_externa"}
 
-    pontos = [
-        (0, 0),
-        (comprimento, 0),
-        (comprimento, largura),
-        (0, largura),
-        (0, 0)
-    ]
+    # Borda inferior
+    msp.add_line((r_bl, 0), (comprimento - r_br, 0), dxfattribs=layer)
+    if r_br > 0:
+        msp.add_arc(
+            (comprimento - r_br, r_br),
+            r_br,
+            start_angle=-90,
+            end_angle=0,
+            dxfattribs=layer,
+        )
 
-    polyline = msp.add_polyline2d(pontos, dxfattribs={"layer": "borda_externa"})
-    polyline.close(True)
+    # Lado direito
+    msp.add_line(
+        (comprimento, r_br),
+        (comprimento, largura - r_tr),
+        dxfattribs=layer,
+    )
+    if r_tr > 0:
+        msp.add_arc(
+            (comprimento - r_tr, largura - r_tr),
+            r_tr,
+            start_angle=0,
+            end_angle=90,
+            dxfattribs=layer,
+        )
+
+    # Borda superior
+    msp.add_line(
+        (comprimento - r_tr, largura),
+        (r_tl, largura),
+        dxfattribs=layer,
+    )
+    if r_tl > 0:
+        msp.add_arc(
+            (r_tl, largura - r_tl),
+            r_tl,
+            start_angle=90,
+            end_angle=180,
+            dxfattribs=layer,
+        )
+
+    # Lado esquerdo
+    msp.add_line((0, largura - r_tl), (0, r_bl), dxfattribs=layer)
+    if r_bl > 0:
+        msp.add_arc(
+            (r_bl, r_bl),
+            r_bl,
+            start_angle=180,
+            end_angle=270,
+            dxfattribs=layer,
+        )
 
     doc.saveas(saida_path)
     print(f"📄 Arquivo DXT gerado em: {saida_path}")

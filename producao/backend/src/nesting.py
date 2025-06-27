@@ -9,6 +9,7 @@ from shapely.ops import unary_union
 from rectpack import newPacker
 import ezdxf
 import math
+from ezdxf.math import ConstructionArc
 from PIL import Image, ImageDraw
 from database import get_db_connection
 
@@ -39,6 +40,16 @@ def _medidas_dxf(path: Path) -> tuple[float, float] | None:
                     r = float(ent.dxf.radius)
                     xs.extend([cx - r, cx + r])
                     ys.extend([cy - r, cy + r])
+                elif ent.dxftype() == "ARC":
+                    arc = ConstructionArc(
+                        ent.dxf.center,
+                        ent.dxf.radius,
+                        ent.dxf.start_angle,
+                        ent.dxf.end_angle,
+                    )
+                    bbox = arc.bounding_box
+                    xs.extend([float(bbox.extmin.x), float(bbox.extmax.x)])
+                    ys.extend([float(bbox.extmin.y), float(bbox.extmax.y)])
             except Exception:
                 continue
     if not xs or not ys:
