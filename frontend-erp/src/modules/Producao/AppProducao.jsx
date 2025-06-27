@@ -215,7 +215,11 @@ const EditarPecaProducao = () => {
 
   const salvarOperacao = () => {
     const pos = form.posicao;
-    let posLinha = pos; // mantém a extremidade original
+    let posLinha = pos;
+    if (operacao === "Puxador Cava Curvo" && espelhar) {
+      const map = { C1: "C2", C2: "C1", L1: "L3", L3: "L1" };
+      posLinha = map[pos] || pos;
+    }
     let operacoesAtuais = [...operacoes];
 
     if (operacao === "Puxador Cava" || operacao === "Puxador Cava Curvo") {
@@ -245,22 +249,19 @@ const EditarPecaProducao = () => {
 
       if (pos === "C1") {
         operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-        const yLinha = 0;
-        const xLinhaCurvo = espelhar ? -originalComprimento : 0;
-        operacoesAtuais.push({ tipo: "Linha", x: xLinhaCurvo, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        const yLinha = posLinha === "C2" ? originalLargura - 1 : 0;
+        operacoesAtuais.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
         } else if (pos === "C2") {
           operacoesAtuais.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
-          const yLinha = originalLargura - 1;
-          const xLinhaCurvo = espelhar ? -originalComprimento : 0;
-          operacoesAtuais.push({ tipo: "Linha", x: xLinhaCurvo, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+          const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
+          operacoesAtuais.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
           if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
         } else {
           let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
-          const xLinha = pos === 'L3' ? novoComprimento - 1 : 0;
-          const yLinhaVertical = espelhar ? -originalLargura : 0;
+          const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
           operacoesAtuais.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
-          operacoesAtuais.push({ tipo: "Linha", x: xLinha, y: yLinhaVertical, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+          operacoesAtuais.push({ tipo: "Linha", x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
           if (isCurvo) operacoesAtuais.push({ tipo: "Raio", pos: posLinha, raio: 51 });
         }
 
