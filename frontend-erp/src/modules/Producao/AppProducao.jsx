@@ -228,7 +228,8 @@ const EditarPecaProducao = () => {
         }
       }
       if (novo.tipo === "Raio" && novo.pos) {
-        if (novo.pos === "L3") novo.pos = "C1";
+        if (novo.pos === "L1") novo.pos = "L3";
+        else if (novo.pos === "L3") novo.pos = "C1";
         else if (novo.pos === "C1") novo.pos = "C2";
         else if (novo.pos === "C2") novo.pos = "C1";
       }
