@@ -41,7 +41,7 @@ def init_db():
                 "admin@example.com",
                 "Administrador",
                 "admin",
-                "[\"chat\", \"campanhas\", \"publicacoes\", \"publico\", \"marketing-ia\", \"producao\", \"cadastros\", \"comercial\"]",
+                "[\"chat\", \"campanhas\", \"publicacoes\", \"publico\", \"marketing-ia\", \"producao\", \"cadastros\", \"comercial\", \"comercial/atendimentos\"]",
             ),
         )
         conn.commit()
