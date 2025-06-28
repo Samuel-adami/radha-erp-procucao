@@ -112,6 +112,7 @@ const LotesOcorrencia = () => {
           JSON.stringify(opsEspelhadas)
         );
       }
+      localStorage.setItem("editado_peca_" + id, "false");
       return { ...p, operacoes: opsEspelhadas, id };
     });
     localStorage.setItem("globalPecaIdProducao", nextId);
