@@ -59,10 +59,13 @@ function CondicaoPagamento() {
   };
 
   const salvar = async () => {
+    const parcelas = parseInt(form.numero_parcelas, 10);
+    const juros = parseFloat(form.juros_parcela);
+
     const body = {
       nome: form.nome,
-      numero_parcelas: parseInt(form.numero_parcelas, 10),
-      juros_parcela: parseFloat(form.juros_parcela || 0),
+      numero_parcelas: Number.isFinite(parcelas) ? parcelas : 1,
+      juros_parcela: Number.isFinite(juros) ? juros : 0,
       dias_vencimento: form.dias_vencimento,
       ativa: form.ativa ? 1 : 0,
     };
