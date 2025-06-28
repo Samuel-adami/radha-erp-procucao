@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
@@ -16,6 +16,18 @@ function AtendimentoForm() {
     historico: '',
   });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const carregarCodigo = async () => {
+      try {
+        const resp = await fetchComAuth('/comercial/atendimentos/proximo-codigo');
+        setForm(prev => ({ ...prev, codigo: resp.codigo }));
+      } catch (err) {
+        console.error('Erro ao obter código', err);
+      }
+    };
+    carregarCodigo();
+  }, []);
 
   const handle = campo => e => {
     const value =
@@ -53,9 +65,9 @@ function AtendimentoForm() {
         <label className="block">
           <span className="text-sm">Código</span>
           <input
-            className="input"
+            className="input bg-gray-100"
             value={form.codigo}
-            onChange={handle('codigo')}
+            readOnly
           />
         </label>
         <label className="block md:col-span-2">

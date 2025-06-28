@@ -30,6 +30,16 @@ def init_db():
             historico TEXT
         )"""
     )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS atendimento_tarefas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            atendimento_id INTEGER,
+            nome TEXT,
+            concluida INTEGER DEFAULT 0,
+            dados TEXT,
+            FOREIGN KEY (atendimento_id) REFERENCES atendimentos(id)
+        )"""
+    )
     conn.commit()
     conn.close()
 
