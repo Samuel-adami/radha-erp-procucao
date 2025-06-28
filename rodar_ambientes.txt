@@ -21,7 +21,13 @@ source venv/bin/activate
 export SECRET_KEY=radha-super-secreto
 uvicorn main:app --host 0.0.0.0 --port 8010 --reload
 
-# --- TERMINAL 4: Frontend Principal (Porta 3005) ---
+# --- TERMINAL 4: Backend Comercial (Porta 8030) ---
+cd /opt/radha/radha-erp/comercial-backend/
+source venv/bin/activate
+export SECRET_KEY=radha-super-secreto
+uvicorn main:app --host 0.0.0.0 --port 8030 --reload
+
+# --- TERMINAL 5: Frontend Principal (Porta 3005) ---
 cd /opt/radha/radha-erp/frontend-erp/
 # Se algum ambiente virtual Python estiver ativo (mostrar "(venv)"), desative:
 # deactivate
