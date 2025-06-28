@@ -37,6 +37,7 @@ function AtendimentoForm() {
   const [sugestoesClientes, setSugestoesClientes] = useState([]);
   const [clienteInfo, setClienteInfo] = useState(null);
   const [sequencial, setSequencial] = useState(1);
+  const [projetosOpen, setProjetosOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,9 +60,13 @@ function AtendimentoForm() {
     setForm(prev => ({ ...prev, [campo]: value }));
   };
 
-  const handleProjetosChange = e => {
-    const selected = Array.from(e.target.selectedOptions).map(o => o.value);
-    setForm(prev => ({ ...prev, projetos: selected }));
+  const handleProjetosToggle = projeto => {
+    setForm(prev => {
+      const selecionados = prev.projetos.includes(projeto)
+        ? prev.projetos.filter(p => p !== projeto)
+        : [...prev.projetos, projeto];
+      return { ...prev, projetos: selecionados };
+    });
   };
 
   const handleClienteChange = e => {
@@ -98,6 +103,16 @@ function AtendimentoForm() {
       console.error('Erro ao criar atendimento', err);
     }
   };
+
+  useEffect(() => {
+    const fechar = e => {
+      if (!e.target.closest('.projetos-select')) {
+        setProjetosOpen(false);
+      }
+    };
+    document.addEventListener('click', fechar);
+    return () => document.removeEventListener('click', fechar);
+  }, []);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,21 +153,30 @@ function AtendimentoForm() {
             readOnly
           />
         </label>
-        <label className="block md:col-span-2">
+        <div className="block md:col-span-2 projetos-select relative">
           <span className="text-sm">Projetos do Atendimento</span>
-          <select
-            multiple
-            className="input h-32"
-            value={form.projetos}
-            onChange={handleProjetosChange}
+          <div
+            className="input cursor-pointer"
+            onClick={() => setProjetosOpen(o => !o)}
           >
-            {PROJETOS.map(p => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </label>
+            {form.projetos.length ? form.projetos.join(', ') : 'Selecione'}
+          </div>
+          {projetosOpen && (
+            <div className="absolute z-10 mt-1 bg-white border rounded shadow max-h-60 overflow-auto w-full">
+              {PROJETOS.map(p => (
+                <label key={p} className="block px-2 py-1 hover:bg-gray-100">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={form.projetos.includes(p)}
+                    onChange={() => handleProjetosToggle(p)}
+                  />
+                  {p}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
         <label className="block">
           <span className="text-sm">Previsão Fechamento</span>
           <input
@@ -187,26 +211,28 @@ function AtendimentoForm() {
             <option>Sim</option>
           </select>
         </label>
-        <label className="block">
-          <span className="text-sm">Nome do Especificador</span>
-          <input
-            className="input"
-            value={form.especificador_nome}
-            onChange={handle('especificador_nome')}
-            disabled={!form.tem_especificador}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm">% RT</span>
-          <input
-            type="number"
-            step="0.01"
-            className="input"
-            value={form.rt_percent}
-            onChange={handle('rt_percent')}
-            disabled={!form.tem_especificador}
-          />
-        </label>
+        {form.tem_especificador && (
+          <>
+            <label className="block">
+              <span className="text-sm">Nome do Especificador</span>
+              <input
+                className="input"
+                value={form.especificador_nome}
+                onChange={handle('especificador_nome')}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm">% RT</span>
+              <input
+                type="number"
+                step="0.01"
+                className="input"
+                value={form.rt_percent}
+                onChange={handle('rt_percent')}
+              />
+            </label>
+          </>
+        )}
         <label className="block md:col-span-2">
           <span className="text-sm">Histórico</span>
           <textarea
