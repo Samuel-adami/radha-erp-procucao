@@ -15,6 +15,8 @@ function AtendimentoForm() {
     rt_percent: '',
     historico: '',
   });
+  const [sugestoesClientes, setSugestoesClientes] = useState([]);
+  const [clienteInfo, setClienteInfo] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +37,22 @@ function AtendimentoForm() {
     setForm(prev => ({ ...prev, [campo]: value }));
   };
 
+  const handleClienteChange = e => {
+    const value = e.target.value;
+    setForm(prev => ({ ...prev, cliente: value }));
+    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
+    if (value.length >= 3) {
+      const termo = value.toLowerCase();
+      setSugestoesClientes(
+        lista.filter(c => c.nome && c.nome.toLowerCase().startsWith(termo))
+      );
+    } else {
+      setSugestoesClientes([]);
+    }
+    const encontrado = lista.find(c => c.nome === value);
+    setClienteInfo(encontrado || null);
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     try {
@@ -53,14 +71,29 @@ function AtendimentoForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {clienteInfo && (
+        <div className="p-2 bg-gray-100 rounded text-sm space-y-1">
+          <div className="font-semibold">{clienteInfo.nome}</div>
+          <div>{clienteInfo.endereco} {clienteInfo.numero} - {clienteInfo.bairro}</div>
+          <div>{clienteInfo.cidade}/{clienteInfo.estado}</div>
+          <div>Tel: {clienteInfo.telefone1}</div>
+          <div>CPF/CNPJ: {clienteInfo.documento}</div>
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm">Cliente</span>
           <input
             className="input"
+            list="lista-clientes"
             value={form.cliente}
-            onChange={handle('cliente')}
+            onChange={handleClienteChange}
           />
+          <datalist id="lista-clientes">
+            {sugestoesClientes.map(c => (
+              <option key={c.id} value={c.nome} />
+            ))}
+          </datalist>
         </label>
         <label className="block">
           <span className="text-sm">Código</span>
