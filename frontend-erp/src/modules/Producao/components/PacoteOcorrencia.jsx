@@ -49,6 +49,7 @@ const PacoteOcorrencia = () => {
   const gerarOcorrencia = async () => {
     if (!loteLocal) return;
     let nextId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
+    const idsOriginais = [];
     const pecas = pecasPacote
       .filter((p) => selecionadas[p.id])
       .map((p) => {
@@ -59,7 +60,10 @@ const PacoteOcorrencia = () => {
         const dadosEdit = localStorage.getItem("ocedit_dados_" + p.id);
         const medidas = dadosEdit ? JSON.parse(dadosEdit) : {};
         const novoId = nextId++;
+        idsOriginais.push(p.id);
         localStorage.setItem("op_producao_" + novoId, JSON.stringify(ops));
+        const editFlag = localStorage.getItem("editado_peca_" + p.id) || (ops.length > 0 ? "true" : "false");
+        localStorage.setItem("editado_peca_" + novoId, editFlag);
         return {
           ...p,
           ...medidas,
@@ -91,9 +95,10 @@ const PacoteOcorrencia = () => {
       ],
     });
     localStorage.setItem("lotesProducao", JSON.stringify(lotesProd));
-    pecas.forEach((p) => {
-      localStorage.removeItem("ocedit_op_" + p.id);
-      localStorage.removeItem("ocedit_dados_" + p.id);
+    idsOriginais.forEach((oldId) => {
+      localStorage.removeItem("ocedit_op_" + oldId);
+      localStorage.removeItem("ocedit_dados_" + oldId);
+      localStorage.removeItem("editado_peca_" + oldId);
     });
     excluirLoteLocal(false);
   };
@@ -115,8 +120,10 @@ const PacoteOcorrencia = () => {
       </h2>
       {pecasPacote.length > 0 && (
         <ul className="space-y-2">
-          {pecasPacote.map((p) => (
-            <li key={p.id} className="border p-2 rounded">
+          {pecasPacote.map((p) => {
+            const editado = localStorage.getItem("editado_peca_" + p.id) === "true";
+            return (
+            <li key={p.id} className={`border p-2 rounded ${editado ? 'bg-yellow-100' : ''}`}>
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
