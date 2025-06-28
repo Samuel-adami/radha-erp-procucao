@@ -85,6 +85,7 @@ const LoteProducao = () => {
         if (p.operacoes) {
           localStorage.setItem("op_producao_" + id, JSON.stringify(p.operacoes));
         }
+        localStorage.setItem("editado_peca_" + id, "false");
         return { ...p, id };
       });
       const ferragensComIds = (pacote.ferragens || []).map(f => ({
@@ -394,6 +395,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes(operacoesAtuais);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(operacoesAtuais));
+    localStorage.setItem(`editado_peca_${pecaId}`, operacoesAtuais.length > 0 ? "true" : "false");
     setForm({ comprimento: "", largura: "", profundidade: "", diametro: "", x: 0, y: 0, estrategia: "Por Dentro", posicao: "C1", face: "Face (F0)" });
     setEspelhar(false);
   };
@@ -402,6 +404,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes([]);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.removeItem(chaveOp);
+    localStorage.setItem(`editado_peca_${pecaId}`, "false");
   };
 
   const excluirUma = (index) => {
@@ -409,6 +412,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes(novas);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(novas));
+    localStorage.setItem(`editado_peca_${pecaId}`, novas.length > 0 ? "true" : "false");
   };
 
   const editarUma = (index) => {
@@ -424,6 +428,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes(novas);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(novas));
+    localStorage.setItem(`editado_peca_${pecaId}`, novas.length > 0 ? "true" : "false");
   };
 
   const desfazerPuxador = () => {
@@ -434,6 +439,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes(dados.operacoes || []);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(dados.operacoes || []));
+    localStorage.setItem(`editado_peca_${pecaId}`, (dados.operacoes || []).length > 0 ? "true" : "false");
     if (!origemOcorrencia) {
       const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
       const atualizados = lotes.map(l =>
@@ -477,6 +483,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes(opsEscaladas);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(opsEscaladas));
+    localStorage.setItem(`editado_peca_${pecaId}`, opsEscaladas.length > 0 ? "true" : "false");
 
     if (origemOcorrencia) {
       localStorage.setItem(
