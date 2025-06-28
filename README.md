@@ -26,5 +26,5 @@ sudo apt install python3 python3-venv nodejs npm
 O serviço `radha-erp.service` é um exemplo de unidade systemd para produção.
 
 ## Suporte
-Caso o navegador exiba apenas uma tela de carregamento, verifique se as APIs estão em execução e se as portas 8010, 8015 e 8020 não estão ocupadas. Consulte os arquivos de log de cada serviço para mais detalhes.
+Caso o navegador exiba apenas uma tela de carregamento, verifique se as APIs estão em execução e se as portas 8010, 8015, 8020 e 8030 não estão ocupadas. Consulte os arquivos de log de cada serviço para mais detalhes.
 

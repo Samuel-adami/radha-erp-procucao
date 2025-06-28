@@ -8,6 +8,8 @@ cd "$DIR/producao/backend/src" && source venv/bin/activate && uvicorn api:app --
 PID2=$!
 cd "$DIR/backend-gateway" && source venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8010 --reload &
 PID3=$!
-cd "$DIR/frontend-erp" && npm run dev &
+cd "$DIR/comercial-backend" && source venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port 8030 --reload &
 PID4=$!
-wait $PID1 $PID2 $PID3 $PID4
+cd "$DIR/frontend-erp" && npm run dev &
+PID5=$!
+wait $PID1 $PID2 $PID3 $PID4 $PID5
