@@ -161,7 +161,8 @@ const PacoteOcorrencia = () => {
                 </Button>
               </div>
             </li>
-          ))}
+          );
+        })}
         </ul>
       )}
       <div className="flex gap-2">
