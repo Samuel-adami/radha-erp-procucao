@@ -86,8 +86,7 @@ const Pacote = () => {
 
       <ul className="space-y-2">
         {pecasFiltradas.map((p) => {
-          const ops = JSON.parse(localStorage.getItem("op_producao_" + p.id) || "[]");
-          const editado = ops.length > 0;
+          const editado = localStorage.getItem("editado_peca_" + p.id) === "true";
           return (
             <li key={p.id} className={`border rounded p-3 ${editado ? 'bg-yellow-100' : ''}`}>
               <p><strong>ID {String(p.id).padStart(6,'0')} ({p.codigo_peca})</strong>: {p.nome} - {p.comprimento} x {p.largura} mm</p>
