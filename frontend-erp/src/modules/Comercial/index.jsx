@@ -3,6 +3,7 @@ import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-ro
 import { useUsuario } from '../../UserContext';
 import Atendimentos from './pages/Atendimentos';
 import AtendimentoForm from './pages/AtendimentoForm';
+import AtendimentoDetalhes from './pages/AtendimentoDetalhes';
 
 function ComercialLayout() {
   const resolved = useResolvedPath('');
@@ -34,6 +35,7 @@ function Comercial() {
       <Route path="/" element={<ComercialLayout />}>
         <Route index element={<Atendimentos />} />
         <Route path="novo" element={<AtendimentoForm />} />
+        <Route path=":id" element={<AtendimentoDetalhes />} />
       </Route>
     </Routes>
   );

@@ -27,7 +27,9 @@ function Atendimentos() {
       <ul className="space-y-2">
         {atendimentos.map((at) => (
           <li key={at.id} className="p-2 border rounded bg-gray-50">
-            <span className="font-medium">{at.codigo}</span> - {at.cliente}
+            <Link to={String(at.id)} className="hover:underline">
+              <span className="font-medium">{at.codigo}</span> - {at.cliente}
+            </Link>
           </li>
         ))}
       </ul>
