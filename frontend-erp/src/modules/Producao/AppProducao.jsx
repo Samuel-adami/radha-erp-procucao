@@ -647,13 +647,13 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
           )}
           <Button
             variant="outline"
-            onClick={() =>
-              origemOcorrencia
-                ? navigate('/producao/ocorrencias', { state: { ocId } })
-                : pacoteIndex !== undefined
-                  ? navigate(`/producao/lote/${nome}/pacote/${pacoteIndex}`)
-                  : navigate(`/producao/lote/${nome}`)
-            }
+              onClick={() =>
+                origemOcorrencia
+                  ? navigate(`/producao/ocorrencias/pacote/${ocId}`)
+                  : pacoteIndex !== undefined
+                    ? navigate(`/producao/lote/${nome}/pacote/${pacoteIndex}`)
+                    : navigate(`/producao/lote/${nome}`)
+              }
           >
             Finalizar
           </Button>
