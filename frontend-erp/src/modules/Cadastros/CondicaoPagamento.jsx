@@ -42,6 +42,7 @@ function CondicaoPagamento() {
   const adicionarParcela = tipo => {
     setForm(prev => ({
       ...prev,
+g1b3co-codex/adicionar-tela-de-cadastro-com-tabela-e-importação
       [tipo]: [
         ...prev[tipo],
         {
