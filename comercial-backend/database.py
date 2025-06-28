@@ -40,6 +40,16 @@ def init_db():
             FOREIGN KEY (atendimento_id) REFERENCES atendimentos(id)
         )"""
     )
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS condicoes_pagamento (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            numero_parcelas INTEGER NOT NULL,
+            juros_parcela REAL DEFAULT 0,
+            dias_vencimento TEXT,
+            ativa INTEGER DEFAULT 1
+        )"""
+    )
     conn.commit()
     conn.close()
 
