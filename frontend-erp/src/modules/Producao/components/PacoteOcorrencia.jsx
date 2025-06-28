@@ -62,7 +62,7 @@ const PacoteOcorrencia = () => {
         const novoId = nextId++;
         idsOriginais.push(p.id);
         localStorage.setItem("op_producao_" + novoId, JSON.stringify(ops));
-        const editFlag = localStorage.getItem("editado_peca_" + p.id) || (ops.length > 0 ? "true" : "false");
+        const editFlag = localStorage.getItem("editado_peca_" + p.id) || "false";
         localStorage.setItem("editado_peca_" + novoId, editFlag);
         return {
           ...p,
