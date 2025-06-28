@@ -24,7 +24,7 @@ Faça login com seu usuário e navegue pelos módulos de acordo com suas permiss
 - **Usuários** – gestão de contas do sistema e permissões de acesso.
 
 ## Comercial
-- **Atendimentos** – registra o processo de venda desde o contato inicial até a pasta final, marcando tarefas e etapas concluídas.
+- **Atendimentos** – registra o processo de venda desde o contato inicial até a pasta final, marcando tarefas e etapas concluídas. Requer a permissão `comercial/atendimentos` para aparecer no menu.
 
 Sempre utilize a opção de **Sair** no canto superior para encerrar sua sessão.
 
