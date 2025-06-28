@@ -1,49 +1,30 @@
 # Radha ERP Monorepo
 
-This repository contains the services and utilities that compose Radha ERP.
+Este repositório agrupa todos os serviços que compõem o Radha ERP. A solução contempla módulos de marketing digital com IA, controle comercial e ferramentas de produção.
 
-## Prerequisites
+## Conteúdo
+- [Visão Geral](docs/overview.md)
+- [Guia de Uso](docs/user-guide.md)
+- [Guia de Manutenção](docs/admin-guide.md)
 
-On Debian based systems you can install them with:
+## Requisitos Básicos
+Instale Python 3, Node.js e npm. Em sistemas baseados em Debian:
 ```bash
 sudo apt install python3 python3-venv nodejs npm
 ```
 
+## Scripts Principais
+- `update_github.sh` – adiciona commits locais e envia ao GitHub.
+- `start_services.sh` – inicia todos os backends e o frontend em modo de desenvolvimento.
+- `rodar_ambientes.txt` – exemplos de comandos para executar cada módulo separadamente.
 
-## Scripts
+## Iniciando o Sistema
+1. Ajuste as variáveis de ambiente desejadas (`RADHA_ADMIN_USER`, `RADHA_ADMIN_PASS`, `SECRET_KEY`, `RADHA_DATA_DIR`).
+2. Execute `./start_services.sh` para rodar todos os serviços localmente.
+3. Acesse `http://localhost:3005` no navegador e faça login com o usuário configurado (padrão `admin`/`admin`).
 
-- **update_github.sh** – commits and pushes local changes to GitHub.
+O serviço `radha-erp.service` é um exemplo de unidade systemd para produção.
 
-The script uses the environment variable `RADHA_ERP_ROOT` to locate the
-monorepo. When the variable is not set, it tries to detect the current
-repository location automatically using `git`. Normally you can run the
-the script without setting anything when executing it inside the repository.
+## Suporte
+Caso o navegador exiba apenas uma tela de carregamento, verifique se as APIs estão em execução e se as portas 8010, 8015 e 8020 não estão ocupadas. Consulte os arquivos de log de cada serviço para mais detalhes.
 
-Example usage specifying a custom path:
-
-```bash
-RADHA_ERP_ROOT=/opt/radha/radha-erp ./update_github.sh
-```
-
-## Running the services
-See `rodar_ambientes.txt` for the commands used to launch each backend and the frontend. You can adapt these into a systemd unit like the example `radha-erp.service` provided in the repository.
-The `start_services.sh` script offers a simple way to run every component locally.
-
-### Default credentials
-When the application is started for the first time and the user database is empty,
-it will create a default administrator account. You can override the username and
-password using the `RADHA_ADMIN_USER` and `RADHA_ADMIN_PASS` environment
-variables. The default values are `admin` / `admin`.
-The default admin receives access to all modules, including the recently added
-`comercial` section. If your database was created before this permission was
-added, update the `permissoes` field for the admin user to include
-`comercial`.
-
-
-## Troubleshooting
-
-If the browser only shows a loading message and the application does not open,
-check whether the backend services are running correctly. The
-directory. Inspect `logs/startup_main.log` and the individual service logs for
-errors, ensuring that ports 8010, 8015 and 8020 are not in use by other
-processes.
