@@ -161,6 +161,7 @@ const EditarPecaProducao = () => {
   const location = useLocation();
   const origemOcorrencia = location.state?.origem === "ocorrencia";
   const ocId = location.state?.ocId;
+  const pacoteIndex = location.state?.pacoteIndex;
 
   const [dadosPeca, setDadosPeca] = useState(null);
   const [operacoes, setOperacoes] = useState([]);
@@ -169,6 +170,9 @@ const EditarPecaProducao = () => {
   const [espelhar, setEspelhar] = useState(false);
   const [novoComprimento, setNovoComprimento] = useState("");
   const [novaLargura, setNovaLargura] = useState("");
+  const [temPuxador, setTemPuxador] = useState(() =>
+    Boolean(localStorage.getItem("puxador_original_" + pecaId))
+  );
 
   useEffect(() => {
     let pecaEncontrada = null;
@@ -325,9 +329,18 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
         }
       }
       operacoesAtuais.push(...opsFinal);
+      localStorage.setItem(
+        "puxador_original_" + pecaId,
+        JSON.stringify({
+          comprimento: originalComprimento,
+          largura: originalLargura,
+          operacoes: operacoes,
+        })
+      );
 
       let newPecaId = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
       localStorage.setItem("globalPecaIdProducao", newPecaId + 1);
+      localStorage.setItem("puxador_painel_" + pecaId, newPecaId);
 
       const originalMaterial = dadosPeca.material || "";
       const novoMaterialPainel = originalMaterial.replace(/\d+mm/gi, '6mm');
@@ -364,6 +377,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
       }
 
       setDadosPeca(prev => ({ ...prev, comprimento: novoComprimento, largura: novaLargura }));
+      setTemPuxador(true);
 
     } else if (operacao === "Corte 45 graus") {
         if (pos.startsWith("L")) {
@@ -395,6 +409,51 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
     setOperacoes(novas);
     const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
     localStorage.setItem(chaveOp, JSON.stringify(novas));
+  };
+
+  const editarUma = (index) => {
+    const op = operacoes[index];
+    if (!op) return;
+    const novoX = prompt("Novo X", op.x);
+    if (novoX === null) return;
+    const novoY = prompt("Novo Y", op.y);
+    if (novoY === null) return;
+    const novas = operacoes.map((o, i) =>
+      i === index ? { ...o, x: parseFloat(novoX), y: parseFloat(novoY) } : o
+    );
+    setOperacoes(novas);
+    const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
+    localStorage.setItem(chaveOp, JSON.stringify(novas));
+  };
+
+  const desfazerPuxador = () => {
+    const original = localStorage.getItem("puxador_original_" + pecaId);
+    if (!original) return;
+    const dados = JSON.parse(original);
+    const painelId = parseInt(localStorage.getItem("puxador_painel_" + pecaId) || "0");
+    setOperacoes(dados.operacoes || []);
+    const chaveOp = origemOcorrencia ? "ocedit_op_" + pecaId : "op_producao_" + pecaId;
+    localStorage.setItem(chaveOp, JSON.stringify(dados.operacoes || []));
+    if (!origemOcorrencia) {
+      const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+      const atualizados = lotes.map(l =>
+        l.nome !== nome ? l : {
+          ...l,
+          pacotes: l.pacotes.map(pac => {
+            if (!pac.pecas.some(p => p.id === parseInt(pecaId))) return pac;
+            const novasPecas = pac.pecas
+              .filter(p => p.id !== painelId)
+              .map(p => p.id === parseInt(pecaId) ? { ...p, comprimento: dados.comprimento, largura: dados.largura } : p);
+            return { ...pac, pecas: novasPecas };
+          })
+        }
+      );
+      localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+    }
+    setDadosPeca(prev => ({ ...prev, comprimento: dados.comprimento, largura: dados.largura }));
+    localStorage.removeItem("puxador_original_" + pecaId);
+    localStorage.removeItem("puxador_painel_" + pecaId);
+    setTemPuxador(false);
   };
 
   const salvarMedidas = () => {
@@ -576,12 +635,17 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
         }
         <div className="flex gap-2 mt-4">
           <Button onClick={salvarOperacao}>Salvar Operação</Button>
+          {temPuxador && (
+            <Button variant="outline" onClick={desfazerPuxador}>Desfazer Puxador</Button>
+          )}
           <Button
             variant="outline"
             onClick={() =>
               origemOcorrencia
                 ? navigate('/producao/ocorrencias', { state: { ocId } })
-                : navigate(`/producao/lote/${nome}`)
+                : pacoteIndex !== undefined
+                  ? navigate(`/producao/lote/${nome}/pacote/${pacoteIndex}`)
+                  : navigate(`/producao/lote/${nome}`)
             }
           >
             Finalizar
@@ -606,7 +670,10 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
                 <span style={{ color: cores[i % cores.length] }}>
                   {op.tipo} {detalhes}
                 </span>
-                <Button size="sm" variant="ghost" onClick={() => excluirUma(i)}>Excluir</Button>
+                <div className="space-x-2">
+                  <Button size="sm" variant="outline" onClick={() => editarUma(i)}>Editar</Button>
+                  <Button size="sm" variant="ghost" onClick={() => excluirUma(i)}>Excluir</Button>
+                </div>
               </li>
             );
           })}

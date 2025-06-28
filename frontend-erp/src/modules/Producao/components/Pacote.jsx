@@ -85,16 +85,20 @@ const Pacote = () => {
       </div>
 
       <ul className="space-y-2">
-        {pecasFiltradas.map((p) => (
-          <li key={p.id} className="border rounded p-3">
-            <p><strong>ID {String(p.id).padStart(6,'0')} ({p.codigo_peca})</strong>: {p.nome} - {p.comprimento} x {p.largura} mm</p>
-            <div className="mt-2 space-x-2">
-              {/* CORREÇÃO: Sintaxe de navegação para a peça corrigida */}
-              <Button onClick={() => navigate(`/producao/lote/${nome}/peca/${p.id}`)}>Editar</Button>
-              <Button variant="destructive" onClick={() => excluirPeca(p.id)}>Excluir</Button>
-            </div>
-          </li>
-        ))}
+        {pecasFiltradas.map((p) => {
+          const ops = JSON.parse(localStorage.getItem("op_producao_" + p.id) || "[]");
+          const editado = ops.length > 0;
+          return (
+            <li key={p.id} className={`border rounded p-3 ${editado ? 'bg-yellow-100' : ''}`}>
+              <p><strong>ID {String(p.id).padStart(6,'0')} ({p.codigo_peca})</strong>: {p.nome} - {p.comprimento} x {p.largura} mm</p>
+              <div className="mt-2 space-x-2">
+                {/* CORREÇÃO: Sintaxe de navegação para a peça corrigida */}
+                <Button onClick={() => navigate(`/producao/lote/${nome}/peca/${p.id}`, { state: { pacoteIndex: indice } })}>Editar</Button>
+                <Button variant="destructive" onClick={() => excluirPeca(p.id)}>Excluir</Button>
+              </div>
+            </li>
+          );
+        })}
       </ul>
 
       {pacote.ferragens && pacote.ferragens.length > 0 && (
