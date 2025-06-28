@@ -129,3 +129,84 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
         conn.commit()
     return {"ok": True}
 
+
+@app.get("/condicoes-pagamento")
+async def listar_condicoes():
+    with get_db_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM condicoes_pagamento ORDER BY id"
+        ).fetchall()
+        itens = [dict(row) for row in rows]
+    return {"condicoes": itens}
+
+
+@app.post("/condicoes-pagamento")
+async def criar_condicao(request: Request):
+    data = await request.json()
+    dias = ",".join(str(d) for d in data.get("dias_vencimento", []))
+    fields = (
+        data.get("nome"),
+        data.get("numero_parcelas"),
+        data.get("juros_parcela", 0),
+        dias,
+        int(data.get("ativa", 1)),
+    )
+    with get_db_connection() as conn:
+        cur = conn.execute(
+            """INSERT INTO condicoes_pagamento (
+                nome, numero_parcelas, juros_parcela,
+                dias_vencimento, ativa
+            ) VALUES (?, ?, ?, ?, ?)""",
+            fields,
+        )
+        conn.commit()
+        new_id = cur.lastrowid
+    return {"id": new_id}
+
+
+@app.get("/condicoes-pagamento/{condicao_id}")
+async def obter_condicao(condicao_id: int):
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM condicoes_pagamento WHERE id=?",
+            (condicao_id,),
+        ).fetchone()
+        if not row:
+            return JSONResponse({"detail": "Condição não encontrada"}, status_code=404)
+        return {"condicao": dict(row)}
+
+
+@app.put("/condicoes-pagamento/{condicao_id}")
+async def atualizar_condicao(condicao_id: int, request: Request):
+    data = await request.json()
+    dias = ",".join(str(d) for d in data.get("dias_vencimento", []))
+    fields = (
+        data.get("nome"),
+        data.get("numero_parcelas"),
+        data.get("juros_parcela", 0),
+        dias,
+        int(data.get("ativa", 1)),
+        condicao_id,
+    )
+    with get_db_connection() as conn:
+        conn.execute(
+            """UPDATE condicoes_pagamento SET
+                nome=?, numero_parcelas=?, juros_parcela=?,
+                dias_vencimento=?, ativa=?
+            WHERE id=?""",
+            fields,
+        )
+        conn.commit()
+    return {"ok": True}
+
+
+@app.delete("/condicoes-pagamento/{condicao_id}")
+async def excluir_condicao(condicao_id: int):
+    with get_db_connection() as conn:
+        conn.execute(
+            "DELETE FROM condicoes_pagamento WHERE id=?",
+            (condicao_id,),
+        )
+        conn.commit()
+    return {"ok": True}
+

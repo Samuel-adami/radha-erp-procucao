@@ -9,6 +9,8 @@ import Fornecedores from './Fornecedores';
 import ListaFornecedores from './ListaFornecedores';
 import Usuarios from './Usuarios';
 import ListaUsuarios from './ListaUsuarios';
+import CondicaoPagamento from './CondicaoPagamento';
+import ListaCondicoesPagamento from './ListaCondicoesPagamento';
 import CadastroMenu from './CadastroMenu';
 import './Cadastros.css';
 
@@ -18,6 +20,7 @@ function CadastrosLayout() {
   const matchClientes = useMatch(`${resolved.pathname}/clientes`);
   const matchFornecedores = useMatch(`${resolved.pathname}/fornecedores`);
   const matchUsuarios = useMatch(`${resolved.pathname}/usuarios`);
+  const matchCondicoes = useMatch(`${resolved.pathname}/condicoes-pagamento`);
   const usuario = useUsuario();
   const possuiPermissao = p => usuario?.permissoes?.includes(p);
   return (
@@ -46,6 +49,14 @@ function CadastrosLayout() {
             className={`px-3 py-1 rounded ${matchFornecedores ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
           >
             Fornecedores
+          </Link>
+        )}
+        {possuiPermissao('cadastros/condicoes-pagamento') && (
+          <Link
+            to="condicoes-pagamento"
+            className={`px-3 py-1 rounded ${matchCondicoes ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Condições de Pagamento
           </Link>
         )}
         {possuiPermissao('cadastros/usuarios') && (
@@ -78,6 +89,11 @@ function Cadastros() {
         <Route path="fornecedores/novo" element={<Fornecedores />} />
         <Route path="fornecedores/lista" element={<ListaFornecedores />} />
         <Route path="fornecedores/editar/:id" element={<Fornecedores />} />
+
+        <Route path="condicoes-pagamento" element={<CadastroMenu ListaComponente={ListaCondicoesPagamento} />} />
+        <Route path="condicoes-pagamento/novo" element={<CondicaoPagamento />} />
+        <Route path="condicoes-pagamento/lista" element={<ListaCondicoesPagamento />} />
+        <Route path="condicoes-pagamento/editar/:id" element={<CondicaoPagamento />} />
 
         <Route path="usuarios" element={<CadastroMenu ListaComponente={ListaUsuarios} />} />
         <Route path="usuarios/novo" element={<Usuarios />} />

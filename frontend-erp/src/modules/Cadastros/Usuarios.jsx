@@ -26,7 +26,8 @@ const PERMISSOES_DISPONIVEIS = {
     'cadastros/dados-empresa',
     'cadastros/clientes',
     'cadastros/fornecedores',
-    'cadastros/usuarios'
+    'cadastros/usuarios',
+    'cadastros/condicoes-pagamento'
   ],
   'Comercial': [
     'comercial',
