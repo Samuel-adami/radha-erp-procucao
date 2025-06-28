@@ -82,8 +82,8 @@ function CondicaoPagamento() {
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       const parsed = rows.slice(1).map(r => ({
         numero: r[0],
-        juros: r[1],
-        retencao: r[2],
+        juros: r[1] !== undefined && r[1] !== null && r[1] !== '' ? Number(r[1]).toFixed(2) : '',
+        retencao: r[2] !== undefined && r[2] !== null && r[2] !== '' ? Number(r[2]).toFixed(2) : '',
       }));
       setForm(prev => ({ ...prev, [tipo]: parsed }));
     };
@@ -159,6 +159,7 @@ function CondicaoPagamento() {
                   <td className="border px-2">
                     <input
                       type="number"
+                      step="0.01"
                       className="input w-full"
                       value={p.juros}
                       onChange={e => atualizarParcela('semEntrada', idx, 'juros', e.target.value)}
@@ -167,6 +168,7 @@ function CondicaoPagamento() {
                   <td className="border px-2">
                     <input
                       type="number"
+                      step="0.01"
                       className="input w-full"
                       value={p.retencao}
                       onChange={e => atualizarParcela('semEntrada', idx, 'retencao', e.target.value)}
@@ -214,6 +216,7 @@ function CondicaoPagamento() {
                   <td className="border px-2">
                     <input
                       type="number"
+                      step="0.01"
                       className="input w-full"
                       value={p.juros}
                       onChange={e => atualizarParcela('comEntrada', idx, 'juros', e.target.value)}
@@ -222,6 +225,7 @@ function CondicaoPagamento() {
                   <td className="border px-2">
                     <input
                       type="number"
+                      step="0.01"
                       className="input w-full"
                       value={p.retencao}
                       onChange={e => atualizarParcela('comEntrada', idx, 'retencao', e.target.value)}
