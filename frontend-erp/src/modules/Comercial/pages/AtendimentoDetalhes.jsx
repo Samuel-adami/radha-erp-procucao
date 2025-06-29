@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
@@ -96,6 +96,25 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos }) {
         <Button size="sm" onClick={() => salvar(true)}>
           Salvar Projeto 3D
         </Button>
+      </li>
+    );
+  }
+
+  if (tarefa.nome === 'Orçamento') {
+    return (
+      <li className="space-y-1 p-2 border rounded">
+        <div className="flex items-center gap-2">
+          <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+          <Link
+            to={`negociacao/${tarefa.id}`}
+            className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
+          >
+            {tarefa.concluida ? 'Editar' : 'Negociar'}
+          </Link>
+        </div>
+        {tarefa.concluida && tarefa.dados?.total && (
+          <div className="text-sm text-gray-700 mt-1">Valor Final: {tarefa.dados.total}</div>
+        )}
       </li>
     );
   }
