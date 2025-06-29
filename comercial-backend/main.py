@@ -138,6 +138,21 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     return {"ok": True}
 
 
+@app.delete("/atendimentos/{atendimento_id}")
+async def excluir_atendimento(atendimento_id: int):
+    with get_db_connection() as conn:
+        conn.execute(
+            "DELETE FROM atendimento_tarefas WHERE atendimento_id=?",
+            (atendimento_id,),
+        )
+        conn.execute(
+            "DELETE FROM atendimentos WHERE id=?",
+            (atendimento_id,),
+        )
+        conn.commit()
+    return {"ok": True}
+
+
 @app.get("/condicoes-pagamento")
 async def listar_condicoes():
     with get_db_connection() as conn:
