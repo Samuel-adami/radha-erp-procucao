@@ -4,6 +4,25 @@ import { Button } from '../Producao/components/ui/button';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchComAuth } from '../../utils/fetchComAuth';
 
+const formatDecimal = v => {
+  const num = parseFloat(v);
+  if (isNaN(num)) return '';
+  return num.toFixed(2);
+};
+
+const formatParcelas = parc => {
+  const fmt = lst =>
+    (lst || []).map(p => ({
+      ...p,
+      juros: p.juros === '' || p.juros === undefined ? '' : formatDecimal(p.juros),
+      retencao:
+        p.retencao === '' || p.retencao === undefined
+          ? ''
+          : formatDecimal(p.retencao),
+    }));
+  return { sem: fmt(parc?.sem), com: fmt(parc?.com) };
+};
+
 function CondicaoPagamento() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -24,7 +43,7 @@ function CondicaoPagamento() {
             setForm({
               nome: c.nome,
               ativa: !!c.ativa,
-              parcelas: c.parcelas || { sem: [], com: [] },
+              parcelas: formatParcelas(c.parcelas || { sem: [], com: [] }),
             });
             setDirty(false);
           }
@@ -83,12 +102,12 @@ function CondicaoPagamento() {
         if (tipo === 'sem' || tipo === 'com') {
           parc[tipo].push({
             numero: Number(numero) || 0,
-            juros: Number(juros) || 0,
-            retencao: Number(retencao) || 0,
+            juros: formatDecimal(juros),
+            retencao: formatDecimal(retencao),
           });
         }
       });
-      setForm(prev => ({ ...prev, parcelas: parc }));
+      setForm(prev => ({ ...prev, parcelas: formatParcelas(parc) }));
       setDirty(true);
     };
     reader.readAsArrayBuffer(file);
@@ -201,6 +220,7 @@ function CondicaoPagamento() {
                         className="input w-full"
                         value={p.juros}
                         onChange={e => updateParcela(tipo, idx, 'juros', e.target.value)}
+                        onBlur={e => updateParcela(tipo, idx, 'juros', formatDecimal(e.target.value))}
                       />
                     </td>
                     <td className="border px-2">
@@ -210,6 +230,7 @@ function CondicaoPagamento() {
                         className="input w-full"
                         value={p.retencao}
                         onChange={e => updateParcela(tipo, idx, 'retencao', e.target.value)}
+                        onBlur={e => updateParcela(tipo, idx, 'retencao', formatDecimal(e.target.value))}
                       />
                     </td>
                     <td className="border px-2 text-center">
