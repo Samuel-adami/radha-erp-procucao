@@ -56,13 +56,14 @@ async def criar_atendimento(request: Request):
             data.get("especificador_nome"),
             data.get("rt_percent"),
             data.get("historico"),
+            json.dumps(data.get("arquivos", [])),
         )
         cur = conn.execute(
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
-                rt_percent, historico
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                rt_percent, historico, arquivos_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
@@ -94,7 +95,13 @@ async def obter_atendimento(atendimento_id: int):
         ).fetchone()
         if not row:
             return JSONResponse({"detail": "Atendimento não encontrado"}, status_code=404)
-        return {"atendimento": dict(row)}
+        item = dict(row)
+        if item.get("arquivos_json"):
+            try:
+                item["arquivos"] = json.loads(item["arquivos_json"])
+            except Exception:
+                item["arquivos"] = []
+        return {"atendimento": item}
 
 
 @app.get("/atendimentos/{atendimento_id}/tarefas")

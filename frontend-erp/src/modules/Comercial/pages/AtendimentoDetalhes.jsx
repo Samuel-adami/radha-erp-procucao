@@ -22,19 +22,6 @@ function AtendimentoDetalhes() {
     carregar();
   }, [id]);
 
-  const toggleTarefa = async (tarefaId, concluida) => {
-    try {
-      await fetchComAuth(`/comercial/atendimentos/${id}/tarefas/${tarefaId}`, {
-        method: 'PUT',
-        body: JSON.stringify({ concluida }),
-      });
-      setTarefas(prev =>
-        prev.map(t => (t.id === tarefaId ? { ...t, concluida } : t))
-      );
-    } catch (err) {
-      console.error('Erro ao atualizar tarefa', err);
-    }
-  };
 
   if (!atendimento) {
     return <p>Carregando...</p>;
@@ -50,11 +37,6 @@ function AtendimentoDetalhes() {
         <ul className="space-y-1">
           {tarefas.map(t => (
             <li key={t.id} className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={!!t.concluida}
-                onChange={e => toggleTarefa(t.id, e.target.checked)}
-              />
               <span className={t.concluida ? 'line-through' : ''}>{t.nome}</span>
             </li>
           ))}
