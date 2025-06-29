@@ -4,6 +4,8 @@ import { useUsuario } from '../../UserContext';
 import Atendimentos from './pages/Atendimentos';
 import AtendimentoForm from './pages/AtendimentoForm';
 import AtendimentoDetalhes from './pages/AtendimentoDetalhes';
+import Negociacao from './pages/Negociacao';
+import './Comercial.css';
 
 function ComercialLayout() {
   const resolved = useResolvedPath('');
@@ -36,6 +38,7 @@ function Comercial() {
         <Route index element={<Atendimentos />} />
         <Route path="novo" element={<AtendimentoForm />} />
         <Route path=":id" element={<AtendimentoDetalhes />} />
+        <Route path=":id/negociacao/:tarefaId" element={<Negociacao />} />
       </Route>
     </Routes>
   );
