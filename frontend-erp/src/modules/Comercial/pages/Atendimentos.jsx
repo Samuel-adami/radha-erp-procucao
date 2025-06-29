@@ -9,7 +9,36 @@ function Atendimentos() {
   const carregar = async () => {
     try {
       const dados = await fetchComAuth('/comercial/atendimentos');
-      setAtendimentos(dados.atendimentos);
+      const lista = await Promise.all(
+        dados.atendimentos.map(async (at) => {
+          try {
+            const t = await fetchComAuth(`/comercial/atendimentos/${at.id}/tarefas`);
+            const tarefas = t.tarefas.map((tt) => {
+              let dadosT;
+              try {
+                dadosT = tt.dados ? JSON.parse(tt.dados) : {};
+              } catch {
+                dadosT = {};
+              }
+              return { ...tt, dados: dadosT };
+            });
+            const first = tarefas.find((x) => x.dados?.data);
+            const lastDoneIndex = tarefas.map((x) => Number(x.concluida)).lastIndexOf(1);
+            const next = tarefas[lastDoneIndex + 1];
+            const last = tarefas[lastDoneIndex];
+            return {
+              ...at,
+              dataCriacao: first?.dados?.data || '',
+              setor: 'Comercial',
+              status: next ? next.nome : 'Finalizado',
+              ultimaAtualizacao: last?.dados?.data || '',
+            };
+          } catch {
+            return { ...at, setor: 'Comercial' };
+          }
+        })
+      );
+      setAtendimentos(lista);
     } catch (err) {
       console.error('Erro ao carregar atendimentos', err);
     }
@@ -32,21 +61,40 @@ function Atendimentos() {
           Novo Atendimento
         </Link>
       </div>
-      <ul className="space-y-2">
-        {atendimentos.map((at) => (
-          <li
-            key={at.id}
-            className="p-2 border rounded bg-gray-50 flex justify-between items-center"
-          >
-            <Link to={String(at.id)} className="hover:underline flex-1">
-              <span className="font-medium">{at.codigo}</span> - {at.cliente}
-            </Link>
-            <Button size="sm" variant="destructive" onClick={() => remover(at.id)}>
-              Excluir
-            </Button>
-          </li>
-        ))}
-      </ul>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border px-2">Data</th>
+            <th className="border px-2">Código</th>
+            <th className="border px-2">Cliente</th>
+            <th className="border px-2">Setor</th>
+            <th className="border px-2">Status</th>
+            <th className="border px-2">Última Atualização</th>
+            <th className="border px-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {atendimentos.map((at) => (
+            <tr key={at.id}>
+              <td className="border px-2">{at.dataCriacao || '-'}</td>
+              <td className="border px-2">
+                <Link to={String(at.id)} className="hover:underline">
+                  {at.codigo}
+                </Link>
+              </td>
+              <td className="border px-2">{at.cliente}</td>
+              <td className="border px-2">{at.setor || '-'}</td>
+              <td className="border px-2">{at.status || '-'}</td>
+              <td className="border px-2">{at.ultimaAtualizacao || '-'}</td>
+              <td className="border px-2 text-center">
+                <Button size="sm" variant="destructive" onClick={() => remover(at.id)}>
+                  Excluir
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
