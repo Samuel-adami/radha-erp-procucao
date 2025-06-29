@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from database import get_db_connection
 import re
+import json
 
 TASKS = [
     "Contato Inicial",
@@ -136,7 +137,15 @@ async def listar_condicoes():
         rows = conn.execute(
             "SELECT * FROM condicoes_pagamento ORDER BY id"
         ).fetchall()
-        itens = [dict(row) for row in rows]
+        itens = []
+        for row in rows:
+            item = dict(row)
+            if item.get("parcelas_json"):
+                try:
+                    item["parcelas"] = json.loads(item["parcelas_json"])
+                except Exception:
+                    item["parcelas"] = []
+            itens.append(item)
     return {"condicoes": itens}
 
 
@@ -144,19 +153,21 @@ async def listar_condicoes():
 async def criar_condicao(request: Request):
     data = await request.json()
     dias = ",".join(str(d) for d in data.get("dias_vencimento", []))
+    parcelas = json.dumps(data.get("parcelas", []))
     fields = (
         data.get("nome"),
         data.get("numero_parcelas"),
         data.get("juros_parcela", 0),
         dias,
         int(data.get("ativa", 1)),
+        parcelas,
     )
     with get_db_connection() as conn:
         cur = conn.execute(
             """INSERT INTO condicoes_pagamento (
                 nome, numero_parcelas, juros_parcela,
-                dias_vencimento, ativa
-            ) VALUES (?, ?, ?, ?, ?)""",
+                dias_vencimento, ativa, parcelas_json
+            ) VALUES (?, ?, ?, ?, ?, ?)""",
             fields,
         )
         conn.commit()
@@ -173,26 +184,34 @@ async def obter_condicao(condicao_id: int):
         ).fetchone()
         if not row:
             return JSONResponse({"detail": "Condição não encontrada"}, status_code=404)
-        return {"condicao": dict(row)}
+        item = dict(row)
+        if item.get("parcelas_json"):
+            try:
+                item["parcelas"] = json.loads(item["parcelas_json"])
+            except Exception:
+                item["parcelas"] = []
+        return {"condicao": item}
 
 
 @app.put("/condicoes-pagamento/{condicao_id}")
 async def atualizar_condicao(condicao_id: int, request: Request):
     data = await request.json()
     dias = ",".join(str(d) for d in data.get("dias_vencimento", []))
+    parcelas = json.dumps(data.get("parcelas", []))
     fields = (
         data.get("nome"),
         data.get("numero_parcelas"),
         data.get("juros_parcela", 0),
         dias,
         int(data.get("ativa", 1)),
+        parcelas,
         condicao_id,
     )
     with get_db_connection() as conn:
         conn.execute(
             """UPDATE condicoes_pagamento SET
                 nome=?, numero_parcelas=?, juros_parcela=?,
-                dias_vencimento=?, ativa=?
+                dias_vencimento=?, ativa=?, parcelas_json=?
             WHERE id=?""",
             fields,
         )
