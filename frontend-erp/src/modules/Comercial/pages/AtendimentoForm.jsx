@@ -69,11 +69,9 @@ function AtendimentoForm() {
   }, []);
 
   useEffect(() => {
-    if (clienteInfo) {
-      const codigo = `AT-${clienteInfo.codigo}-${String(sequencial).padStart(4, '0')}`;
-      setForm(prev => ({ ...prev, codigo }));
-    }
-  }, [clienteInfo, sequencial]);
+    const codigo = `AT-${String(sequencial).padStart(4, '0')}`;
+    setForm(prev => ({ ...prev, codigo }));
+  }, [sequencial]);
 
   const handle = campo => e => {
     let value = e.target.value;
