@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from database import get_db_connection
+from datetime import datetime
 import re
 import json
 
@@ -57,13 +58,14 @@ async def criar_atendimento(request: Request):
             data.get("rt_percent"),
             data.get("historico"),
             json.dumps(data.get("arquivos", [])),
+            datetime.utcnow().isoformat(),
         )
         cur = conn.execute(
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
-                rt_percent, historico, arquivos_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                rt_percent, historico, arquivos_json, data_cadastro
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
@@ -80,7 +82,7 @@ async def criar_atendimento(request: Request):
 async def listar_atendimentos():
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT id, cliente, codigo, previsao_fechamento, temperatura FROM atendimentos ORDER BY id DESC"
+            "SELECT id, cliente, codigo, previsao_fechamento, temperatura, data_cadastro FROM atendimentos ORDER BY id DESC"
         ).fetchall()
         itens = [dict(row) for row in rows]
     return {"atendimentos": itens}

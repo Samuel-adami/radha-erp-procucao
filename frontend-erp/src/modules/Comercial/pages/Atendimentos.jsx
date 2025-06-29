@@ -28,7 +28,7 @@ function Atendimentos() {
             const last = tarefas[lastDoneIndex];
             return {
               ...at,
-              dataCriacao: first?.dados?.data || '',
+              dataCadastro: at.data_cadastro || first?.dados?.data || '',
               setor: 'Comercial',
               status: next ? next.nome : 'Finalizado',
               ultimaAtualizacao: last?.dados?.data || '',
@@ -64,7 +64,7 @@ function Atendimentos() {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border px-2">Data</th>
+            <th className="border px-2">Data de Cadastro</th>
             <th className="border px-2">Código</th>
             <th className="border px-2">Cliente</th>
             <th className="border px-2">Setor</th>
@@ -76,7 +76,7 @@ function Atendimentos() {
         <tbody>
           {atendimentos.map((at) => (
             <tr key={at.id}>
-              <td className="border px-2">{at.dataCriacao || '-'}</td>
+              <td className="border px-2">{at.dataCadastro || '-'}</td>
               <td className="border px-2">
                 <Link to={String(at.id)} className="hover:underline">
                   {at.codigo}

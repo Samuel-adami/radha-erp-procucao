@@ -86,7 +86,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos }) {
               <span>{amb}</span>
               <input type="file" accept=".xml,.txt,.csv" onChange={handleFile(amb)} />
             </div>
-            {dadosProj[amb] && (
+            {dadosProj[amb] && dadosProj[amb].valor > 0 && (
               <div className="text-sm text-gray-700 ml-2">
                 {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].valor}
               </div>

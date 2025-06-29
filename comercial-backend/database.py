@@ -28,7 +28,8 @@ def init_db():
             especificador_nome TEXT,
             rt_percent REAL,
             historico TEXT,
-            arquivos_json TEXT
+            arquivos_json TEXT,
+            data_cadastro TEXT DEFAULT CURRENT_TIMESTAMP
         )"""
     )
     cur.execute(
@@ -58,6 +59,10 @@ def init_db():
     cols_a = [row[1] for row in cur.execute("PRAGMA table_info(atendimentos)")]
     if "arquivos_json" not in cols_a:
         cur.execute("ALTER TABLE atendimentos ADD COLUMN arquivos_json TEXT")
+    if "data_cadastro" not in cols_a:
+        cur.execute(
+            "ALTER TABLE atendimentos ADD COLUMN data_cadastro TEXT DEFAULT CURRENT_TIMESTAMP"
+        )
     conn.commit()
     conn.close()
 
