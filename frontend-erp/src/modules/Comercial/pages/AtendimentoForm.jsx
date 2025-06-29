@@ -34,6 +34,18 @@ function AtendimentoForm() {
     rt_percent: '',
     historico: '',
   });
+  const [initialForm, setInitialForm] = useState({
+    cliente: '',
+    codigo: '',
+    projetos: [],
+    previsao_fechamento: '',
+    temperatura: '',
+    tem_especificador: false,
+    especificador_nome: '',
+    rt_percent: '',
+    historico: '',
+  });
+  const [files, setFiles] = useState([]);
   const [sugestoesClientes, setSugestoesClientes] = useState([]);
   const [clienteInfo, setClienteInfo] = useState(null);
   const [sequencial, setSequencial] = useState(1);
@@ -43,6 +55,17 @@ function AtendimentoForm() {
   useEffect(() => {
     const seq = parseInt(localStorage.getItem('atendimentoCodigoSeq') || '1', 10);
     setSequencial(seq);
+    setInitialForm({
+      cliente: '',
+      codigo: '',
+      projetos: [],
+      previsao_fechamento: '',
+      temperatura: '',
+      tem_especificador: false,
+      especificador_nome: '',
+      rt_percent: '',
+      historico: '',
+    });
   }, []);
 
   useEffect(() => {
@@ -85,23 +108,59 @@ function AtendimentoForm() {
     setClienteInfo(encontrado || null);
   };
 
+  const handleFileChange = async e => {
+    const fileList = Array.from(e.target.files || []);
+    const lidos = await Promise.all(
+      fileList.map(
+        f =>
+          new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = ev => resolve({ nome: f.name, conteudo: ev.target.result });
+            reader.readAsDataURL(f);
+          })
+      )
+    );
+    setFiles(lidos);
+  };
+
+  const salvar = async () => {
+    await fetchComAuth('/comercial/atendimentos', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...form,
+        projetos: form.projetos.join(','),
+        tem_especificador: form.tem_especificador ? 1 : 0,
+        arquivos: files,
+      }),
+    });
+    localStorage.setItem('atendimentoCodigoSeq', String(sequencial + 1));
+    setSequencial(s => s + 1);
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      await fetchComAuth('/comercial/atendimentos', {
-        method: 'POST',
-        body: JSON.stringify({
-          ...form,
-          projetos: form.projetos.join(','),
-          tem_especificador: form.tem_especificador ? 1 : 0,
-        }),
-      });
-      localStorage.setItem('atendimentoCodigoSeq', String(sequencial + 1));
-      setSequencial(s => s + 1);
+      await salvar();
       navigate('..');
     } catch (err) {
       console.error('Erro ao criar atendimento', err);
     }
+  };
+
+  const handleSair = async () => {
+    const changed =
+      JSON.stringify(form) !== JSON.stringify(initialForm) || files.length > 0;
+    if (changed) {
+      const salvarAntes = window.confirm('Deseja salvar o formulário antes de sair?');
+      if (salvarAntes) {
+        try {
+          await salvar();
+        } catch (err) {
+          console.error('Erro ao salvar atendimento', err);
+        }
+      }
+    }
+    navigate('..');
   };
 
   useEffect(() => {
@@ -241,9 +300,21 @@ function AtendimentoForm() {
             value={form.historico}
             onChange={handle('historico')}
           />
+          <input
+            type="file"
+            multiple
+            className="mt-2"
+            accept=".pdf,.txt,.png,.jpg,.jpeg,.xls,.xlsx"
+            onChange={handleFileChange}
+          />
         </label>
       </div>
-      <Button type="submit">Salvar</Button>
+      <div className="flex gap-2">
+        <Button type="submit">Salvar</Button>
+        <Button type="button" variant="outline" onClick={handleSair}>
+          Sair
+        </Button>
+      </div>
     </form>
   );
 }

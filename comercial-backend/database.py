@@ -27,7 +27,8 @@ def init_db():
             tem_especificador INTEGER,
             especificador_nome TEXT,
             rt_percent REAL,
-            historico TEXT
+            historico TEXT,
+            arquivos_json TEXT
         )"""
     )
     cur.execute(
@@ -54,6 +55,9 @@ def init_db():
     cols = [row[1] for row in cur.execute("PRAGMA table_info(condicoes_pagamento)")]
     if "parcelas_json" not in cols:
         cur.execute("ALTER TABLE condicoes_pagamento ADD COLUMN parcelas_json TEXT")
+    cols_a = [row[1] for row in cur.execute("PRAGMA table_info(atendimentos)")]
+    if "arquivos_json" not in cols_a:
+        cur.execute("ALTER TABLE atendimentos ADD COLUMN arquivos_json TEXT")
     conn.commit()
     conn.close()
 
