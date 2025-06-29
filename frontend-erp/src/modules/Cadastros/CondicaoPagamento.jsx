@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import { Button } from '../Producao/components/ui/button';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchComAuth } from '../../utils/fetchComAuth';
@@ -8,10 +9,8 @@ function CondicaoPagamento() {
   const { id } = useParams();
   const initialForm = {
     nome: '',
-    numero_parcelas: 1,
-    juros_parcela: '',
-    dias_vencimento: ['0'],
     ativa: true,
+    parcelas: { sem: [], com: [] },
   };
   const [form, setForm] = useState(initialForm);
   const [dirty, setDirty] = useState(false);
@@ -24,10 +23,8 @@ function CondicaoPagamento() {
           if (c) {
             setForm({
               nome: c.nome,
-              numero_parcelas: c.numero_parcelas,
-              juros_parcela: c.juros_parcela,
-              dias_vencimento: c.dias_vencimento ? c.dias_vencimento.split(',') : [],
               ativa: !!c.ativa,
+              parcelas: c.parcelas || { sem: [], com: [] },
             });
             setDirty(false);
           }
@@ -42,38 +39,72 @@ function CondicaoPagamento() {
     setDirty(true);
   };
 
-  const handleDiasChange = (index, value) => {
+  const addParcela = tipo => {
     setForm(prev => {
-      const dias = [...prev.dias_vencimento];
-      dias[index] = value;
-      return { ...prev, dias_vencimento: dias };
+      const lista = [...prev.parcelas[tipo]];
+      lista.push({ numero: lista.length + 1, juros: '', retencao: '' });
+      return { ...prev, parcelas: { ...prev.parcelas, [tipo]: lista } };
     });
     setDirty(true);
   };
 
-  const adicionarDia = () => {
-    setForm(prev => ({ ...prev, dias_vencimento: [...prev.dias_vencimento, ''] }));
+  const updateParcela = (tipo, index, campo, valor) => {
+    setForm(prev => {
+      const lista = prev.parcelas[tipo].map((p, i) =>
+        i === index ? { ...p, [campo]: valor } : p
+      );
+      return { ...prev, parcelas: { ...prev.parcelas, [tipo]: lista } };
+    });
     setDirty(true);
   };
 
-  const removerDia = index => {
-    setForm(prev => ({
-      ...prev,
-      dias_vencimento: prev.dias_vencimento.filter((_, i) => i !== index),
-    }));
+  const removeParcela = (tipo, index) => {
+    setForm(prev => {
+      const lista = prev.parcelas[tipo].filter((_, i) => i !== index);
+      return { ...prev, parcelas: { ...prev.parcelas, [tipo]: lista } };
+    });
     setDirty(true);
   };
+
+  const fileRef = useRef();
+
+  const importarExcel = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      const data = new Uint8Array(evt.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      const parc = { sem: [], com: [] };
+      rows.slice(1).forEach(r => {
+        const [tipo, numero, juros, retencao] = r;
+        if (tipo === 'sem' || tipo === 'com') {
+          parc[tipo].push({
+            numero: Number(numero) || 0,
+            juros: Number(juros) || 0,
+            retencao: Number(retencao) || 0,
+          });
+        }
+      });
+      setForm(prev => ({ ...prev, parcelas: parc }));
+      setDirty(true);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const abrirImport = () => fileRef.current?.click();
 
   const salvar = async () => {
-    const parcelas = parseInt(form.numero_parcelas, 10);
-    const juros = parseFloat(form.juros_parcela);
-
+    const totalParcelas = form.parcelas.sem.length + form.parcelas.com.length;
     const body = {
       nome: form.nome,
-      numero_parcelas: Number.isFinite(parcelas) ? parcelas : 1,
-      juros_parcela: Number.isFinite(juros) ? juros : 0,
-      dias_vencimento: form.dias_vencimento,
+      numero_parcelas: totalParcelas,
+      juros_parcela: 0,
+      dias_vencimento: [],
       ativa: form.ativa ? 1 : 0,
+      parcelas: form.parcelas,
     };
     const url = id ? `/comercial/condicoes-pagamento/${id}` : '/comercial/condicoes-pagamento';
     const metodo = id ? 'PUT' : 'POST';
@@ -117,60 +148,83 @@ function CondicaoPagamento() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
         <label className="block">
-          <span className="text-sm">Nome/Descrição</span>
+          <span className="text-sm">Descrição</span>
           <input className="input" value={form.nome} onChange={handle('nome')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Número de Parcelas</span>
-          <input
-            type="number"
-            className="input"
-            value={form.numero_parcelas}
-            onChange={handle('numero_parcelas')}
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm">Juros % por Parcela</span>
-          <input
-            type="number"
-            step="0.01"
-            className="input"
-            value={form.juros_parcela}
-            onChange={handle('juros_parcela')}
-          />
         </label>
         <label className="inline-flex items-center gap-1">
           <input type="checkbox" checked={form.ativa} onChange={handle('ativa')} />
           Ativa
         </label>
-        <div className="md:col-span-2 space-y-2">
-          <span className="text-sm block">Dias de Vencimento</span>
-          {form.dias_vencimento.map((dia, idx) => (
-            <div key={idx} className="flex items-center gap-2">
-              <input
-                type="number"
-                className="input flex-1"
-                value={dia}
-                onChange={e => handleDiasChange(idx, e.target.value)}
-              />
-              <button
-                type="button"
-                className="text-red-600 hover:underline"
-                onClick={() => removerDia(idx)}
-              >
-                Remover
-              </button>
-            </div>
-          ))}
-          <Button type="button" variant="secondary" onClick={adicionarDia}>
-            Adicionar Dia
-          </Button>
-        </div>
       </div>
+      <div className="space-y-4">
+        {['sem', 'com'].map(tipo => (
+          <div key={tipo}>
+            <div className="flex justify-between items-center mb-1">
+              <h4 className="font-semibold">
+                {tipo === 'sem' ? 'Sem Entrada' : 'Com Entrada'}
+              </h4>
+              <Button type="button" variant="secondary" onClick={() => addParcela(tipo)}>
+                Adicionar Parcela
+              </Button>
+            </div>
+            <table className="w-full text-sm border">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2">Nº Parcela</th>
+                  <th className="border px-2">Juros % mês</th>
+                  <th className="border px-2">Retenção %</th>
+                  <th className="border px-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.parcelas[tipo].map((p, idx) => (
+                  <tr key={idx}>
+                    <td className="border px-2">
+                      <input
+                        type="number"
+                        className="input w-full"
+                        value={p.numero}
+                        onChange={e => updateParcela(tipo, idx, 'numero', e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="input w-full"
+                        value={p.juros}
+                        onChange={e => updateParcela(tipo, idx, 'juros', e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="input w-full"
+                        value={p.retencao}
+                        onChange={e => updateParcela(tipo, idx, 'retencao', e.target.value)}
+                      />
+                    </td>
+                    <td className="border px-2 text-center">
+                      <button type="button" className="text-red-600" onClick={() => removeParcela(tipo, idx)}>
+                        Remover
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))}
+      </div>
+      <input type="file" ref={fileRef} onChange={importarExcel} className="hidden" />
       <div className="flex gap-2">
         <Button type="submit">Salvar</Button>
+        <Button type="button" variant="secondary" onClick={abrirImport}>
+          Importar Excel
+        </Button>
         <Button type="button" variant="secondary" onClick={cancelar}>
           Cancelar
         </Button>

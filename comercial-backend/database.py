@@ -47,9 +47,13 @@ def init_db():
             numero_parcelas INTEGER NOT NULL,
             juros_parcela REAL DEFAULT 0,
             dias_vencimento TEXT,
-            ativa INTEGER DEFAULT 1
+            ativa INTEGER DEFAULT 1,
+            parcelas_json TEXT
         )"""
     )
+    cols = [row[1] for row in cur.execute("PRAGMA table_info(condicoes_pagamento)")]
+    if "parcelas_json" not in cols:
+        cur.execute("ALTER TABLE condicoes_pagamento ADD COLUMN parcelas_json TEXT")
     conn.commit()
     conn.close()
 
