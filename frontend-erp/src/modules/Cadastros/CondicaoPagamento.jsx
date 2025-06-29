@@ -14,6 +14,7 @@ function CondicaoPagamento() {
     ativa: true,
   };
   const [form, setForm] = useState(initialForm);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -28,6 +29,7 @@ function CondicaoPagamento() {
               dias_vencimento: c.dias_vencimento ? c.dias_vencimento.split(',') : [],
               ativa: !!c.ativa,
             });
+            setDirty(false);
           }
         })
         .catch(() => {});
@@ -37,6 +39,7 @@ function CondicaoPagamento() {
   const handle = campo => e => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setForm(prev => ({ ...prev, [campo]: value }));
+    setDirty(true);
   };
 
   const handleDiasChange = (index, value) => {
@@ -45,10 +48,12 @@ function CondicaoPagamento() {
       dias[index] = value;
       return { ...prev, dias_vencimento: dias };
     });
+    setDirty(true);
   };
 
   const adicionarDia = () => {
     setForm(prev => ({ ...prev, dias_vencimento: [...prev.dias_vencimento, ''] }));
+    setDirty(true);
   };
 
   const removerDia = index => {
@@ -56,6 +61,7 @@ function CondicaoPagamento() {
       ...prev,
       dias_vencimento: prev.dias_vencimento.filter((_, i) => i !== index),
     }));
+    setDirty(true);
   };
 
   const salvar = async () => {
@@ -71,24 +77,41 @@ function CondicaoPagamento() {
     };
     const url = id ? `/comercial/condicoes-pagamento/${id}` : '/comercial/condicoes-pagamento';
     const metodo = id ? 'PUT' : 'POST';
-    await fetchComAuth(url, { method: metodo, body: JSON.stringify(body) });
+    try {
+      await fetchComAuth(url, { method: metodo, body: JSON.stringify(body) });
+      alert('Condição salva');
+      setDirty(false);
+    } catch (err) {
+      alert('Erro ao salvar: ' + err.message);
+      throw err;
+    }
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    await salvar();
-    if (id) {
-      navigate('../lista');
-    } else {
-      setForm(initialForm);
+    try {
+      await salvar();
+      if (id) {
+        navigate('../lista');
+      } else {
+        setForm(initialForm);
+      }
+    } catch (err) {
+      console.error('Falha ao salvar condição', err);
     }
   };
 
   const cancelar = () => {
     setForm(initialForm);
+    setDirty(false);
   };
 
   const sair = () => {
+    if (dirty) {
+      if (window.confirm('Deseja salvar as informações adicionadas?')) {
+        salvar();
+      }
+    }
     navigate('..');
   };
 
