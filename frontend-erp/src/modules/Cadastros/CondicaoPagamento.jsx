@@ -159,17 +159,22 @@ function CondicaoPagamento() {
         </label>
       </div>
       <div className="space-y-4">
-        {['sem', 'com'].map(tipo => (
-          <div key={tipo}>
-            <div className="flex justify-between items-center mb-1">
-              <h4 className="font-semibold">
-                {tipo === 'sem' ? 'Sem Entrada' : 'Com Entrada'}
-              </h4>
-              <Button type="button" variant="secondary" onClick={() => addParcela(tipo)}>
-                Adicionar Parcela
-              </Button>
-            </div>
-            <table className="w-full text-sm border">
+          {['sem', 'com'].map(tipo => (
+            <div key={tipo}>
+              <div className="flex justify-between items-center mb-1">
+                <h4 className="font-semibold">
+                  {tipo === 'sem' ? 'Sem Entrada' : 'Com Entrada'}
+                </h4>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" onClick={() => addParcela(tipo)}>
+                    Adicionar Parcela
+                  </Button>
+                  <Button type="button" variant="secondary" onClick={abrirImport}>
+                    Importar Excel
+                  </Button>
+                </div>
+              </div>
+              <table className="w-full text-sm border">
               <thead>
                 <tr className="bg-gray-100">
                   <th className="border px-2">Nº Parcela</th>
@@ -220,17 +225,14 @@ function CondicaoPagamento() {
         ))}
       </div>
       <input type="file" ref={fileRef} onChange={importarExcel} className="hidden" />
-      <div className="flex gap-2">
-        <Button type="submit">Salvar</Button>
-        <Button type="button" variant="secondary" onClick={abrirImport}>
-          Importar Excel
-        </Button>
-        <Button type="button" variant="secondary" onClick={cancelar}>
-          Cancelar
-        </Button>
-        <Button type="button" variant="secondary" onClick={sair}>
-          Sair
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit">Salvar</Button>
+          <Button type="button" variant="secondary" onClick={cancelar}>
+            Cancelar
+          </Button>
+          <Button type="button" variant="secondary" onClick={sair}>
+            Sair
+          </Button>
       </div>
     </form>
   );
