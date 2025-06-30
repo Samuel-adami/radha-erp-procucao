@@ -110,7 +110,7 @@ async def obter_atendimento(atendimento_id: int):
 async def listar_tarefas(atendimento_id: int):
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT id, nome, concluida, dados FROM atendimento_tarefas WHERE atendimento_id=?",
+            "SELECT id, nome, concluida, dados FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
             (atendimento_id,),
         ).fetchall()
         tarefas = [dict(row) for row in rows]
@@ -122,6 +122,23 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     data = await request.json()
     campos = []
     valores = []
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=? AND id=?",
+            (atendimento_id, tarefa_id),
+        ).fetchone()
+        if not row:
+            return JSONResponse({"detail": "Tarefa não encontrada"}, status_code=404)
+        if not row["concluida"]:
+            prev = conn.execute(
+                "SELECT COUNT(*) FROM atendimento_tarefas WHERE atendimento_id=? AND id < ? AND concluida=0",
+                (atendimento_id, tarefa_id),
+            ).fetchone()[0]
+            if prev > 0:
+                return JSONResponse(
+                    {"detail": "Não é possível executar esta tarefa antes de concluir as anteriores"},
+                    status_code=400,
+                )
     if "concluida" in data:
         campos.append("concluida=?")
         valores.append(int(bool(data["concluida"])))
