@@ -41,6 +41,7 @@ function AtendimentoForm() {
     tem_especificador: false,
     especificador_nome: '',
     rt_percent: '',
+    entrega_diferente: '',
     historico: '',
   });
   const [initialForm, setInitialForm] = useState({
@@ -61,6 +62,7 @@ function AtendimentoForm() {
     tem_especificador: false,
     especificador_nome: '',
     rt_percent: '',
+    entrega_diferente: '',
     historico: '',
   });
   const [files, setFiles] = useState([]);
@@ -71,6 +73,10 @@ function AtendimentoForm() {
   const [entregaOpcao, setEntregaOpcao] = useState('');
   const navigate = useNavigate();
   const { id } = useParams();
+
+  useEffect(() => {
+    setEntregaOpcao(form.entrega_diferente || '');
+  }, [form.entrega_diferente]);
 
   useEffect(() => {
     const seq = parseInt(localStorage.getItem('atendimentoCodigoSeq') || '1', 10);
@@ -93,6 +99,7 @@ function AtendimentoForm() {
       tem_especificador: false,
       especificador_nome: '',
       rt_percent: '',
+      entrega_diferente: '',
       historico: '',
     });
   }, []);
@@ -121,6 +128,7 @@ function AtendimentoForm() {
           tem_especificador: Boolean(at.tem_especificador),
           especificador_nome: at.especificador_nome || '',
           rt_percent: at.rt_percent || '',
+          entrega_diferente: at.entrega_diferente || '',
           historico: at.historico || '',
         });
         setInitialForm({
@@ -141,6 +149,7 @@ function AtendimentoForm() {
           tem_especificador: Boolean(at.tem_especificador),
           especificador_nome: at.especificador_nome || '',
           rt_percent: at.rt_percent || '',
+          entrega_diferente: at.entrega_diferente || '',
           historico: at.historico || '',
         });
       } catch (err) {
@@ -228,6 +237,7 @@ function AtendimentoForm() {
     if (val === 'Sim' && clienteInfo) {
       setForm(prev => ({
         ...prev,
+        entrega_diferente: val,
         rua: clienteInfo.endereco || '',
         numero: clienteInfo.numero || '',
         cidade: clienteInfo.cidade || '',
@@ -237,12 +247,15 @@ function AtendimentoForm() {
     } else if (val === 'Não') {
       setForm(prev => ({
         ...prev,
+        entrega_diferente: val,
         rua: '',
         numero: '',
         cidade: '',
         estado: '',
         cep: '',
       }));
+    } else {
+      setForm(prev => ({ ...prev, entrega_diferente: val }));
     }
   };
 

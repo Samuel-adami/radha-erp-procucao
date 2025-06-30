@@ -56,6 +56,7 @@ async def criar_atendimento(request: Request):
             int(data.get("tem_especificador") or 0),
             data.get("especificador_nome"),
             data.get("rt_percent"),
+            data.get("entrega_diferente"),
             data.get("historico"),
             json.dumps(data.get("arquivos", [])),
             data.get("procedencia"),
@@ -73,10 +74,10 @@ async def criar_atendimento(request: Request):
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
-                rt_percent, historico, arquivos_json,
+                rt_percent, entrega_diferente, historico, arquivos_json,
                 procedencia, vendedor, telefone, email, rua, numero, cidade, estado, cep,
                 data_cadastro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
@@ -131,6 +132,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
         "cidade",
         "estado",
         "cep",
+        "entrega_diferente",
         "procedencia",
         "projetos",
     ]:
