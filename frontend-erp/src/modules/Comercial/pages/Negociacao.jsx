@@ -194,6 +194,21 @@ function Negociacao() {
     const template = t.template;
     if (!template) return;
     const empresa = JSON.parse(localStorage.getItem('empresa') || '{}');
+
+    const footerText = () => {
+      switch (template.tipo) {
+        case 'contrato':
+          return `Contrato ${new Date().getFullYear()}/0001`;
+        case 'orcamento':
+          return `OR ${atendimento?.codigo || 'AT-0000'} 001`;
+        case 'pedido':
+          return `Pedido ${atendimento?.codigo || 'AT-0000'}`;
+        case 'romaneio':
+          return 'Romaneio Nº 00001';
+        default:
+          return '';
+      }
+    };
     const cond = condicoes.find(c => String(c.id) === String(condicaoId))?.nome || '';
     const valores = {
       atendimento: atendimento || {},
@@ -223,19 +238,35 @@ function Negociacao() {
     document.body.appendChild(cont);
 
     const content = document.createElement('div');
-    content.className = 'border bg-white p-4';
+    content.className = 'border bg-white p-4 flex flex-col justify-between';
     content.style.width = '210mm';
     content.style.minHeight = '297mm';
     cont.appendChild(content);
 
+    const header = document.createElement('div');
+    header.className = 'flex justify-between items-center mb-4';
+    if (empresa.logo) {
+      const img = document.createElement('img');
+      img.src = empresa.logo;
+      img.style.height = '40px';
+      header.appendChild(img);
+    }
+    const slog = document.createElement('div');
+    slog.textContent = empresa.slogan || '';
+    header.appendChild(slog);
+    content.appendChild(header);
+
+    const main = document.createElement('div');
+    content.appendChild(main);
+
     const title = document.createElement('h2');
     title.className = 'text-center font-bold mb-4';
     title.textContent = template.titulo;
-    content.appendChild(title);
+    main.appendChild(title);
 
     const wrapper = document.createElement('div');
     wrapper.className = 'flex flex-wrap';
-    content.appendChild(wrapper);
+    main.appendChild(wrapper);
 
     template.campos.forEach(campo => {
       const div = document.createElement('div');
@@ -366,6 +397,16 @@ function Negociacao() {
       }
       wrapper.appendChild(div);
     });
+
+    const footer = document.createElement('div');
+    footer.className = 'flex justify-between items-center mt-4 text-sm';
+    const pag = document.createElement('div');
+    pag.textContent = 'Página 1 de 1';
+    const foot = document.createElement('div');
+    foot.textContent = footerText();
+    footer.appendChild(pag);
+    footer.appendChild(foot);
+    content.appendChild(footer);
 
     html2canvas(content).then(canvas => {
       const imgData = canvas.toDataURL('image/png');

@@ -16,6 +16,21 @@ function TemplatePreview() {
 
   const empresa = JSON.parse(localStorage.getItem('empresa') || '{}');
 
+  const footerText = () => {
+    switch (template.tipo) {
+      case 'contrato':
+        return `Contrato ${new Date().getFullYear()}/0001`;
+      case 'orcamento':
+        return 'OR AT-0001 001';
+      case 'pedido':
+        return 'Pedido AT-0001';
+      case 'romaneio':
+        return 'Romaneio Nº 00001';
+      default:
+        return '';
+    }
+  };
+
   const renderField = (campo, idx) => {
     const wClass = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
     let content;
@@ -101,10 +116,20 @@ function TemplatePreview() {
 
   return (
     <div className="p-4 flex justify-center">
-      <div className="border bg-white p-4" style={{ width: '210mm', minHeight: '297mm' }}>
-        <h2 className="text-center font-bold mb-4">{template.titulo}</h2>
-        <div className="flex flex-wrap">
-          {template.campos?.map(renderField)}
+      <div className="border bg-white p-4 flex flex-col justify-between" style={{ width: '210mm', minHeight: '297mm' }}>
+        <div className="flex justify-between items-center mb-4">
+          {empresa.logo && <img src={empresa.logo} alt="Logo" className="h-12" />}
+          <div className="text-sm">{empresa.slogan}</div>
+        </div>
+        <div className="flex-1">
+          <h2 className="text-center font-bold mb-4">{template.titulo}</h2>
+          <div className="flex flex-wrap">
+            {template.campos?.map(renderField)}
+          </div>
+        </div>
+        <div className="flex justify-between items-center mt-4 text-sm">
+          <div>Página 1 de 1</div>
+          <div className="mx-auto">{footerText()}</div>
         </div>
       </div>
     </div>

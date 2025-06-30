@@ -18,7 +18,7 @@ Faça login com seu usuário e navegue pelos módulos de acordo com suas permiss
 - **Ocorrências** – geração de lotes de ocorrência e relatórios de motivos.
 
 ## Cadastros
-- **Dados da Empresa** – informações institucionais e logotipo.
+ - **Dados da Empresa** – informações institucionais, logotipo e slogan.
 - **Clientes** – cadastro de clientes com endereços e contatos.
 - **Fornecedores** – cadastro de fornecedores utilizados na produção.
 - **Usuários** – gestão de contas do sistema e permissões de acesso.

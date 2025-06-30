@@ -33,9 +33,13 @@ def init_db():
             estado TEXT,
             telefone1 TEXT,
             telefone2 TEXT,
+            slogan TEXT,
             logo BLOB
         )"""
     )
+    cols = [row[1] for row in cur.execute("PRAGMA table_info(empresa)")]
+    if "slogan" not in cols:
+        cur.execute("ALTER TABLE empresa ADD COLUMN slogan TEXT")
     conn.commit()
     conn.close()
 
