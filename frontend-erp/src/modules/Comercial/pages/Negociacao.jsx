@@ -74,15 +74,34 @@ function Negociacao() {
 
   useEffect(() => {
     const c = condicoes.find(cc => String(cc.id) === String(condicaoId));
-    if (c) {
-      const max = c.numero_parcelas || (c.parcelas ? c.parcelas.sem.length + c.parcelas.com.length : 0);
-      const n = numParcelas ? parseInt(numParcelas, 10) : max;
-      const resto = total - parseFloat(entrada || 0);
-      const valor = n ? resto / n : resto;
-      setParcelas(Array.from({ length: n }, (_, i) => ({ numero: i + 1, valor })));
-    } else {
+    if (!c) {
       setParcelas([]);
+      return;
     }
+
+    const temEntrada = parseFloat(entrada || 0) > 0;
+    const tipo = temEntrada ? 'com' : 'sem';
+    const listaOrig = c.parcelas?.[tipo] || [];
+    const lista = [...listaOrig].sort((a, b) => (a.numero || 0) - (b.numero || 0));
+
+    const max = c.numero_parcelas || (c.parcelas ? c.parcelas.sem.length + c.parcelas.com.length : 0);
+    const nSel = numParcelas ? parseInt(numParcelas, 10) : max;
+    const nCalculo = temEntrada ? nSel - 1 : nSel;
+    const resto = total - parseFloat(entrada || 0);
+    const valorBase = nCalculo > 0 ? resto / nCalculo : 0;
+
+    let listaParcelas = lista.slice(0, Math.max(nCalculo, 0)).map((p, idx) => {
+      const juros = parseFloat(p.retencao || 0) / 100;
+      const valor = valorBase * (1 + juros);
+      const numero = temEntrada ? idx + 2 : idx + 1;
+      return { numero, valor };
+    });
+
+    if (temEntrada) {
+      listaParcelas = [{ numero: 1, valor: parseFloat(entrada) || 0 }, ...listaParcelas];
+    }
+
+    setParcelas(listaParcelas);
   }, [condicaoId, total, condicoes, numParcelas, entrada]);
 
   const salvar = async () => {
