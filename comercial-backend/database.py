@@ -60,8 +60,12 @@ def init_db():
     if "arquivos_json" not in cols_a:
         cur.execute("ALTER TABLE atendimentos ADD COLUMN arquivos_json TEXT")
     if "data_cadastro" not in cols_a:
+        # SQLite não permite adicionar uma coluna com DEFAULT CURRENT_TIMESTAMP
+        # via ALTER TABLE. Criamos a coluna e definimos o valor atual para
+        # registros existentes.
+        cur.execute("ALTER TABLE atendimentos ADD COLUMN data_cadastro TEXT")
         cur.execute(
-            "ALTER TABLE atendimentos ADD COLUMN data_cadastro TEXT DEFAULT CURRENT_TIMESTAMP"
+            "UPDATE atendimentos SET data_cadastro = CURRENT_TIMESTAMP WHERE data_cadastro IS NULL"
         )
     conn.commit()
     conn.close()
