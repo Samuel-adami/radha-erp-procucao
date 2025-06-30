@@ -27,6 +27,7 @@ def init_db():
             tem_especificador INTEGER,
             especificador_nome TEXT,
             rt_percent REAL,
+            entrega_diferente TEXT,
             historico TEXT,
             arquivos_json TEXT,
             procedencia TEXT,
@@ -87,6 +88,7 @@ def init_db():
         "cidade",
         "estado",
         "cep",
+        "entrega_diferente",
     ]
     for campo in adicionais:
         if campo not in cols_a:
