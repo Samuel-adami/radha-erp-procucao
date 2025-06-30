@@ -55,8 +55,8 @@ export async function fetchComAuth(url, options = {}) {
     }
 
     if (response.status === 401 || response.status === 403) {
+      // Apenas remove o token; quem chamar decide se recarrega a página
       localStorage.removeItem("token");
-      window.location.reload();
     }
 
     throw new Error(`Erro ${response.status}: ${errorMessage}`);
