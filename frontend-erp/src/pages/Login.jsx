@@ -22,7 +22,8 @@ function Login({ onLoginSuccess }) {
         body: JSON.stringify({ username, password }),
       });
       localStorage.setItem("token", data.access_token);
-      
+      localStorage.setItem("usuario", JSON.stringify(data.usuario));
+
       // Chama a função do componente pai (App.jsx) para atualizar o estado e navegar
       onLoginSuccess(data.usuario);
 
