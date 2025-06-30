@@ -93,44 +93,6 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     const handleFile = amb => async e => {
       const file = e.target.files[0];
       if (!file) return;
-      const text = await file.text();
-      const m = text.match(/(\d+[\.,]?\d*)/);
-      const valor = m ? parseFloat(m[1].replace(',', '.')) : 0;
-      setDados(prev => ({
-        projetos: { ...prev.projetos, [amb]: { arquivo: file.name, valor } },
-      }));
-    };
-
-    return (
-      <li className="space-y-2 p-2 border rounded">
-        <div className="font-medium mb-1">{tarefa.nome}</div>
-        {ambientes.map(amb => (
-          <div key={amb} className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span>{amb}</span>
-              <input type="file" accept=".xml,.txt,.csv" onChange={handleFile(amb)} />
-            </div>
-            {dadosProj[amb] && dadosProj[amb].valor > 0 && (
-              <div className="text-sm text-gray-700 ml-2">
-                {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].valor}
-              </div>
-            )}
-          </div>
-        ))}
-        <Button size="sm" onClick={() => salvar(true)}>
-          Salvar Projeto 3D
-        </Button>
-      </li>
-    );
-  }
-
-  if (tarefa.nome === 'Orçamento') {
-    const ambientes = projetos;
-    const dadosOrc = dados.projetos || {};
-
-    const handleFile = amb => async e => {
-      const file = e.target.files[0];
-      if (!file) return;
       const form = new FormData();
       form.append('file', file);
       const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
@@ -150,7 +112,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             <div className="flex items-center gap-2">
               <span>{amb}</span>
               <input type="file" accept="application/pdf" onChange={handleFile(amb)} />
-              {dadosOrc[amb] && (
+              {dadosProj[amb] && (
                 <Link
                   to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
                   className="text-sm text-blue-600 underline"
@@ -159,13 +121,24 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                 </Link>
               )}
             </div>
-            {dadosOrc[amb] && dadosOrc[amb].total > 0 && (
+            {dadosProj[amb] && dadosProj[amb].total > 0 && (
               <div className="text-sm text-gray-700 ml-2">
-                {dadosOrc[amb].arquivo} - Valor: {dadosOrc[amb].total}
+                {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].total}
               </div>
             )}
           </div>
         ))}
+        <Button size="sm" onClick={() => salvar(true)}>
+          Salvar Projeto 3D
+        </Button>
+      </li>
+    );
+  }
+
+  if (tarefa.nome === 'Orçamento') {
+    return (
+      <li className="space-y-2 p-2 border rounded">
+        <div className="font-medium mb-1">{tarefa.nome}</div>
         <div className="flex items-center gap-2 mt-2">
           <Link
             to={`negociacao/${tarefa.id}`}
@@ -174,12 +147,12 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             {tarefa.concluida ? 'Editar' : 'Negociar'}
           </Link>
           {tarefa.concluida && tarefa.dados?.total && (
-            <div className="text-sm text-gray-700">Valor Final: {tarefa.dados.total}</div>
+            <div className="text-sm text-gray-700">
+              Valor Final: {tarefa.dados.total}
+              {tarefa.dados.descricao_pagamento ? ` - ${tarefa.dados.descricao_pagamento}` : ''}
+            </div>
           )}
         </div>
-        <Button size="sm" onClick={() => salvar(true)}>
-          Salvar Orçamento
-        </Button>
       </li>
     );
   }

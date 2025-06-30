@@ -29,18 +29,15 @@ function Negociacao() {
       const conds = await fetchComAuth('/comercial/condicoes-pagamento');
       setCondicoes(conds.condicoes || []);
       const proj = t.tarefas.find(tt => tt.nome === 'Projeto 3D');
-      const orc = t.tarefas.find(tt => tt.nome === 'Orçamento');
       const orcAtual = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
       let dadosProj = {};
-      let dadosOrc = {};
       let dadosNeg = {};
       try { dadosProj = proj && proj.dados ? JSON.parse(proj.dados) : {}; } catch {}
-      try { dadosOrc = orc && orc.dados ? JSON.parse(orc.dados) : {}; } catch {}
       try { dadosNeg = orcAtual && orcAtual.dados ? JSON.parse(orcAtual.dados) : {}; } catch {}
       const projs = (at.atendimento.projetos || '').split(',').map(p => p.trim()).filter(Boolean);
       const listaAmb = projs.map(a => ({
         nome: a,
-        valor: dadosOrc.projetos?.[a]?.total || dadosProj.projetos?.[a]?.valor || 0
+        valor: dadosProj.projetos?.[a]?.total || dadosProj.projetos?.[a]?.valor || 0
       }));
       setAmbientes(listaAmb);
       setSelecionados(listaAmb.reduce((acc, a) => ({ ...acc, [a.nome]: true }), {}));
@@ -111,6 +108,9 @@ function Negociacao() {
   }, [condicaoId, total, condicoes, numParcelas, entrada]);
 
   const salvar = async () => {
+    const descricao = parcelas
+      .map(p => `Parcela ${p.numero} = R$ ${currency(p.valor)}`)
+      .join(', ');
     const dados = {
       pontuacao,
       condicaoId,
@@ -121,6 +121,8 @@ function Negociacao() {
       custos,
       ambientes,
       selecionados,
+      parcelas,
+      descricao_pagamento: descricao,
       total,
     };
     await fetchComAuth(`/comercial/atendimentos/${id}/tarefas/${tarefaId}`, {
@@ -137,6 +139,14 @@ function Negociacao() {
         <label className="block">
           <span className="text-sm">Pontuação</span>
           <input type="number" className="input" value={pontuacao} onChange={e => setPontuacao(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Desconto 1 (%)</span>
+          <input type="number" className="input" value={desc1} onChange={e => setDesc1(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Desconto 2 (%)</span>
+          <input type="number" className="input" value={desc2} onChange={e => setDesc2(e.target.value)} />
         </label>
         <label className="block">
           <span className="text-sm">Condição de Pagamento</span>
@@ -163,14 +173,6 @@ function Negociacao() {
               ));
             })()}
           </select>
-        </label>
-        <label className="block">
-          <span className="text-sm">Desconto 1 (%)</span>
-          <input type="number" className="input" value={desc1} onChange={e => setDesc1(e.target.value)} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Desconto 2 (%)</span>
-          <input type="number" className="input" value={desc2} onChange={e => setDesc2(e.target.value)} />
         </label>
       </div>
       <div>
