@@ -23,12 +23,12 @@ function Atendimentos() {
               }
               return { ...tt, dados: dadosT };
             });
-            const first = tarefas.find((x) => x.dados?.data);
+            const first = tarefas.find((x) => x.dados?.data || x.data_execucao);
             const lastDoneIndex = tarefas.map((x) => Number(x.concluida)).lastIndexOf(1);
             const next = tarefas[lastDoneIndex + 1];
             const last = tarefas[lastDoneIndex];
-            const dataCadastroRaw = at.data_cadastro || first?.dados?.data || '';
-            const ultimaRaw = last?.dados?.data || '';
+            const dataCadastroRaw = at.data_cadastro || first?.dados?.data || first?.data_execucao || '';
+            const ultimaRaw = last?.dados?.data || last?.data_execucao || '';
             return {
               ...at,
               dataCadastro: formatDateBr(dataCadastroRaw),
