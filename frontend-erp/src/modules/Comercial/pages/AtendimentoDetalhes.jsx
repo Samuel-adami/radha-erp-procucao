@@ -70,6 +70,22 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     );
   }
 
+  if (tarefa.nome === 'Visita Técnica/Briefing') {
+    return (
+      <li className="space-y-1 p-2 border rounded">
+        <div className="flex items-center gap-2">
+          <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+          <Link
+            to={`/formularios/briefing-vendas/${atendimentoId}/${tarefa.id}`}
+            className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
+          >
+            {tarefa.concluida ? 'Editar' : 'Preencher'}
+          </Link>
+        </div>
+      </li>
+    );
+  }
+
   if (tarefa.nome === 'Projeto 3D') {
     const ambientes = projetos;
     const dadosProj = dados.projetos || {};

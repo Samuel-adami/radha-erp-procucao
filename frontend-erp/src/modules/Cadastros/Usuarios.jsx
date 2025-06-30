@@ -32,6 +32,10 @@ const PERMISSOES_DISPONIVEIS = {
   'Comercial': [
     'comercial',
     'comercial/atendimentos'
+  ],
+  'Formulários': [
+    'formularios',
+    'formularios/briefing-vendas'
   ]
 };
 
