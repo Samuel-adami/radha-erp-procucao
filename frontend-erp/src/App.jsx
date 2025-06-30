@@ -84,11 +84,15 @@ function Layout({ usuario, onLogout }) {
 
 // Componente principal que gerencia o estado e as rotas
 function App() {
-  const [usuarioLogado, setUsuarioLogado] = useState(null);
+  const [usuarioLogado, setUsuarioLogado] = useState(() => {
+    const stored = localStorage.getItem("usuario");
+    return stored ? JSON.parse(stored) : null;
+  });
   const [carregando, setCarregando] = useState(true);
   const navigate = useNavigate();
 
   const handleLoginSuccess = (usuario) => {
+    localStorage.setItem("usuario", JSON.stringify(usuario));
     setUsuarioLogado(usuario);
     navigate("/");
   };
@@ -100,12 +104,14 @@ function App() {
       if (token) {
         try {
           const dados = await fetchComAuth("/auth/validate");
+          localStorage.setItem("usuario", JSON.stringify(dados.usuario));
           setUsuarioLogado(dados.usuario);
           setCarregando(false);
           return;
         } catch (error) {
           console.error("Token inválido ou expirado, tentando novo login.", error);
           localStorage.removeItem("token");
+          localStorage.removeItem("usuario");
         }
       }
 
@@ -119,6 +125,7 @@ function App() {
               body: JSON.stringify({ username: defaultUser, password: defaultPass }),
             });
             localStorage.setItem("token", login.access_token);
+            localStorage.setItem("usuario", JSON.stringify(login.usuario));
             setUsuarioLogado(login.usuario);
           } catch (error) {
             console.error("Falha no login automático:", error);
@@ -135,6 +142,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("usuario");
     setUsuarioLogado(null);
     navigate("/");
   };
