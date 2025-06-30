@@ -226,6 +226,21 @@ function AtendimentoDetalhes() {
       <h3 className="text-lg font-bold">
         Atendimento {atendimento.codigo} - {atendimento.cliente}
       </h3>
+      <div className="p-2 bg-gray-100 rounded space-y-1 text-sm">
+        <div><strong>Procedência:</strong> {atendimento.procedencia || '-'}</div>
+        <div><strong>Vendedor:</strong> {atendimento.vendedor || '-'}</div>
+        <div><strong>Telefone:</strong> {atendimento.telefone || '-'}</div>
+        <div><strong>E-mail:</strong> {atendimento.email || '-'}</div>
+        <div>
+          <strong>Endereço:</strong> {atendimento.rua || ''} {atendimento.numero || ''} - {atendimento.cidade || ''}/{atendimento.estado || ''}
+        </div>
+        <Link
+          to={`/comercial/${id}/editar`}
+          className="text-blue-600 hover:underline"
+        >
+          Editar Atendimento
+        </Link>
+      </div>
       <div>
         <h4 className="font-medium mb-2">Tarefas</h4>
         <ul className="space-y-2">

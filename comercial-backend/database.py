@@ -29,6 +29,7 @@ def init_db():
             rt_percent REAL,
             historico TEXT,
             arquivos_json TEXT,
+            procedencia TEXT,
             vendedor TEXT,
             telefone TEXT,
             email TEXT,
@@ -77,6 +78,7 @@ def init_db():
         )
     # Campos adicionais para dados do cliente/vendedor
     adicionais = [
+        "procedencia",
         "vendedor",
         "telefone",
         "email",

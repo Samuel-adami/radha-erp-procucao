@@ -37,6 +37,7 @@ function Comercial() {
       <Route path="/" element={<ComercialLayout />}>
         <Route index element={<Atendimentos />} />
         <Route path="novo" element={<AtendimentoForm />} />
+        <Route path=":id/editar" element={<AtendimentoForm />} />
         <Route path=":id" element={<AtendimentoDetalhes />} />
         <Route path=":id/negociacao/:tarefaId" element={<Negociacao />} />
       </Route>
