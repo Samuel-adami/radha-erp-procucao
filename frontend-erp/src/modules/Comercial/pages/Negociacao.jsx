@@ -29,13 +29,19 @@ function Negociacao() {
       const conds = await fetchComAuth('/comercial/condicoes-pagamento');
       setCondicoes(conds.condicoes || []);
       const proj = t.tarefas.find(tt => tt.nome === 'Projeto 3D');
-      const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
+      const orc = t.tarefas.find(tt => tt.nome === 'Orçamento');
+      const orcAtual = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
       let dadosProj = {};
+      let dadosOrc = {};
       let dadosNeg = {};
       try { dadosProj = proj && proj.dados ? JSON.parse(proj.dados) : {}; } catch {}
-      try { dadosNeg = orc && orc.dados ? JSON.parse(orc.dados) : {}; } catch {}
+      try { dadosOrc = orc && orc.dados ? JSON.parse(orc.dados) : {}; } catch {}
+      try { dadosNeg = orcAtual && orcAtual.dados ? JSON.parse(orcAtual.dados) : {}; } catch {}
       const projs = (at.atendimento.projetos || '').split(',').map(p => p.trim()).filter(Boolean);
-      const listaAmb = projs.map(a => ({ nome: a, valor: dadosProj.projetos?.[a]?.valor || 0 }));
+      const listaAmb = projs.map(a => ({
+        nome: a,
+        valor: dadosOrc.projetos?.[a]?.total || dadosProj.projetos?.[a]?.valor || 0
+      }));
       setAmbientes(listaAmb);
       setSelecionados(listaAmb.reduce((acc, a) => ({ ...acc, [a.nome]: true }), {}));
       if (dadosNeg.pontuacao) setPontuacao(String(dadosNeg.pontuacao));
