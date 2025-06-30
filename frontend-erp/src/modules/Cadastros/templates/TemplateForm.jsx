@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
+import AutoFieldSelect from './AutoFieldSelect';
 
 const FIELD_TYPES = [
   { value: 'short', label: 'Texto curto' },
@@ -55,13 +56,83 @@ function TemplateForm() {
 
   const updateCampo = (idx, campo, valor) => {
     setForm(prev => {
-      const campos = prev.campos.map((c, i) => (i === idx ? { ...c, [campo]: valor } : c));
+      const campos = prev.campos.map((c, i) => {
+        if (i !== idx) return c;
+        const novo = { ...c, [campo]: valor };
+        if (campo === 'linhas') {
+          const n = parseInt(valor) || 0;
+          novo.headersLinhas = Array.from({ length: n }, (_, i2) => c.headersLinhas?.[i2] || '');
+          novo.celulas = Array.from({ length: n }, (_, i2) => {
+            const cols = parseInt(novo.colunas) || 0;
+            return Array.from({ length: cols }, (_, j2) => c.celulas?.[i2]?.[j2] || { autoCampo: '' });
+          });
+        }
+        if (campo === 'colunas') {
+          const n = parseInt(valor) || 0;
+          novo.headersColunas = Array.from({ length: n }, (_, j2) => c.headersColunas?.[j2] || '');
+          novo.celulas = Array.from({ length: parseInt(novo.linhas) || 0 }, (_, i2) => {
+            return Array.from({ length: n }, (_, j2) => c.celulas?.[i2]?.[j2] || { autoCampo: '' });
+          });
+        }
+        return novo;
+      });
       return { ...prev, campos };
     });
   };
 
   const removerCampo = idx => {
     setForm(prev => ({ ...prev, campos: prev.campos.filter((_, i) => i !== idx) }));
+  };
+
+  const toggleAuto = idx => {
+    setForm(prev => {
+      const campos = prev.campos.map((c, i) => (i === idx ? { ...c, showAuto: !c.showAuto } : c));
+      return { ...prev, campos };
+    });
+  };
+
+  const setAutoCampo = (idx, valor) => {
+    setForm(prev => {
+      const campos = prev.campos.map((c, i) => (i === idx ? { ...c, autoCampo: valor, showAuto: false } : c));
+      return { ...prev, campos };
+    });
+  };
+
+  const setHeader = (idx, tipo, pos, valor) => {
+    setForm(prev => {
+      const campos = prev.campos.map((c, i) => {
+        if (i !== idx) return c;
+        const novo = { ...c };
+        if (tipo === 'linha') {
+          const arr = novo.headersLinhas ? [...novo.headersLinhas] : Array.from({ length: novo.linhas || 0 }, () => '');
+          arr[pos] = valor;
+          novo.headersLinhas = arr;
+        } else {
+          const arr = novo.headersColunas ? [...novo.headersColunas] : Array.from({ length: novo.colunas || 0 }, () => '');
+          arr[pos] = valor;
+          novo.headersColunas = arr;
+        }
+        return novo;
+      });
+      return { ...prev, campos };
+    });
+  };
+
+  const setCellAuto = (idx, r, cIdx, valor) => {
+    setForm(prev => {
+      const campos = prev.campos.map((c, i) => {
+        if (i !== idx) return c;
+        const novo = { ...c };
+        const rows = novo.celulas ? novo.celulas.map(row => [...row]) : [];
+        while (rows.length < novo.linhas) rows.push(Array.from({ length: novo.colunas || 0 }, () => ({ autoCampo: '' })));
+        rows[r] = rows[r] || Array.from({ length: novo.colunas || 0 }, () => ({ autoCampo: '' }));
+        while (rows[r].length < novo.colunas) rows[r].push({ autoCampo: '' });
+        rows[r][cIdx] = { autoCampo: valor };
+        novo.celulas = rows;
+        return novo;
+      });
+      return { ...prev, campos };
+    });
   };
 
   const salvar = async () => {
@@ -97,22 +168,78 @@ function TemplateForm() {
               <button type="button" className="text-red-600" onClick={() => removerCampo(idx)}>Remover</button>
             </div>
             {c.tipo === 'table' && (
-              <div className="flex gap-2">
-                <label className="block">
-                  <span className="text-sm">Linhas</span>
-                  <input type="number" className="input" value={c.linhas}
-                    onChange={e => updateCampo(idx, 'linhas', e.target.value)} />
-                </label>
-                <label className="block">
-                  <span className="text-sm">Colunas</span>
-                  <input type="number" className="input" value={c.colunas}
-                    onChange={e => updateCampo(idx, 'colunas', e.target.value)} />
-                </label>
-              </div>
+              <>
+                <div className="flex gap-2">
+                  <label className="block">
+                    <span className="text-sm">Linhas</span>
+                    <input
+                      type="number"
+                      className="input"
+                      value={c.linhas}
+                      onChange={e => updateCampo(idx, 'linhas', e.target.value)}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm">Colunas</span>
+                    <input
+                      type="number"
+                      className="input"
+                      value={c.colunas}
+                      onChange={e => updateCampo(idx, 'colunas', e.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="overflow-auto">
+                  <table className="text-sm mt-2">
+                    <thead>
+                      <tr>
+                        <th className="border p-1"></th>
+                        {Array.from({ length: c.colunas || 0 }).map((_, j2) => (
+                          <th key={j2} className="border p-1">
+                            <input
+                              className="input"
+                              value={c.headersColunas?.[j2] || ''}
+                              onChange={e => setHeader(idx, 'coluna', j2, e.target.value)}
+                            />
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Array.from({ length: c.linhas || 0 }).map((_, r2) => (
+                        <tr key={r2}>
+                          <th className="border p-1">
+                            <input
+                              className="input"
+                              value={c.headersLinhas?.[r2] || ''}
+                              onChange={e => setHeader(idx, 'linha', r2, e.target.value)}
+                            />
+                          </th>
+                          {Array.from({ length: c.colunas || 0 }).map((_, c2) => (
+                            <td key={c2} className="border p-1">
+                              <AutoFieldSelect
+                                value={c.celulas?.[r2]?.[c2]?.autoCampo || ''}
+                                onChange={v => setCellAuto(idx, r2, c2, v)}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
-            <button type="button" className="text-blue-600 underline" onClick={() => updateCampo(idx, 'auto', true)}>
-              Carregamento automático
-            </button>
+            {c.tipo !== 'table' && (
+              <>
+                <button type="button" className="text-blue-600 underline" onClick={() => toggleAuto(idx)}>
+                  Carregamento automático
+                </button>
+                {c.showAuto && (
+                  <AutoFieldSelect value={c.autoCampo} onChange={v => setAutoCampo(idx, v)} />
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>
