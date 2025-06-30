@@ -318,3 +318,76 @@ async def excluir_condicao(condicao_id: int):
         conn.commit()
     return {"ok": True}
 
+
+@app.get("/templates")
+async def listar_templates(tipo: str | None = None):
+    with get_db_connection() as conn:
+        if tipo:
+            rows = conn.execute(
+                "SELECT * FROM templates WHERE tipo=? ORDER BY id", (tipo,)
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT * FROM templates ORDER BY id"
+            ).fetchall()
+        itens = [dict(row) for row in rows]
+        for it in itens:
+            if it.get("campos_json"):
+                try:
+                    it["campos"] = json.loads(it["campos_json"])
+                except Exception:
+                    it["campos"] = []
+    return {"templates": itens}
+
+
+@app.post("/templates")
+async def criar_template(request: Request):
+    data = await request.json()
+    campos = json.dumps(data.get("campos", []))
+    with get_db_connection() as conn:
+        cur = conn.execute(
+            "INSERT INTO templates (tipo, titulo, campos_json) VALUES (?, ?, ?)",
+            (data.get("tipo"), data.get("titulo"), campos),
+        )
+        conn.commit()
+        new_id = cur.lastrowid
+    return {"id": new_id}
+
+
+@app.get("/templates/{template_id}")
+async def obter_template(template_id: int):
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM templates WHERE id=?", (template_id,)
+        ).fetchone()
+        if not row:
+            return JSONResponse({"detail": "Template não encontrado"}, status_code=404)
+        item = dict(row)
+        if item.get("campos_json"):
+            try:
+                item["campos"] = json.loads(item["campos_json"])
+            except Exception:
+                item["campos"] = []
+        return {"template": item}
+
+
+@app.put("/templates/{template_id}")
+async def atualizar_template(template_id: int, request: Request):
+    data = await request.json()
+    campos = json.dumps(data.get("campos", []))
+    with get_db_connection() as conn:
+        conn.execute(
+            """UPDATE templates SET titulo=?, tipo=?, campos_json=? WHERE id=?""",
+            (data.get("titulo"), data.get("tipo"), campos, template_id),
+        )
+        conn.commit()
+    return {"ok": True}
+
+
+@app.delete("/templates/{template_id}")
+async def excluir_template(template_id: int):
+    with get_db_connection() as conn:
+        conn.execute("DELETE FROM templates WHERE id=?", (template_id,))
+        conn.commit()
+    return {"ok": True}
+
