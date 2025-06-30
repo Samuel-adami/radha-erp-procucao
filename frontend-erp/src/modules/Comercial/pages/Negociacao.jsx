@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
@@ -24,19 +26,25 @@ function Negociacao() {
   const [editIdx, setEditIdx] = useState(-1);
   const [parcelas, setParcelas] = useState([]);
   const [totalVenda, setTotalVenda] = useState(0);
+  const [atendimento, setAtendimento] = useState(null);
+  const [templates, setTemplates] = useState([]);
+  const [templateId, setTemplateId] = useState('');
 
   useEffect(() => {
     const carregar = async () => {
       const at = await fetchComAuth(`/comercial/atendimentos/${id}`);
+      setAtendimento(at.atendimento);
       const t = await fetchComAuth(`/comercial/atendimentos/${id}/tarefas`);
       const conds = await fetchComAuth('/comercial/condicoes-pagamento');
+      const temps = await fetchComAuth('/comercial/templates?tipo=orcamento');
       setCondicoes(conds.condicoes || []);
+      setTemplates(temps.templates || []);
       const proj = t.tarefas.find(tt => tt.nome === 'Projeto 3D');
       const orcAtual = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
       let dadosProj = {};
       let dadosNeg = {};
-      try { dadosProj = proj && proj.dados ? JSON.parse(proj.dados) : {}; } catch {}
-      try { dadosNeg = orcAtual && orcAtual.dados ? JSON.parse(orcAtual.dados) : {}; } catch {}
+      try { dadosProj = proj && proj.dados ? JSON.parse(proj.dados) : {}; } catch (e) { /* ignore */ }
+      try { dadosNeg = orcAtual && orcAtual.dados ? JSON.parse(orcAtual.dados) : {}; } catch (e) { /* ignore */ }
       const projs = (at.atendimento.projetos || '').split(',').map(p => p.trim()).filter(Boolean);
       const listaAmb = projs.map(a => ({
         nome: a,
@@ -163,6 +171,159 @@ function Negociacao() {
     navigate(`/comercial/${id}`);
   };
 
+  const baixarOrcamento = async () => {
+    if (!templateId) {
+      alert('Selecione um template');
+      return;
+    }
+    const t = await fetchComAuth(`/comercial/templates/${templateId}`);
+    const template = t.template;
+    if (!template) return;
+    const empresa = JSON.parse(localStorage.getItem('empresa') || '{}');
+    const cond = condicoes.find(c => String(c.id) === String(condicaoId))?.nome || '';
+    const valores = {
+      atendimento: atendimento || {},
+      empresa,
+      negociacao: {
+        pontuacao,
+        desconto1: desc1,
+        desconto2: desc2,
+        entrada,
+        numParcelas,
+        condicao: cond,
+        total: totalVenda || total,
+        descricao_pagamento: parcelas.map(p => `Parcela ${p.numero} = R$ ${currency(p.valor)}`).join(', '),
+      },
+    };
+
+    const getValor = caminho => {
+      if (!caminho) return '';
+      const [grp, campo] = caminho.split('.');
+      return valores[grp]?.[campo] ?? '';
+    };
+
+    const cont = document.createElement('div');
+    cont.style.position = 'fixed';
+    cont.style.left = '-10000px';
+    cont.className = 'p-4 flex justify-center';
+    document.body.appendChild(cont);
+
+    const content = document.createElement('div');
+    content.className = 'border bg-white p-4';
+    content.style.width = '210mm';
+    content.style.minHeight = '297mm';
+    cont.appendChild(content);
+
+    const title = document.createElement('h2');
+    title.className = 'text-center font-bold mb-4';
+    title.textContent = template.titulo;
+    content.appendChild(title);
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'flex flex-wrap';
+    content.appendChild(wrapper);
+
+    template.campos.forEach(campo => {
+      const div = document.createElement('div');
+      div.className = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
+      if (campo.tipo === 'table') {
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm';
+        const thead = document.createElement('thead');
+        const trh = document.createElement('tr');
+        const thb = document.createElement('th');
+        thb.className = 'border px-1';
+        trh.appendChild(thb);
+        for (let i = 0; i < (campo.colunas || 0); i++) {
+          const th = document.createElement('th');
+          th.className = 'border px-1';
+          th.textContent = campo.headersColunas?.[i] || '';
+          trh.appendChild(th);
+        }
+        thead.appendChild(trh);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        for (let r = 0; r < (campo.linhas || 0); r++) {
+          const tr = document.createElement('tr');
+          const th = document.createElement('th');
+          th.className = 'border px-1';
+          th.textContent = campo.headersLinhas?.[r] || '';
+          tr.appendChild(th);
+          for (let cIdx = 0; cIdx < (campo.colunas || 0); cIdx++) {
+            const td = document.createElement('td');
+            td.className = 'border px-1';
+            const val = getValor(campo.celulas?.[r]?.[cIdx]?.autoCampo);
+            td.textContent = val;
+            tr.appendChild(td);
+          }
+          tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        div.appendChild(table);
+      } else if (campo.tipo === 'negociacao') {
+        const table = document.createElement('table');
+        table.className = 'w-full text-sm';
+        const thead2 = document.createElement('thead');
+        const tr2 = document.createElement('tr');
+        tr2.className = 'bg-gray-100';
+        ['Número', 'Valor'].forEach(tx => {
+          const th = document.createElement('th');
+          th.className = 'border px-2';
+          th.textContent = tx;
+          tr2.appendChild(th);
+        });
+        thead2.appendChild(tr2);
+        table.appendChild(thead2);
+        const tbody2 = document.createElement('tbody');
+        parcelas.forEach(p => {
+          const tr = document.createElement('tr');
+          const tdNum = document.createElement('td');
+          tdNum.className = 'border px-2';
+          tdNum.textContent = p.numero;
+          const tdVal = document.createElement('td');
+          tdVal.className = 'border px-2';
+          tdVal.textContent = currency(p.valor);
+          tr.appendChild(tdNum);
+          tr.appendChild(tdVal);
+          tbody2.appendChild(tr);
+        });
+        table.appendChild(tbody2);
+        div.appendChild(table);
+      } else if (campo.autoCampo === 'empresa.dados_completos') {
+        const bloco = document.createElement('div');
+        bloco.className = 'space-y-1';
+        const l1 = document.createElement('div');
+        l1.textContent = empresa.nomeFantasia || 'Empresa LTDA';
+        const l2 = document.createElement('div');
+        l2.textContent = `${empresa.cnpj || '00.000.000/0000-00'} / ${empresa.inscricaoEstadual || 'IE'}`;
+        const l3 = document.createElement('div');
+        l3.textContent = `${empresa.rua || 'Rua'}, ${empresa.numero || '123'} - ${empresa.bairro || ''}`;
+        const l4 = document.createElement('div');
+        l4.textContent = `${empresa.cidade || ''} - ${empresa.estado || ''}`;
+        const l5 = document.createElement('div');
+        l5.textContent = empresa.telefone1 || '';
+        [l1, l2, l3, l4, l5].forEach(el => bloco.appendChild(el));
+        div.appendChild(bloco);
+      } else {
+        const texto = document.createElement('div');
+        texto.className = 'whitespace-pre-wrap';
+        texto.textContent = campo.autoCampo ? getValor(campo.autoCampo) : campo.label;
+        div.appendChild(texto);
+      }
+      wrapper.appendChild(div);
+    });
+
+    html2canvas(content).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save('orcamento.pdf');
+      document.body.removeChild(cont);
+    });
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Negociação</h3>
@@ -203,6 +364,15 @@ function Negociacao() {
                 <option key={nPar} value={nPar}>{nPar}</option>
               ));
             })()}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm">Template de Orçamento</span>
+          <select className="input" value={templateId} onChange={e => setTemplateId(e.target.value)}>
+            <option value="">Selecione</option>
+            {templates.map(t => (
+              <option key={t.id} value={t.id}>{t.titulo}</option>
+            ))}
           </select>
         </label>
       </div>
@@ -320,6 +490,7 @@ function Negociacao() {
         <Button variant="secondary" onClick={() => navigate(`/comercial/${id}`)}>
           Cancelar
         </Button>
+        <Button variant="secondary" onClick={baixarOrcamento}>Baixar Orçamento</Button>
       </div>
     </div>
   );
