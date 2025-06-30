@@ -18,6 +18,8 @@ import EditarLoteOcorrencia from "./components/EditarLoteOcorrencia";
 import PacoteOcorrencia from "./components/PacoteOcorrencia";
 import "./Producao.css";
 
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
+
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
 
 const HomeProducao = () => {
@@ -51,6 +53,11 @@ const HomeProducao = () => {
     }
   };
 
+  const baixarLote = (nome) => {
+    const url = `${GATEWAY_URL}/producao/download-lote/${encodeURIComponent(nome)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Painel de Produção Radha</h1>
@@ -61,6 +68,7 @@ const HomeProducao = () => {
             <span>{l.nome}</span>
             <div className="space-x-2">
               <Button onClick={() => navigate(`lote/${l.nome}`)}>Editar</Button>
+              <Button onClick={() => baixarLote(l.nome)}>Baixar</Button>
               <Button variant="destructive" onClick={() => excluirLote(l.nome)}>Excluir</Button>
             </div>
           </li>

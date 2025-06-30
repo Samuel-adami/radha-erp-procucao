@@ -1,4 +1,5 @@
-from fastapi import FastAPI, File, UploadFile, Request
+from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
+from fastapi.responses import StreamingResponse
 import xml.etree.ElementTree as ET
 import os
 import re
@@ -305,6 +306,60 @@ async def listar_nestings():
     except Exception:
         dados = []
     return {"nestings": dados}
+
+
+@app.get("/download-lote/{lote}")
+async def download_lote(lote: str, background_tasks: BackgroundTasks):
+    """Compacta e faz o download do lote especificado."""
+    pasta = SAIDA_DIR / f"Lote_{lote}"
+    if not pasta.is_dir():
+        return {"erro": "Lote não encontrado"}
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp.close()
+    base_name = tmp.name[:-4]
+    shutil.make_archive(base_name, "zip", pasta)
+    zip_path = base_name + ".zip"
+    background_tasks.add_task(os.remove, zip_path)
+    return StreamingResponse(
+        open(zip_path, "rb"),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=Lote_{lote}.zip"},
+    )
+
+
+@app.get("/download-nesting/{nid}")
+async def download_nesting(nid: int, background_tasks: BackgroundTasks):
+    """Compacta e faz o download dos arquivos de uma otimização."""
+    try:
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT pasta_resultado FROM nestings WHERE id=?",
+                (nid,),
+            ).fetchone()
+            pasta_str = row["pasta_resultado"] if row else None
+    except Exception:
+        pasta_str = None
+
+    if not pasta_str:
+        return {"erro": "Nesting não encontrado"}
+
+    pasta = Path(pasta_str)
+    if not pasta.is_dir():
+        return {"erro": "Pasta não encontrada"}
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp.close()
+    base_name = tmp.name[:-4]
+    shutil.make_archive(base_name, "zip", pasta)
+    zip_path = base_name + ".zip"
+    background_tasks.add_task(os.remove, zip_path)
+    filename = f"{pasta.name}.zip"
+    return StreamingResponse(
+        open(zip_path, "rb"),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
 
 
 @app.post("/remover-nesting")

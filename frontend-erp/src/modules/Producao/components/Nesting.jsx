@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 import { Button } from "./ui/button";
 
+const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
+
 const modeloLayer = {
   nome: "",
   tipo: "Chapa",
@@ -189,6 +191,11 @@ const Nesting = () => {
     }
   };
 
+  const baixarNesting = (n) => {
+    const url = `${GATEWAY_URL}/producao/download-nesting/${n.id}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-semibold">Configuração de Nesting</h2>
@@ -240,9 +247,12 @@ const Nesting = () => {
             {nestings.map((n) => (
               <li key={n.id} className="flex justify-between items-center border p-2 rounded">
                 <span>{n.lote.split(/[/\\]/).pop()}</span>
-                <Button variant="destructive" size="sm" onClick={() => removerNesting(n)}>
-                  Excluir
-                </Button>
+                <div className="space-x-2">
+                  <Button size="sm" onClick={() => baixarNesting(n)}>Baixar</Button>
+                  <Button variant="destructive" size="sm" onClick={() => removerNesting(n)}>
+                    Excluir
+                  </Button>
+                </div>
               </li>
             ))}
           </ul>
