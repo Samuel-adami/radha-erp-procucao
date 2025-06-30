@@ -10,10 +10,10 @@ Faça login com seu usuário e navegue pelos módulos de acordo com suas permiss
 - **Públicos Alvo** – registra e mantém perfis de público para segmentação.
 
 ## Produção
-- **Lotes** – criação de lotes de produção, importação de arquivos XML ou DXT, edição de peças e visualização.
+- **Lotes** – criação de lotes de produção, importação de arquivos XML ou DXT, edição de peças e visualização. Permite baixar o lote final compactado.
 - **Apontamento** – registra o andamento das peças na produção.
 - **Apontamento Volume** – resumo de volumes produzidos por lote.
-- **Nesting** – envia um lote para otimização de corte, gerando arquivos e relatórios.
+- **Nesting** – envia um lote para otimização de corte, gerando arquivos e relatórios. Cada otimização pode ser baixada em ZIP.
 - **Chapas** – cadastro de chapas e materiais utilizados na produção.
 - **Ocorrências** – geração de lotes de ocorrência e relatórios de motivos.
 
