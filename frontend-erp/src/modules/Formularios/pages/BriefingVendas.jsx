@@ -66,6 +66,25 @@ function BriefingVendas() {
       const tarefa = (ts.tarefas || []).find(t => String(t.id) === String(tarefaId));
       let dadosExist = {};
       try { dadosExist = tarefa && tarefa.dados ? JSON.parse(tarefa.dados) : {}; } catch {}
+
+      // Determina o endereço de entrega do atendimento
+      let rua = at.atendimento.rua || '';
+      let numero = at.atendimento.numero || '';
+      let cidade = at.atendimento.cidade || '';
+      let estado = at.atendimento.estado || '';
+      let cep = at.atendimento.cep || '';
+      if (!rua && typeof localStorage !== 'undefined') {
+        const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
+        const cli = clientes.find(c => c.nome === at.atendimento.cliente);
+        if (cli) {
+          rua = cli.endereco || '';
+          numero = cli.numero || '';
+          cidade = cli.cidade || '';
+          estado = cli.estado || '';
+          cep = cli.cep || '';
+        }
+      }
+
       const lista = at.atendimento.projetos ? at.atendimento.projetos.split(',').map(p => p.trim()).filter(Boolean) : [];
       setListaAmbientes(lista);
       setForm(prev => ({
@@ -75,11 +94,11 @@ function BriefingVendas() {
         vendedor: at.atendimento.vendedor || (dadosExist.form?.vendedor || ''),
         telefone: at.atendimento.telefone || (dadosExist.form?.telefone || ''),
         email: at.atendimento.email || (dadosExist.form?.email || ''),
-        rua: at.atendimento.rua || (dadosExist.form?.rua || ''),
-        numero: at.atendimento.numero || (dadosExist.form?.numero || ''),
-        cidade: at.atendimento.cidade || (dadosExist.form?.cidade || ''),
-        estado: at.atendimento.estado || (dadosExist.form?.estado || ''),
-        cep: at.atendimento.cep || (dadosExist.form?.cep || ''),
+        rua: dadosExist.form?.rua || rua,
+        numero: dadosExist.form?.numero || numero,
+        cidade: dadosExist.form?.cidade || cidade,
+        estado: dadosExist.form?.estado || estado,
+        cep: dadosExist.form?.cep || cep,
         cliente: at.atendimento.cliente || '',
         ambientes: dadosExist.form?.ambientes || lista,
         origem:
