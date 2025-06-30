@@ -3,6 +3,11 @@ import os
 from typing import Optional, List
 from jose import jwt
 from datetime import datetime, timedelta
+import bcrypt as _bcrypt
+from types import SimpleNamespace
+if not hasattr(_bcrypt, "__about__"):
+    _bcrypt.__about__ = SimpleNamespace(__version__=_bcrypt.__version__)
+from passlib.hash import bcrypt
 from database import get_db_connection
 
 SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")
@@ -19,11 +24,13 @@ def _row_to_user(row) -> dict:
 def autenticar(username: str, password: str) -> Optional[dict]:
     conn = get_db_connection()
     row = conn.execute(
-        "SELECT * FROM users WHERE username=? AND password=?",
-        (username, password),
+        "SELECT * FROM users WHERE username=?",
+        (username,),
     ).fetchone()
     conn.close()
-    return _row_to_user(row) if row else None
+    if row and bcrypt.verify(password, row["password"]):
+        return _row_to_user(row)
+    return None
 
 
 def criar_token(usuario: dict) -> dict:
@@ -71,7 +78,7 @@ def criar_usuario(data: dict) -> int:
         "INSERT INTO users (username, password, email, nome, cargo, permissoes) VALUES (?, ?, ?, ?, ?, ?)",
         (
             data.get("username"),
-            data.get("password"),
+            bcrypt.hash(data.get("password")),
             data.get("email"),
             data.get("nome"),
             data.get("cargo"),
@@ -90,7 +97,7 @@ def atualizar_usuario(user_id: int, data: dict) -> bool:
         "UPDATE users SET username=?, password=?, email=?, nome=?, cargo=?, permissoes=? WHERE id=?",
         (
             data.get("username"),
-            data.get("password"),
+            bcrypt.hash(data.get("password")) if data.get("password") else None,
             data.get("email"),
             data.get("nome"),
             data.get("cargo"),
