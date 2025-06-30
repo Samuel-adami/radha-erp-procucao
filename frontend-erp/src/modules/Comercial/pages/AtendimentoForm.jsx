@@ -427,7 +427,7 @@ function AtendimentoForm() {
         </div>
       </div>
       <label className="block">
-        <span className="text-sm">Endereço de entrega diferente do cadastro?</span>
+        <span className="text-sm">Endereço de entrega é o mesmo do cadastro?</span>
         <select className="input" value={entregaOpcao} onChange={handleEntregaOpcao}>
           <option value="">Selecione</option>
           <option>Sim</option>
