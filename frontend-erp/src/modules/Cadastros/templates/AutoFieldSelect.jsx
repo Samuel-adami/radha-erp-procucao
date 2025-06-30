@@ -34,6 +34,15 @@ const AUTO_OPTIONS = [
   { value: 'empresa.estado', label: 'Empresa - Estado' },
   { value: 'empresa.telefone1', label: 'Empresa - Telefone 1' },
   { value: 'empresa.telefone2', label: 'Empresa - Telefone 2' },
+  // Negociação
+  { value: 'negociacao.pontuacao', label: 'Negociação - Pontuação' },
+  { value: 'negociacao.desconto1', label: 'Negociação - Desconto 1' },
+  { value: 'negociacao.desconto2', label: 'Negociação - Desconto 2' },
+  { value: 'negociacao.entrada', label: 'Negociação - Entrada' },
+  { value: 'negociacao.numParcelas', label: 'Negociação - Nº Parcelas' },
+  { value: 'negociacao.condicao', label: 'Negociação - Condição Pagamento' },
+  { value: 'negociacao.total', label: 'Negociação - Total' },
+  { value: 'negociacao.descricao_pagamento', label: 'Negociação - Descrição Pagamento' },
 ];
 
 function AutoFieldSelect({ value, onChange }) {

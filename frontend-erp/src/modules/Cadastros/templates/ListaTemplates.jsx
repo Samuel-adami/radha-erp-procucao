@@ -15,6 +15,8 @@ const nomeTipo = tipo => {
       return 'Romaneio de Entrega';
     case 'memorial':
       return 'Memorial Descritivo';
+    case 'negociacao':
+      return 'Negociação';
     default:
       return tipo;
   }
