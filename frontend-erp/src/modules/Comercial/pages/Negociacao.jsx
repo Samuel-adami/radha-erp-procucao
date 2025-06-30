@@ -374,6 +374,11 @@ function Negociacao() {
               <option key={t.id} value={t.id}>{t.titulo}</option>
             ))}
           </select>
+          {templates.length === 0 && (
+            <div className="text-xs text-gray-600">
+              Nenhum template cadastrado. Cadastre em Cadastros &gt; Templates.
+            </div>
+          )}
         </label>
       </div>
       <div>

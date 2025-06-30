@@ -22,6 +22,7 @@ Faça login com seu usuário e navegue pelos módulos de acordo com suas permiss
 - **Clientes** – cadastro de clientes com endereços e contatos.
 - **Fornecedores** – cadastro de fornecedores utilizados na produção.
 - **Usuários** – gestão de contas do sistema e permissões de acesso.
+- **Templates** – define modelos para orçamentos, pedidos e outros documentos. Cadastre ao menos um template de Orçamento para usar a opção **Baixar Orçamento**.
 
 ## Comercial
 - **Atendimentos** – registra o processo de venda desde o contato inicial até a pasta final, marcando tarefas e etapas concluídas. Requer a permissão `comercial/atendimentos` para aparecer no menu.
