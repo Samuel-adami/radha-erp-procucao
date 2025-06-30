@@ -26,6 +26,14 @@ function AtendimentoForm() {
   const [form, setForm] = useState({
     cliente: '',
     codigo: '',
+    vendedor: '',
+    telefone: '',
+    email: '',
+    rua: '',
+    numero: '',
+    cidade: '',
+    estado: '',
+    cep: '',
     projetos: [],
     previsao_fechamento: '',
     temperatura: '',
@@ -37,6 +45,14 @@ function AtendimentoForm() {
   const [initialForm, setInitialForm] = useState({
     cliente: '',
     codigo: '',
+    vendedor: '',
+    telefone: '',
+    email: '',
+    rua: '',
+    numero: '',
+    cidade: '',
+    estado: '',
+    cep: '',
     projetos: [],
     previsao_fechamento: '',
     temperatura: '',
@@ -58,6 +74,14 @@ function AtendimentoForm() {
     setInitialForm({
       cliente: '',
       codigo: '',
+      vendedor: '',
+      telefone: '',
+      email: '',
+      rua: '',
+      numero: '',
+      cidade: '',
+      estado: '',
+      cep: '',
       projetos: [],
       previsao_fechamento: '',
       temperatura: '',
@@ -201,6 +225,38 @@ function AtendimentoForm() {
               <option key={c.id} value={c.nome} />
             ))}
           </datalist>
+        </label>
+        <label className="block">
+          <span className="text-sm">Vendedor Responsável</span>
+          <input className="input" value={form.vendedor} onChange={handle('vendedor')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Telefone</span>
+          <input className="input" value={form.telefone} onChange={handle('telefone')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">E-mail</span>
+          <input type="email" className="input" value={form.email} onChange={handle('email')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Rua</span>
+          <input className="input" value={form.rua} onChange={handle('rua')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Número</span>
+          <input className="input" value={form.numero} onChange={handle('numero')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Cidade</span>
+          <input className="input" value={form.cidade} onChange={handle('cidade')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Estado</span>
+          <input className="input" value={form.estado} onChange={handle('estado')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">CEP</span>
+          <input className="input" value={form.cep} onChange={handle('cep')} />
         </label>
         <label className="block">
           <span className="text-sm">Código</span>
