@@ -25,6 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent
 SAIDA_DIR = BASE_DIR / "saida"
 
 
+def resolve_saidadir_path(p: str | Path) -> Path:
+    """Resolve `p` ensuring the resulting path is inside ``SAIDA_DIR``."""
+    resolved = Path(p).resolve()
+    if not resolved.is_relative_to(SAIDA_DIR):
+        raise ValueError("Caminho fora de SAIDA_DIR")
+    return resolved
+
+
 def proximo_oc_numero() -> int:
     """Retorna o próximo número sequencial de OC."""
     with get_db_connection() as conn:
@@ -194,7 +202,10 @@ async def gerar_lote_final(request: Request):
 @app.get("/carregar-lote-final")
 async def carregar_lote_final(pasta: str):
     """Lê o lote final em 'pasta' e retorna os pacotes com suas peças."""
-    pasta_path = Path(pasta)
+    try:
+        pasta_path = resolve_saidadir_path(pasta)
+    except ValueError:
+        return {"erro": "Caminho inválido"}
     dxt_path = pasta_path / f"{pasta_path.name}.dxt"
     if not dxt_path.exists():
         return {"erro": "DXT nao encontrado"}
@@ -218,8 +229,12 @@ async def executar_nesting(request: Request):
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
     try:
+        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
+    except ValueError:
+        return {"erro": "Caminho inválido"}
+    try:
         pasta_resultado = gerar_nesting(
-            pasta_lote,
+            str(pasta_lote_resolved),
             largura_chapa,
             altura_chapa,
             ferramentas,
@@ -229,11 +244,11 @@ async def executar_nesting(request: Request):
         with get_db_connection() as conn:
             cur = conn.execute(
                 "INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES (?, ?, ?)",
-                (pasta_lote, pasta_resultado, datetime.now().isoformat()),
+                (str(pasta_lote_resolved), pasta_resultado, datetime.now().isoformat()),
             )
             nid = cur.lastrowid
             conn.commit()
-        layers = coletar_layers(pasta_lote)
+        layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers, "id": nid}
@@ -247,7 +262,11 @@ async def api_coletar_layers(request: Request):
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
     try:
-        layers = coletar_layers(pasta_lote)
+        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
+    except ValueError:
+        return {"erro": "Caminho inválido"}
+    try:
+        layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
         return {"erro": str(e)}
     return {"layers": layers}
@@ -313,7 +332,11 @@ async def remover_nesting(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     if pasta_resultado:
-        shutil.rmtree(pasta_resultado, ignore_errors=True)
+        try:
+            pasta_resultado_resolved = resolve_saidadir_path(pasta_resultado)
+        except ValueError:
+            return {"erro": "Caminho inválido"}
+        shutil.rmtree(pasta_resultado_resolved, ignore_errors=True)
     return {"status": "ok"}
 
 
@@ -682,7 +705,10 @@ async def excluir_lote_ocorrencia(oc_id: int):
                 "SELECT pasta FROM lotes_ocorrencias WHERE id=?", (oc_id,)
             ).fetchone()
             if row:
-                pasta = Path(row["pasta"])
+                try:
+                    pasta = resolve_saidadir_path(row["pasta"])
+                except ValueError:
+                    return {"erro": "Caminho inválido"}
                 if pasta.is_dir():
                     shutil.rmtree(pasta, ignore_errors=True)
                 conn.execute(
