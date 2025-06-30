@@ -55,6 +55,7 @@ function ListaTemplates() {
             <span>{t.titulo}</span>
             <div className="space-x-2">
               <Link className="text-blue-600 hover:underline" to={`editar/${t.id}`}>Editar</Link>
+              <Link className="text-blue-600 hover:underline" to={`preview/${t.id}`}>Visualizar</Link>
               <button className="text-red-600 hover:underline" onClick={() => excluir(t.id)}>Excluir</button>
             </div>
           </li>

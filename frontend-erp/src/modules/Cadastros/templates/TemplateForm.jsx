@@ -44,7 +44,10 @@ function TemplateForm() {
       fetchComAuth(`/comercial/templates/${id}`)
         .then(d => {
           const t = d.template;
-          if (t) setForm({ titulo: t.titulo, campos: t.campos || [] });
+          if (t) {
+            const campos = (t.campos || []).map(c => ({ largura: 'full', ...c }));
+            setForm({ titulo: t.titulo, campos });
+          }
         })
         .catch(() => {});
     }
@@ -52,7 +55,7 @@ function TemplateForm() {
 
   const addCampo = () => {
     if (!novoTipo) return;
-    const novo = { tipo: novoTipo, label: '', linhas: 1, colunas: 1 };
+    const novo = { tipo: novoTipo, label: '', linhas: 1, colunas: 1, largura: 'full' };
     setForm(prev => ({ ...prev, campos: [...prev.campos, novo] }));
     setNovoTipo('');
   };
@@ -85,6 +88,17 @@ function TemplateForm() {
 
   const removerCampo = idx => {
     setForm(prev => ({ ...prev, campos: prev.campos.filter((_, i) => i !== idx) }));
+  };
+
+  const moverCampo = (idx, dir) => {
+    setForm(prev => {
+      const campos = [...prev.campos];
+      const novo = idx + dir;
+      if (novo < 0 || novo >= campos.length) return prev;
+      const [item] = campos.splice(idx, 1);
+      campos.splice(novo, 0, item);
+      return { ...prev, campos };
+    });
   };
 
   const toggleAuto = idx => {
@@ -168,6 +182,12 @@ function TemplateForm() {
                   <option key={ft.value} value={ft.value}>{ft.label}</option>
                 ))}
               </select>
+              <select className="input" value={c.largura || 'full'} onChange={e => updateCampo(idx, 'largura', e.target.value)}>
+                <option value="full">Linha inteira</option>
+                <option value="half">Meia largura</option>
+              </select>
+              <button type="button" className="text-xl" onClick={() => moverCampo(idx, -1)}>&uarr;</button>
+              <button type="button" className="text-xl" onClick={() => moverCampo(idx, 1)}>&darr;</button>
               <button type="button" className="text-red-600" onClick={() => removerCampo(idx)}>Remover</button>
             </div>
             {c.tipo === 'table' && (
