@@ -110,8 +110,11 @@ function App() {
           return;
         } catch (error) {
           console.error("Token inválido ou expirado, tentando novo login.", error);
-          localStorage.removeItem("token");
-          localStorage.removeItem("usuario");
+          // Só remove o token se a falha indicar realmente problema de autorização
+          if (error.message.startsWith("Erro 401") || error.message.startsWith("Erro 403")) {
+            localStorage.removeItem("token");
+            localStorage.removeItem("usuario");
+          }
         }
       }
 
