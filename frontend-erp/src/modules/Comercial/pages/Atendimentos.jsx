@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
+import { formatDateBr } from '../../../utils/formatDateBr';
 
 function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
@@ -26,12 +27,14 @@ function Atendimentos() {
             const lastDoneIndex = tarefas.map((x) => Number(x.concluida)).lastIndexOf(1);
             const next = tarefas[lastDoneIndex + 1];
             const last = tarefas[lastDoneIndex];
+            const dataCadastroRaw = at.data_cadastro || first?.dados?.data || '';
+            const ultimaRaw = last?.dados?.data || '';
             return {
               ...at,
-              dataCadastro: at.data_cadastro || first?.dados?.data || '',
+              dataCadastro: formatDateBr(dataCadastroRaw),
               setor: 'Comercial',
               status: next ? next.nome : 'Finalizado',
-              ultimaAtualizacao: last?.dados?.data || '',
+              ultimaAtualizacao: formatDateBr(ultimaRaw),
             };
           } catch {
             return { ...at, setor: 'Comercial' };
