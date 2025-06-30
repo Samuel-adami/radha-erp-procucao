@@ -68,6 +68,7 @@ function AtendimentoForm() {
   const [clienteInfo, setClienteInfo] = useState(null);
   const [sequencial, setSequencial] = useState(1);
   const [projetosOpen, setProjetosOpen] = useState(false);
+  const [entregaOpcao, setEntregaOpcao] = useState('');
   const navigate = useNavigate();
   const { id } = useParams();
 
@@ -150,6 +151,26 @@ function AtendimentoForm() {
   }, [id]);
 
   useEffect(() => {
+    if (!form.cliente) return;
+    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
+    const encontrado = lista.find(c => c.nome === form.cliente);
+    setClienteInfo(encontrado || null);
+  }, [form.cliente, id]);
+
+  useEffect(() => {
+    if (entregaOpcao === 'Sim' && clienteInfo) {
+      setForm(prev => ({
+        ...prev,
+        rua: clienteInfo.endereco || '',
+        numero: clienteInfo.numero || '',
+        cidade: clienteInfo.cidade || '',
+        estado: clienteInfo.estado || '',
+        cep: clienteInfo.cep || '',
+      }));
+    }
+  }, [clienteInfo, entregaOpcao]);
+
+  useEffect(() => {
     if (id) return;
     const codigo = `AT-${String(sequencial).padStart(4, '0')}`;
     setForm(prev => ({ ...prev, codigo }));
@@ -186,8 +207,42 @@ function AtendimentoForm() {
     }
     const encontrado = lista.find(c => c.nome === value);
     setClienteInfo(encontrado || null);
-    if (encontrado && encontrado.procedencia) {
-      setForm(prev => ({ ...prev, procedencia: encontrado.procedencia }));
+    if (encontrado) {
+      setForm(prev => ({
+        ...prev,
+        procedencia: encontrado.procedencia || '',
+        telefone: encontrado.telefone1 || '',
+        email: encontrado.email || '',
+        rua: encontrado.endereco || '',
+        numero: encontrado.numero || '',
+        cidade: encontrado.cidade || '',
+        estado: encontrado.estado || '',
+        cep: encontrado.cep || '',
+      }));
+    }
+  };
+
+  const handleEntregaOpcao = e => {
+    const val = e.target.value;
+    setEntregaOpcao(val);
+    if (val === 'Sim' && clienteInfo) {
+      setForm(prev => ({
+        ...prev,
+        rua: clienteInfo.endereco || '',
+        numero: clienteInfo.numero || '',
+        cidade: clienteInfo.cidade || '',
+        estado: clienteInfo.estado || '',
+        cep: clienteInfo.cep || '',
+      }));
+    } else if (val === 'Não') {
+      setForm(prev => ({
+        ...prev,
+        rua: '',
+        numero: '',
+        cidade: '',
+        estado: '',
+        cep: '',
+      }));
     }
   };
 
@@ -268,15 +323,25 @@ function AtendimentoForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       {clienteInfo && (
         <div className="p-2 bg-gray-100 rounded text-sm space-y-1">
-          <div className="font-semibold">{clienteInfo.nome}</div>
-          <div>CPF/CNPJ: {clienteInfo.documento}</div>
-          <div>Tel: {clienteInfo.telefone1}</div>
-          <div>Email: {clienteInfo.email}</div>
-          <div>
-            {clienteInfo.endereco} {clienteInfo.numero} - {clienteInfo.bairro}
-          </div>
-          <div>
-            {clienteInfo.cidade}/{clienteInfo.estado}
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="font-semibold">{clienteInfo.nome}</div>
+              <div>CPF/CNPJ: {clienteInfo.documento}</div>
+              <div>Tel: {clienteInfo.telefone1}</div>
+              <div>Email: {clienteInfo.email}</div>
+              <div>
+                {clienteInfo.endereco} {clienteInfo.numero} - {clienteInfo.bairro}
+              </div>
+              <div>
+                {clienteInfo.cidade}/{clienteInfo.estado}
+              </div>
+            </div>
+            <Link
+              to={`/cadastros/clientes/editar/${clienteInfo.id}`}
+              className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
+            >
+              Editar
+            </Link>
           </div>
         </div>
       )}
@@ -300,14 +365,6 @@ function AtendimentoForm() {
           <input className="input" value={form.vendedor} onChange={handle('vendedor')} />
         </label>
         <label className="block">
-          <span className="text-sm">Telefone</span>
-          <input className="input" value={form.telefone} onChange={handle('telefone')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">E-mail</span>
-          <input type="email" className="input" value={form.email} onChange={handle('email')} />
-        </label>
-        <label className="block">
           <span className="text-sm">Como chegou até nós?</span>
           <select className="input" value={form.procedencia} onChange={handle('procedencia')}>
             <option value="">Selecione</option>
@@ -322,26 +379,6 @@ function AtendimentoForm() {
             <option>Telefone</option>
             <option>Outros</option>
           </select>
-        </label>
-        <label className="block">
-          <span className="text-sm">Rua</span>
-          <input className="input" value={form.rua} onChange={handle('rua')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Número</span>
-          <input className="input" value={form.numero} onChange={handle('numero')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Cidade</span>
-          <input className="input" value={form.cidade} onChange={handle('cidade')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Estado</span>
-          <input className="input" value={form.estado} onChange={handle('estado')} />
-        </label>
-        <label className="block">
-          <span className="text-sm">CEP</span>
-          <input className="input" value={form.cep} onChange={handle('cep')} />
         </label>
         <label className="block">
           <span className="text-sm">Código</span>
@@ -375,6 +412,40 @@ function AtendimentoForm() {
             </div>
           )}
         </div>
+      </div>
+      <label className="block">
+        <span className="text-sm">Endereço de entrega diferente do cadastro?</span>
+        <select className="input" value={entregaOpcao} onChange={handleEntregaOpcao}>
+          <option value="">Selecione</option>
+          <option>Sim</option>
+          <option>Não</option>
+        </select>
+      </label>
+      {entregaOpcao && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="block">
+            <span className="text-sm">Rua</span>
+            <input className="input" value={form.rua} onChange={handle('rua')} />
+          </label>
+          <label className="block">
+            <span className="text-sm">Número</span>
+            <input className="input" value={form.numero} onChange={handle('numero')} />
+          </label>
+          <label className="block">
+            <span className="text-sm">Cidade</span>
+            <input className="input" value={form.cidade} onChange={handle('cidade')} />
+          </label>
+          <label className="block">
+            <span className="text-sm">Estado</span>
+            <input className="input" value={form.estado} onChange={handle('estado')} />
+          </label>
+          <label className="block">
+            <span className="text-sm">CEP</span>
+            <input className="input" value={form.cep} onChange={handle('cep')} />
+          </label>
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block">
           <span className="text-sm">Previsão Fechamento</span>
           <input
