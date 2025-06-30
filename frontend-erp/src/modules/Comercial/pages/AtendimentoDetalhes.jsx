@@ -3,9 +3,17 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
-function TarefaItem({ tarefa, atendimentoId, onChange, projetos }) {
+function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
   const [edit, setEdit] = useState(false);
   const [dados, setDados] = useState(() => tarefa.dados || {});
+
+  if (bloqueada && !tarefa.concluida) {
+    return (
+      <li className="p-2 border rounded text-gray-500">
+        <span>{tarefa.nome} - aguarde a conclusão da tarefa anterior</span>
+      </li>
+    );
+  }
 
   const salvar = async concl => {
     await fetchComAuth(
@@ -205,13 +213,14 @@ function AtendimentoDetalhes() {
       <div>
         <h4 className="font-medium mb-2">Tarefas</h4>
         <ul className="space-y-2">
-          {tarefas.map(t => (
+          {tarefas.map((t, idx) => (
             <TarefaItem
               key={t.id}
               tarefa={t}
               atendimentoId={id}
               onChange={carregarTarefas}
               projetos={atendimento.projetos ? atendimento.projetos.split(',').map(p => p.trim()) : []}
+              bloqueada={tarefas.slice(0, idx).some(tt => !tt.concluida)}
             />
           ))}
         </ul>
