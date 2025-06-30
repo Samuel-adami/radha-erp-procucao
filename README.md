@@ -20,8 +20,9 @@ sudo apt install python3 python3-venv nodejs npm
 
 ## Iniciando o Sistema
 1. Ajuste as variáveis de ambiente desejadas (`RADHA_ADMIN_USER`, `RADHA_ADMIN_PASS`, `SECRET_KEY`, `RADHA_DATA_DIR`).
-2. Execute `./start_services.sh` para rodar todos os serviços localmente.
-3. Acesse `http://localhost:3005` no navegador e faça login com o usuário configurado (padrão `admin`/`admin`).
+2. Execute `./start_services.sh` para rodar todos os serviços.
+3. Edite `frontend-erp/.env` definindo `VITE_GATEWAY_URL=http://212.85.13.74:8010`.
+4. Acesse `http://212.85.13.74:3005` no navegador e faça login com o usuário configurado (padrão `admin`/`admin`).
 
 O serviço `radha-erp.service` é um exemplo de unidade systemd para produção.
 
