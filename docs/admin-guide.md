@@ -27,3 +27,6 @@ Use `update_github.sh` para adicionar commits e enviar alterações para o GitHu
 ## Verificação e Logs
 Verifique se as portas 8010 (gateway), 8015 (marketing), 8020 (produção) e 8030 (comercial) estão livres. Os logs de cada backend podem ser analisados individualmente caso ocorram erros de inicialização.
 
+### Templates do Comercial
+Os modelos de documentos ficam armazenados no banco `comercial.db`. Para que usuários consigam baixar orçamentos, cadastre templates do tipo **Orçamento** acessando o menu *Cadastros > Templates* no frontend.
+
