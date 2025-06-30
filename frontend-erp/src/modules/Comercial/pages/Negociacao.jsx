@@ -13,6 +13,8 @@ function Negociacao() {
   const [condicaoId, setCondicaoId] = useState('');
   const [desc1, setDesc1] = useState('');
   const [desc2, setDesc2] = useState('');
+  const [entrada, setEntrada] = useState('');
+  const [numParcelas, setNumParcelas] = useState('');
   const [ambientes, setAmbientes] = useState([]);
   const [selecionados, setSelecionados] = useState({});
   const [custos, setCustos] = useState([]);
@@ -40,6 +42,8 @@ function Negociacao() {
       if (dadosNeg.condicaoId) setCondicaoId(String(dadosNeg.condicaoId));
       if (dadosNeg.desconto1) setDesc1(String(dadosNeg.desconto1));
       if (dadosNeg.desconto2) setDesc2(String(dadosNeg.desconto2));
+      if (dadosNeg.entrada) setEntrada(String(dadosNeg.entrada));
+      if (dadosNeg.numParcelas) setNumParcelas(String(dadosNeg.numParcelas));
       if (dadosNeg.custos) setCustos(dadosNeg.custos);
     };
     carregar();
@@ -71,18 +75,22 @@ function Negociacao() {
   useEffect(() => {
     const c = condicoes.find(cc => String(cc.id) === String(condicaoId));
     if (c) {
-      const n = c.numero_parcelas || (c.parcelas ? c.parcelas.sem.length + c.parcelas.com.length : 0);
-      const valor = n ? total / n : total;
+      const max = c.numero_parcelas || (c.parcelas ? c.parcelas.sem.length + c.parcelas.com.length : 0);
+      const n = numParcelas ? parseInt(numParcelas, 10) : max;
+      const resto = total - parseFloat(entrada || 0);
+      const valor = n ? resto / n : resto;
       setParcelas(Array.from({ length: n }, (_, i) => ({ numero: i + 1, valor })));
     } else {
       setParcelas([]);
     }
-  }, [condicaoId, total, condicoes]);
+  }, [condicaoId, total, condicoes, numParcelas, entrada]);
 
   const salvar = async () => {
     const dados = {
       pontuacao,
       condicaoId,
+      entrada,
+      numParcelas,
       desconto1: desc1,
       desconto2: desc2,
       custos,
@@ -100,7 +108,7 @@ function Negociacao() {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Negociação</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <label className="block">
           <span className="text-sm">Pontuação</span>
           <input type="number" className="input" value={pontuacao} onChange={e => setPontuacao(e.target.value)} />
@@ -112,6 +120,23 @@ function Negociacao() {
             {condicoes.map(c => (
               <option key={c.id} value={c.id}>{c.nome}</option>
             ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm">Entrada (R$)</span>
+          <input type="number" className="input" value={entrada} onChange={e => setEntrada(e.target.value)} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Parcelas</span>
+          <select className="input" value={numParcelas} onChange={e => setNumParcelas(e.target.value)}>
+            <option value="">Selecione</option>
+            {(() => {
+              const c = condicoes.find(cc => String(cc.id) === String(condicaoId));
+              const n = c ? c.numero_parcelas || (c.parcelas ? c.parcelas.sem.length + c.parcelas.com.length : 0) : 0;
+              return Array.from({ length: n }, (_, i) => i + 1).map(nPar => (
+                <option key={nPar} value={nPar}>{nPar}</option>
+              ));
+            })()}
           </select>
         </label>
         <label className="block">
