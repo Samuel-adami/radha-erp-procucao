@@ -11,6 +11,7 @@ const FIELD_TYPES = [
   { value: 'number', label: 'Número' },
   { value: 'document', label: 'Documento' },
   { value: 'table', label: 'Tabela' },
+  { value: 'negociacao', label: 'Negociação' },
 ];
 
 const nomeTipo = tipo => {
@@ -232,7 +233,10 @@ function TemplateForm() {
                 </div>
               </>
             )}
-            {c.tipo !== 'table' && (
+            {c.tipo === 'negociacao' && (
+              <div className="text-sm text-gray-600">Tabela da negociação será exibida neste local.</div>
+            )}
+            {c.tipo !== 'table' && c.tipo !== 'negociacao' && (
               <>
                 <button type="button" className="text-blue-600 underline" onClick={() => toggleAuto(idx)}>
                   Carregamento automático

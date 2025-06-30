@@ -20,6 +20,8 @@ function Negociacao() {
   const [custos, setCustos] = useState([]);
   const [novoCusto, setNovoCusto] = useState({ descricao: '', ambiente: '', valor: '' });
   const [mostrarFormCusto, setMostrarFormCusto] = useState(false);
+  const [mostrarListaCustos, setMostrarListaCustos] = useState(false);
+  const [editIdx, setEditIdx] = useState(-1);
   const [parcelas, setParcelas] = useState([]);
   const [totalVenda, setTotalVenda] = useState(0);
 
@@ -59,7 +61,12 @@ function Negociacao() {
 
   const addCusto = () => {
     if (!novoCusto.descricao || !novoCusto.ambiente || !novoCusto.valor) return;
-    setCustos(prev => [...prev, { ...novoCusto, valor: parseFloat(novoCusto.valor) }]);
+    if (editIdx >= 0) {
+      setCustos(prev => prev.map((c, i) => (i === editIdx ? { ...novoCusto, valor: parseFloat(novoCusto.valor) } : c)));
+      setEditIdx(-1);
+    } else {
+      setCustos(prev => [...prev, { ...novoCusto, valor: parseFloat(novoCusto.valor) }]);
+    }
     setNovoCusto({ descricao: '', ambiente: '', valor: '' });
     setMostrarFormCusto(false);
   };
@@ -68,6 +75,17 @@ function Negociacao() {
   const valorAmbiente = nome => {
     const amb = ambientes.find(a => a.nome === nome);
     return (amb?.valor || 0) + somaCustos(nome);
+  };
+
+  const editarCusto = idx => {
+    const c = custos[idx];
+    setNovoCusto({ descricao: c.descricao, ambiente: c.ambiente, valor: c.valor });
+    setEditIdx(idx);
+    setMostrarFormCusto(true);
+  };
+
+  const removerCusto = idx => {
+    setCustos(prev => prev.filter((_, i) => i !== idx));
   };
 
   const valorOrcamento = nome => {
@@ -196,8 +214,8 @@ function Negociacao() {
               <th className="border px-2">Ambiente</th>
               <th className="border px-2">Custo Fábrica</th>
               <th className="border px-2">Custos Adicionais</th>
+              <th className="border px-2">Custo Total</th>
               <th className="border px-2">Orçamento</th>
-              <th className="border px-2">Valor Final</th>
             </tr>
           </thead>
           <tbody>
@@ -209,15 +227,20 @@ function Negociacao() {
                 <td className="border px-2">{a.nome}</td>
                 <td className="border px-2">{currency(a.valor)}</td>
                 <td className="border px-2">{currency(somaCustos(a.nome))}</td>
-                <td className="border px-2">{currency(valorOrcamento(a.nome))}</td>
                 <td className="border px-2">{currency(valorAmbiente(a.nome))}</td>
+                <td className="border px-2">{currency(valorOrcamento(a.nome))}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <Button size="sm" variant="secondary" onClick={() => setMostrarFormCusto(!mostrarFormCusto)}>
-          Inserir Custos Adicionais
-        </Button>
+        <div className="flex gap-2 mb-2">
+          <Button size="sm" variant="secondary" onClick={() => setMostrarFormCusto(!mostrarFormCusto)}>
+            {editIdx >= 0 ? 'Editar Custo' : 'Inserir Custos Adicionais'}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setMostrarListaCustos(!mostrarListaCustos)}>
+            Listar Custos Adicionais
+          </Button>
+        </div>
         {mostrarFormCusto && (
           <div className="border p-2 rounded mt-2 space-y-2">
             <label className="block">
@@ -237,7 +260,34 @@ function Negociacao() {
               <span className="text-sm">Valor (R$)</span>
               <input type="number" className="input" value={novoCusto.valor} onChange={e => setNovoCusto({ ...novoCusto, valor: e.target.value })} />
             </label>
-            <Button size="sm" onClick={addCusto}>Adicionar</Button>
+            <Button size="sm" onClick={addCusto}>{editIdx >= 0 ? 'Salvar' : 'Adicionar'}</Button>
+          </div>
+        )}
+        {mostrarListaCustos && (
+          <div className="border p-2 rounded mt-2">
+            <table className="w-full text-sm mb-2">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border px-2">Descrição</th>
+                  <th className="border px-2">Ambiente</th>
+                  <th className="border px-2">Valor</th>
+                  <th className="border px-2">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {custos.map((c, idx) => (
+                  <tr key={idx}>
+                    <td className="border px-2">{c.descricao}</td>
+                    <td className="border px-2">{c.ambiente}</td>
+                    <td className="border px-2">{currency(c.valor)}</td>
+                    <td className="border px-2 space-x-2">
+                      <button className="text-blue-600" onClick={() => editarCusto(idx)}>Editar</button>
+                      <button className="text-red-600" onClick={() => removerCusto(idx)}>Excluir</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

@@ -9,7 +9,6 @@ const tipos = [
   { id: 'contrato', nome: 'Contrato' },
   { id: 'romaneio', nome: 'Romaneio de Entrega' },
   { id: 'memorial', nome: 'Memorial Descritivo' },
-  { id: 'negociacao', nome: 'Negociação' },
 ];
 
 function TemplatesMenu() {
