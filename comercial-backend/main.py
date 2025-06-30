@@ -155,7 +155,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
 async def listar_tarefas(atendimento_id: int):
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT id, nome, concluida, dados FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
+            "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
             (atendimento_id,),
         ).fetchall()
         tarefas = [dict(row) for row in rows]
@@ -185,8 +185,11 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                     status_code=400,
                 )
     if "concluida" in data:
+        concl = bool(data["concluida"])
         campos.append("concluida=?")
-        valores.append(int(bool(data["concluida"])))
+        valores.append(int(concl))
+        campos.append("data_execucao=?")
+        valores.append(datetime.utcnow().isoformat() if concl else None)
     if "dados" in data:
         campos.append("dados=?")
         valores.append(data["dados"])

@@ -49,6 +49,7 @@ def init_db():
             nome TEXT,
             concluida INTEGER DEFAULT 0,
             dados TEXT,
+            data_execucao TEXT,
             FOREIGN KEY (atendimento_id) REFERENCES atendimentos(id)
         )"""
     )
@@ -93,6 +94,10 @@ def init_db():
     for campo in adicionais:
         if campo not in cols_a:
             cur.execute(f"ALTER TABLE atendimentos ADD COLUMN {campo} TEXT")
+
+    cols_t = [row[1] for row in cur.execute("PRAGMA table_info(atendimento_tarefas)")]
+    if "data_execucao" not in cols_t:
+        cur.execute("ALTER TABLE atendimento_tarefas ADD COLUMN data_execucao TEXT")
     conn.commit()
     conn.close()
 
