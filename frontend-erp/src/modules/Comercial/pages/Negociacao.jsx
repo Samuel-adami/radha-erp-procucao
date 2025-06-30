@@ -172,11 +172,25 @@ function Negociacao() {
   };
 
   const baixarOrcamento = async () => {
-    if (!templateId) {
-      alert('Selecione um template');
-      return;
+    let tplId = templateId;
+    if (!tplId) {
+      if (templates.length === 0) {
+        alert('Nenhum template cadastrado');
+        return;
+      }
+      if (templates.length === 1) {
+        tplId = templates[0].id;
+      } else {
+        const opcoes = templates.map((t, i) => `${i + 1} - ${t.titulo}`).join('\n');
+        const escolha = window.prompt(`Selecione o template:\n${opcoes}`);
+        if (!escolha) return;
+        const idx = parseInt(escolha, 10) - 1;
+        if (!templates[idx]) return;
+        tplId = templates[idx].id;
+      }
+      setTemplateId(tplId);
     }
-    const t = await fetchComAuth(`/comercial/templates/${templateId}`);
+    const t = await fetchComAuth(`/comercial/templates/${tplId}`);
     const template = t.template;
     if (!template) return;
     const empresa = JSON.parse(localStorage.getItem('empresa') || '{}');
@@ -261,8 +275,42 @@ function Negociacao() {
         table.appendChild(tbody);
         div.appendChild(table);
       } else if (campo.tipo === 'negociacao') {
+        const desc = document.createElement('div');
+        desc.textContent = valores.negociacao.descricao_pagamento || '';
+        div.appendChild(desc);
+
+        const tableProj = document.createElement('table');
+        tableProj.className = 'w-full text-sm mt-1';
+        const thdP = document.createElement('thead');
+        const trP = document.createElement('tr');
+        trP.className = 'bg-gray-100';
+        ['Projeto', 'Valor'].forEach(tx => {
+          const th = document.createElement('th');
+          th.className = 'border px-2';
+          th.textContent = tx;
+          trP.appendChild(th);
+        });
+        thdP.appendChild(trP);
+        tableProj.appendChild(thdP);
+        const tbP = document.createElement('tbody');
+        ambientes.forEach(a => {
+          if (!selecionados[a.nome]) return;
+          const tr = document.createElement('tr');
+          const tdN = document.createElement('td');
+          tdN.className = 'border px-2';
+          tdN.textContent = a.nome;
+          const tdV = document.createElement('td');
+          tdV.className = 'border px-2';
+          tdV.textContent = currency(valorOrcamento(a.nome));
+          tr.appendChild(tdN);
+          tr.appendChild(tdV);
+          tbP.appendChild(tr);
+        });
+        tableProj.appendChild(tbP);
+        div.appendChild(tableProj);
+
         const table = document.createElement('table');
-        table.className = 'w-full text-sm';
+        table.className = 'w-full text-sm mt-2';
         const thead2 = document.createElement('thead');
         const tr2 = document.createElement('tr');
         tr2.className = 'bg-gray-100';
@@ -289,6 +337,11 @@ function Negociacao() {
         });
         table.appendChild(tbody2);
         div.appendChild(table);
+
+        const tot = document.createElement('div');
+        tot.className = 'mt-1 font-semibold';
+        tot.textContent = `Total: R$ ${currency(totalVenda || total)}`;
+        div.appendChild(tot);
       } else if (campo.autoCampo === 'empresa.dados_completos') {
         const bloco = document.createElement('div');
         bloco.className = 'space-y-1';
@@ -307,7 +360,8 @@ function Negociacao() {
       } else {
         const texto = document.createElement('div');
         texto.className = 'whitespace-pre-wrap';
-        texto.textContent = campo.autoCampo ? getValor(campo.autoCampo) : campo.label;
+        const val = campo.autoCampo ? getValor(campo.autoCampo) : '';
+        texto.textContent = campo.label ? `${campo.label}: ${val}` : val;
         div.appendChild(texto);
       }
       wrapper.appendChild(div);
@@ -365,20 +419,6 @@ function Negociacao() {
               ));
             })()}
           </select>
-        </label>
-        <label className="block">
-          <span className="text-sm">Template de Orçamento</span>
-          <select className="input" value={templateId} onChange={e => setTemplateId(e.target.value)}>
-            <option value="">Selecione</option>
-            {templates.map(t => (
-              <option key={t.id} value={t.id}>{t.titulo}</option>
-            ))}
-          </select>
-          {templates.length === 0 && (
-            <div className="text-xs text-gray-600">
-              Nenhum template cadastrado. Cadastre em Cadastros &gt; Templates.
-            </div>
-          )}
         </label>
       </div>
       <div>

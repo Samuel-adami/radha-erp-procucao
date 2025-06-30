@@ -29,8 +29,70 @@ function TemplatePreview() {
           <div>{empresa.telefone1 || ''}</div>
         </div>
       );
+    } else if (campo.tipo === 'table') {
+      content = (
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th className="border px-1"></th>
+              {Array.from({ length: campo.colunas || 0 }).map((_, i) => (
+                <th key={i} className="border px-1">{campo.headersColunas?.[i] || ''}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: campo.linhas || 0 }).map((_, r) => (
+              <tr key={r}>
+                <th className="border px-1">{campo.headersLinhas?.[r] || ''}</th>
+                {Array.from({ length: campo.colunas || 0 }).map((_, cIdx) => (
+                  <td key={cIdx} className="border px-1">___</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      );
+    } else if (campo.tipo === 'negociacao') {
+      content = (
+        <div className="space-y-1 text-sm">
+          <div>Descrição da condição de pagamento</div>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="border px-1">Projeto</th>
+                <th className="border px-1">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border px-1">Projeto 1</td>
+                <td className="border px-1">R$ 0,00</td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="border px-1">Número</th>
+                <th className="border px-1">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border px-1">1</td>
+                <td className="border px-1">R$ 0,00</td>
+              </tr>
+            </tbody>
+          </table>
+          <div>Total: R$ 0,00</div>
+        </div>
+      );
     } else {
-      content = <div className="whitespace-pre-wrap">[{campo.label}]</div>;
+      content = (
+        <div className="whitespace-pre-wrap">
+          {campo.label ? `${campo.label}: ___` : '___'}
+        </div>
+      );
     }
     return (
       <div key={idx} className={wClass}>{content}</div>
