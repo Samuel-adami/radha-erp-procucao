@@ -98,6 +98,14 @@ def init_db():
     cols_t = [row[1] for row in cur.execute("PRAGMA table_info(atendimento_tarefas)")]
     if "data_execucao" not in cols_t:
         cur.execute("ALTER TABLE atendimento_tarefas ADD COLUMN data_execucao TEXT")
+    cur.execute(
+        """CREATE TABLE IF NOT EXISTS templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tipo TEXT NOT NULL,
+            titulo TEXT NOT NULL,
+            campos_json TEXT
+        )"""
+    )
     conn.commit()
     conn.close()
 

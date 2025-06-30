@@ -11,6 +11,7 @@ import Usuarios from './Usuarios';
 import ListaUsuarios from './ListaUsuarios';
 import CondicaoPagamento from './CondicaoPagamento';
 import ListaCondicoesPagamento from './ListaCondicoesPagamento';
+import Templates from './templates';
 import CadastroMenu from './CadastroMenu';
 import './Cadastros.css';
 
@@ -21,6 +22,7 @@ function CadastrosLayout() {
   const matchFornecedores = useMatch(`${resolved.pathname}/fornecedores`);
   const matchUsuarios = useMatch(`${resolved.pathname}/usuarios`);
   const matchCondicoes = useMatch(`${resolved.pathname}/condicoes-pagamento`);
+  const matchTemplates = useMatch(`${resolved.pathname}/templates`);
   const usuario = useUsuario();
   const possuiPermissao = p => usuario?.permissoes?.includes(p);
   return (
@@ -59,6 +61,12 @@ function CadastrosLayout() {
             Condições de Pagamento
           </Link>
         )}
+        <Link
+          to="templates"
+          className={`px-3 py-1 rounded ${matchTemplates ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+        >
+          Templates
+        </Link>
         {possuiPermissao('cadastros/usuarios') && (
           <Link
             to="usuarios"
@@ -94,6 +102,8 @@ function Cadastros() {
         <Route path="condicoes-pagamento/novo" element={<CondicaoPagamento />} />
         <Route path="condicoes-pagamento/lista" element={<ListaCondicoesPagamento />} />
         <Route path="condicoes-pagamento/editar/:id" element={<CondicaoPagamento />} />
+
+        <Route path="templates/*" element={<Templates />} />
 
         <Route path="usuarios" element={<CadastroMenu ListaComponente={ListaUsuarios} />} />
         <Route path="usuarios/novo" element={<Usuarios />} />
