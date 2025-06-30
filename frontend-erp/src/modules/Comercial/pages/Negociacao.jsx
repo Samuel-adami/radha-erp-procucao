@@ -8,7 +8,7 @@ const currency = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDi
 function Negociacao() {
   const { id, tarefaId } = useParams();
   const navigate = useNavigate();
-  const [pontuacao, setPontuacao] = useState('');
+  const [pontuacao, setPontuacao] = useState('4');
   const [condicoes, setCondicoes] = useState([]);
   const [condicaoId, setCondicaoId] = useState('');
   const [desc1, setDesc1] = useState('');
@@ -21,6 +21,7 @@ function Negociacao() {
   const [novoCusto, setNovoCusto] = useState({ descricao: '', ambiente: '', valor: '' });
   const [mostrarFormCusto, setMostrarFormCusto] = useState(false);
   const [parcelas, setParcelas] = useState([]);
+  const [totalVenda, setTotalVenda] = useState(0);
 
   useEffect(() => {
     const carregar = async () => {
@@ -69,6 +70,15 @@ function Negociacao() {
     return (amb?.valor || 0) + somaCustos(nome);
   };
 
+  const valorOrcamento = nome => {
+    let v = valorAmbiente(nome);
+    if (pontuacao) v *= parseFloat(pontuacao);
+    if (desc1) v *= 1 - parseFloat(desc1) / 100;
+    if (desc2) v *= 1 - parseFloat(desc2) / 100;
+    if (total > 0) v *= totalVenda / total;
+    return v;
+  };
+
   const totalBase = ambientes.reduce((s, a) => s + (selecionados[a.nome] ? valorAmbiente(a.nome) : 0), 0);
   let total = totalBase;
   if (pontuacao) total *= parseFloat(pontuacao);
@@ -79,6 +89,7 @@ function Negociacao() {
     const c = condicoes.find(cc => String(cc.id) === String(condicaoId));
     if (!c) {
       setParcelas([]);
+      setTotalVenda(total);
       return;
     }
 
@@ -105,6 +116,8 @@ function Negociacao() {
     }
 
     setParcelas(listaParcelas);
+    const soma = listaParcelas.reduce((s, p) => s + Number(p.valor || 0), 0);
+    setTotalVenda(soma);
   }, [condicaoId, total, condicoes, numParcelas, entrada]);
 
   const salvar = async () => {
@@ -123,7 +136,7 @@ function Negociacao() {
       selecionados,
       parcelas,
       descricao_pagamento: descricao,
-      total,
+      total: totalVenda || total,
     };
     await fetchComAuth(`/comercial/atendimentos/${id}/tarefas/${tarefaId}`, {
       method: 'PUT',
@@ -181,8 +194,9 @@ function Negociacao() {
             <tr className="bg-gray-100">
               <th className="border px-2"></th>
               <th className="border px-2">Ambiente</th>
-              <th className="border px-2">Orçamento</th>
+              <th className="border px-2">Custo Fábrica</th>
               <th className="border px-2">Custos Adicionais</th>
+              <th className="border px-2">Orçamento</th>
               <th className="border px-2">Valor Final</th>
             </tr>
           </thead>
@@ -195,6 +209,7 @@ function Negociacao() {
                 <td className="border px-2">{a.nome}</td>
                 <td className="border px-2">{currency(a.valor)}</td>
                 <td className="border px-2">{currency(somaCustos(a.nome))}</td>
+                <td className="border px-2">{currency(valorOrcamento(a.nome))}</td>
                 <td className="border px-2">{currency(valorAmbiente(a.nome))}</td>
               </tr>
             ))}
@@ -247,7 +262,7 @@ function Negociacao() {
           </table>
         </div>
         <div className="md:w-1/2 flex items-center justify-center text-xl font-bold">
-          Total: R$ {currency(total)}
+          Total: R$ {currency(totalVenda || total)}
         </div>
       </div>
       <div className="flex gap-2">
