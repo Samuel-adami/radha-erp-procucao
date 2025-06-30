@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, UploadFile, File
 from fastapi.responses import JSONResponse
 from database import get_db_connection
+from orcamento_pdf import parse_gabster_pdf
 from datetime import datetime
 import re
 import json
@@ -40,6 +41,12 @@ async def proximo_codigo():
     with get_db_connection() as conn:
         codigo = get_next_codigo(conn)
     return {"codigo": codigo}
+
+
+@app.post("/leitor-orcamento-gabster")
+async def leitor_orcamento_gabster(file: UploadFile = File(...)):
+    data = parse_gabster_pdf(file.file)
+    return data
 
 
 @app.post("/atendimentos")

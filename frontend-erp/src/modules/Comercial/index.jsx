@@ -5,6 +5,7 @@ import Atendimentos from './pages/Atendimentos';
 import AtendimentoForm from './pages/AtendimentoForm';
 import AtendimentoDetalhes from './pages/AtendimentoDetalhes';
 import Negociacao from './pages/Negociacao';
+import ListagemProjeto from './pages/ListagemProjeto';
 import './Comercial.css';
 
 function ComercialLayout() {
@@ -40,6 +41,7 @@ function Comercial() {
         <Route path=":id/editar" element={<AtendimentoForm />} />
         <Route path=":id" element={<AtendimentoDetalhes />} />
         <Route path=":id/negociacao/:tarefaId" element={<Negociacao />} />
+        <Route path=":id/listagem/:tarefaId/:ambiente" element={<ListagemProjeto />} />
       </Route>
     </Routes>
   );

@@ -125,20 +125,61 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
   }
 
   if (tarefa.nome === 'Orçamento') {
+    const ambientes = projetos;
+    const dadosOrc = dados.projetos || {};
+
+    const handleFile = amb => async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
+        method: 'POST',
+        body: form,
+      });
+      setDados(prev => ({
+        projetos: { ...prev.projetos, [amb]: { arquivo: file.name, ...info } },
+      }));
+    };
+
     return (
-      <li className="space-y-1 p-2 border rounded">
-        <div className="flex items-center gap-2">
-          <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+      <li className="space-y-2 p-2 border rounded">
+        <div className="font-medium mb-1">{tarefa.nome}</div>
+        {ambientes.map(amb => (
+          <div key={amb} className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span>{amb}</span>
+              <input type="file" accept="application/pdf" onChange={handleFile(amb)} />
+              {dadosOrc[amb] && (
+                <Link
+                  to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
+                  className="text-sm text-blue-600 underline"
+                >
+                  Listagem
+                </Link>
+              )}
+            </div>
+            {dadosOrc[amb] && dadosOrc[amb].total > 0 && (
+              <div className="text-sm text-gray-700 ml-2">
+                {dadosOrc[amb].arquivo} - Valor: {dadosOrc[amb].total}
+              </div>
+            )}
+          </div>
+        ))}
+        <div className="flex items-center gap-2 mt-2">
           <Link
             to={`negociacao/${tarefa.id}`}
             className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
           >
             {tarefa.concluida ? 'Editar' : 'Negociar'}
           </Link>
+          {tarefa.concluida && tarefa.dados?.total && (
+            <div className="text-sm text-gray-700">Valor Final: {tarefa.dados.total}</div>
+          )}
         </div>
-        {tarefa.concluida && tarefa.dados?.total && (
-          <div className="text-sm text-gray-700 mt-1">Valor Final: {tarefa.dados.total}</div>
-        )}
+        <Button size="sm" onClick={() => salvar(true)}>
+          Salvar Orçamento
+        </Button>
       </li>
     );
   }
