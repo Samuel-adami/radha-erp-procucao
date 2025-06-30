@@ -18,6 +18,7 @@ function DadosEmpresa() {
     estado: '',
     telefone1: '',
     telefone2: '',
+    slogan: '',
     logo: null,
   };
   const [form, setForm] = useState(initialForm);
@@ -139,6 +140,10 @@ function DadosEmpresa() {
         <label className="block">
           <span className="text-sm">Telefone 2</span>
           <input className="input" value={form.telefone2} onChange={handle('telefone2')} placeholder="(11) 99999-9999" />
+        </label>
+        <label className="block">
+          <span className="text-sm">Slogan</span>
+          <input className="input" value={form.slogan} onChange={handle('slogan')} />
         </label>
         <label className="block">
           <span className="text-sm">Logotipo</span>

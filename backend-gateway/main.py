@@ -139,6 +139,7 @@ async def criar_empresa(request: Request):
         form.get("estado"),
         form.get("telefone1"),
         form.get("telefone2"),
+        form.get("slogan"),
         logo_bytes,
     )
     with get_db_connection() as conn:
@@ -147,8 +148,8 @@ async def criar_empresa(request: Request):
                 codigo, razao_social, nome_fantasia, cnpj,
                 inscricao_estadual, cep, rua, numero,
                 bairro, cidade, estado, telefone1,
-                telefone2, logo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                telefone2, slogan, logo
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         conn.commit()
@@ -161,7 +162,7 @@ async def listar_empresas():
     """Lista todas as empresas cadastradas."""
     with get_db_connection() as conn:
         rows = conn.execute(
-            "SELECT id, codigo, razao_social, nome_fantasia, cnpj FROM empresa ORDER BY id"
+            "SELECT id, codigo, razao_social, nome_fantasia, cnpj, slogan FROM empresa ORDER BY id"
         ).fetchall()
         empresas = [dict(row) for row in rows]
     return {"empresas": empresas}
@@ -195,6 +196,7 @@ async def atualizar_empresa(empresa_id: int, request: Request):
         form.get("estado"),
         form.get("telefone1"),
         form.get("telefone2"),
+        form.get("slogan"),
         logo_bytes,
         empresa_id,
     )
@@ -204,7 +206,7 @@ async def atualizar_empresa(empresa_id: int, request: Request):
                 codigo=?, razao_social=?, nome_fantasia=?, cnpj=?,
                 inscricao_estadual=?, cep=?, rua=?, numero=?,
                 bairro=?, cidade=?, estado=?, telefone1=?,
-                telefone2=?, logo=?
+                telefone2=?, slogan=?, logo=?
             WHERE id=?""",
             fields,
         )
