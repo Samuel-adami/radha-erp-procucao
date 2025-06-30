@@ -29,6 +29,14 @@ def init_db():
             rt_percent REAL,
             historico TEXT,
             arquivos_json TEXT,
+            vendedor TEXT,
+            telefone TEXT,
+            email TEXT,
+            rua TEXT,
+            numero TEXT,
+            cidade TEXT,
+            estado TEXT,
+            cep TEXT,
             data_cadastro TEXT DEFAULT CURRENT_TIMESTAMP
         )"""
     )
@@ -67,6 +75,20 @@ def init_db():
         cur.execute(
             "UPDATE atendimentos SET data_cadastro = CURRENT_TIMESTAMP WHERE data_cadastro IS NULL"
         )
+    # Campos adicionais para dados do cliente/vendedor
+    adicionais = [
+        "vendedor",
+        "telefone",
+        "email",
+        "rua",
+        "numero",
+        "cidade",
+        "estado",
+        "cep",
+    ]
+    for campo in adicionais:
+        if campo not in cols_a:
+            cur.execute(f"ALTER TABLE atendimentos ADD COLUMN {campo} TEXT")
     conn.commit()
     conn.close()
 

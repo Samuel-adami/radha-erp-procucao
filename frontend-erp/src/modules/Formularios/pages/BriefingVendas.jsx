@@ -3,15 +3,23 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
-const AMBIENTES_SUGERIDOS = [
+const PROJETOS_PADRAO = [
   'Cozinha',
-  'Banheiros/Lavabo',
-  'Dormitório Casal',
-  'Dormitório Solteiro',
-  'Dormitório Bebê',
-  'Home Office',
-  'Sala de Estar',
+  'Banheiro',
+  'Lavabo',
+  'B. Social',
+  'B. Suíte',
   'Lavanderia',
+  'D. Casal',
+  'Suíte',
+  'Closet',
+  'Home Office',
+  'A. Gourmet',
+  'D. Solteiro',
+  'D. Hóspedes',
+  'D. Infantil',
+  'D. Bebê',
+  'Ambiente Comercial',
 ];
 
 const ITENS_POR_AMBIENTE = {
@@ -24,6 +32,7 @@ function BriefingVendas() {
   const { atendimentoId, tarefaId } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
+    codigo: '',
     vendedor: '',
     cliente: '',
     telefone: '',
@@ -43,6 +52,7 @@ function BriefingVendas() {
   });
   const [planta, setPlanta] = useState(null);
   const [referencias, setReferencias] = useState([]);
+  const [listaAmbientes, setListaAmbientes] = useState([]);
   const [ambientesExtras, setAmbientesExtras] = useState([]);
   const [novoAmb, setNovoAmb] = useState('');
   const [dadosAmbientes, setDadosAmbientes] = useState({});
@@ -56,11 +66,22 @@ function BriefingVendas() {
       const tarefa = (ts.tarefas || []).find(t => String(t.id) === String(tarefaId));
       let dadosExist = {};
       try { dadosExist = tarefa && tarefa.dados ? JSON.parse(tarefa.dados) : {}; } catch {}
+      const lista = at.atendimento.projetos ? at.atendimento.projetos.split(',').map(p => p.trim()).filter(Boolean) : [];
+      setListaAmbientes(lista);
       setForm(prev => ({
         ...prev,
         ...(dadosExist.form || {}),
+        codigo: at.atendimento.codigo || '',
+        vendedor: at.atendimento.vendedor || (dadosExist.form?.vendedor || ''),
+        telefone: at.atendimento.telefone || (dadosExist.form?.telefone || ''),
+        email: at.atendimento.email || (dadosExist.form?.email || ''),
+        rua: at.atendimento.rua || (dadosExist.form?.rua || ''),
+        numero: at.atendimento.numero || (dadosExist.form?.numero || ''),
+        cidade: at.atendimento.cidade || (dadosExist.form?.cidade || ''),
+        estado: at.atendimento.estado || (dadosExist.form?.estado || ''),
+        cep: at.atendimento.cep || (dadosExist.form?.cep || ''),
         cliente: at.atendimento.cliente || '',
-        ambientes: (dadosExist.form?.ambientes) || (at.atendimento.projetos ? at.atendimento.projetos.split(',').map(p => p.trim()).filter(Boolean) : []),
+        ambientes: dadosExist.form?.ambientes || lista,
       }));
       setDadosAmbientes(dadosExist.dadosAmbientes || {});
       setCarregado(true);
@@ -79,6 +100,23 @@ function BriefingVendas() {
 
   const handleAmbData = (amb, campo, valor) => {
     setDadosAmbientes(prev => ({ ...prev, [amb]: { ...prev[amb], [campo]: valor } }));
+  };
+
+  const adicionarAmbiente = async () => {
+    if (!novoAmb) return;
+    const novaLista = [...listaAmbientes, novoAmb];
+    setListaAmbientes(novaLista);
+    setAmbientesExtras(prev => [...prev, novoAmb]);
+    toggleAmbiente(novoAmb);
+    setNovoAmb('');
+    try {
+      await fetchComAuth(`/comercial/atendimentos/${atendimentoId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ projetos: novaLista.join(',') }),
+      });
+    } catch (err) {
+      console.error('Erro ao atualizar atendimento', err);
+    }
   };
 
   const salvar = async () => {
@@ -101,6 +139,10 @@ function BriefingVendas() {
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Briefing de Vendas</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="block">
+          <span className="text-sm">Número do Atendimento</span>
+          <input className="input bg-gray-100" value={form.codigo} readOnly />
+        </label>
         <label className="block">
           <span className="text-sm">Vendedor Responsável*</span>
           <input className="input" value={form.vendedor} onChange={e => setForm({ ...form, vendedor: e.target.value })} />
@@ -140,7 +182,7 @@ function BriefingVendas() {
         <div className="block md:col-span-2">
           <span className="text-sm">Quais ambientes deseja planejar?*</span>
           <div className="flex flex-wrap gap-4 mt-1">
-            {AMBIENTES_SUGERIDOS.concat(ambientesExtras).map(a => (
+            {listaAmbientes.concat(ambientesExtras).map(a => (
               <label key={a} className="flex items-center gap-1">
                 <input type="checkbox" checked={form.ambientes.includes(a)} onChange={() => toggleAmbiente(a)} />
                 {a}
@@ -148,8 +190,13 @@ function BriefingVendas() {
             ))}
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <input className="input flex-grow" placeholder="Adicionar ambiente" value={novoAmb} onChange={e => setNovoAmb(e.target.value)} />
-            <Button size="sm" onClick={() => { if (novoAmb.trim()) { setAmbientesExtras(prev => [...prev, novoAmb.trim()]); toggleAmbiente(novoAmb.trim()); setNovoAmb(''); } }}>Adicionar</Button>
+            <select className="input flex-grow" value={novoAmb} onChange={e => setNovoAmb(e.target.value)}>
+              <option value="">Adicionar ambiente</option>
+              {PROJETOS_PADRAO.filter(p => !listaAmbientes.includes(p) && !ambientesExtras.includes(p)).map(p => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+            <Button size="sm" onClick={adicionarAmbiente}>Adicionar</Button>
           </div>
         </div>
         <label className="block md:col-span-2">

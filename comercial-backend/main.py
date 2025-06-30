@@ -58,14 +58,24 @@ async def criar_atendimento(request: Request):
             data.get("rt_percent"),
             data.get("historico"),
             json.dumps(data.get("arquivos", [])),
+            data.get("vendedor"),
+            data.get("telefone"),
+            data.get("email"),
+            data.get("rua"),
+            data.get("numero"),
+            data.get("cidade"),
+            data.get("estado"),
+            data.get("cep"),
             datetime.utcnow().isoformat(),
         )
         cur = conn.execute(
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
-                rt_percent, historico, arquivos_json, data_cadastro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                rt_percent, historico, arquivos_json,
+                vendedor, telefone, email, rua, numero, cidade, estado, cep,
+                data_cadastro
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
@@ -104,6 +114,37 @@ async def obter_atendimento(atendimento_id: int):
             except Exception:
                 item["arquivos"] = []
         return {"atendimento": item}
+
+
+@app.put("/atendimentos/{atendimento_id}")
+async def atualizar_atendimento(atendimento_id: int, request: Request):
+    data = await request.json()
+    campos = []
+    valores = []
+    for campo in [
+        "vendedor",
+        "telefone",
+        "email",
+        "rua",
+        "numero",
+        "cidade",
+        "estado",
+        "cep",
+        "projetos",
+    ]:
+        if campo in data:
+            campos.append(f"{campo}=?")
+            valores.append(data[campo])
+    if not campos:
+        return {"detail": "Nada para atualizar"}
+    valores.append(atendimento_id)
+    with get_db_connection() as conn:
+        conn.execute(
+            f"UPDATE atendimentos SET {', '.join(campos)} WHERE id=?",
+            valores,
+        )
+        conn.commit()
+    return {"ok": True}
 
 
 @app.get("/atendimentos/{atendimento_id}/tarefas")
