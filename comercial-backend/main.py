@@ -58,6 +58,7 @@ async def criar_atendimento(request: Request):
             data.get("rt_percent"),
             data.get("historico"),
             json.dumps(data.get("arquivos", [])),
+            data.get("procedencia"),
             data.get("vendedor"),
             data.get("telefone"),
             data.get("email"),
@@ -73,9 +74,9 @@ async def criar_atendimento(request: Request):
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
                 rt_percent, historico, arquivos_json,
-                vendedor, telefone, email, rua, numero, cidade, estado, cep,
+                procedencia, vendedor, telefone, email, rua, numero, cidade, estado, cep,
                 data_cadastro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
@@ -130,6 +131,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
         "cidade",
         "estado",
         "cep",
+        "procedencia",
         "projetos",
     ]:
         if campo in data:

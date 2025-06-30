@@ -82,6 +82,19 @@ function BriefingVendas() {
         cep: at.atendimento.cep || (dadosExist.form?.cep || ''),
         cliente: at.atendimento.cliente || '',
         ambientes: dadosExist.form?.ambientes || lista,
+        origem:
+          dadosExist.form?.origem ||
+          (at.atendimento.procedencia
+            ? ['Google', 'Indicação', 'Instagram', 'Outros'].includes(at.atendimento.procedencia)
+              ? [at.atendimento.procedencia]
+              : ['Outros']
+            : []),
+        origemOutro:
+          dadosExist.form?.origemOutro ||
+          (at.atendimento.procedencia &&
+          !['Google', 'Indicação', 'Instagram', 'Outros'].includes(at.atendimento.procedencia)
+            ? at.atendimento.procedencia
+            : ''),
       }));
       setDadosAmbientes(dadosExist.dadosAmbientes || {});
       setCarregado(true);

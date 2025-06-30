@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
@@ -26,6 +26,7 @@ function AtendimentoForm() {
   const [form, setForm] = useState({
     cliente: '',
     codigo: '',
+    procedencia: '',
     vendedor: '',
     telefone: '',
     email: '',
@@ -45,6 +46,7 @@ function AtendimentoForm() {
   const [initialForm, setInitialForm] = useState({
     cliente: '',
     codigo: '',
+    procedencia: '',
     vendedor: '',
     telefone: '',
     email: '',
@@ -67,6 +69,7 @@ function AtendimentoForm() {
   const [sequencial, setSequencial] = useState(1);
   const [projetosOpen, setProjetosOpen] = useState(false);
   const navigate = useNavigate();
+  const { id } = useParams();
 
   useEffect(() => {
     const seq = parseInt(localStorage.getItem('atendimentoCodigoSeq') || '1', 10);
@@ -74,6 +77,7 @@ function AtendimentoForm() {
     setInitialForm({
       cliente: '',
       codigo: '',
+      procedencia: '',
       vendedor: '',
       telefone: '',
       email: '',
@@ -93,9 +97,63 @@ function AtendimentoForm() {
   }, []);
 
   useEffect(() => {
+    if (!id) return;
+    const carregar = async () => {
+      try {
+        const dados = await fetchComAuth(`/comercial/atendimentos/${id}`);
+        const at = dados.atendimento;
+        setForm({
+          cliente: at.cliente || '',
+          codigo: at.codigo || '',
+          procedencia: at.procedencia || '',
+          vendedor: at.vendedor || '',
+          telefone: at.telefone || '',
+          email: at.email || '',
+          rua: at.rua || '',
+          numero: at.numero || '',
+          cidade: at.cidade || '',
+          estado: at.estado || '',
+          cep: at.cep || '',
+          projetos: at.projetos ? at.projetos.split(',').map(p => p.trim()).filter(Boolean) : [],
+          previsao_fechamento: at.previsao_fechamento || '',
+          temperatura: at.temperatura || '',
+          tem_especificador: Boolean(at.tem_especificador),
+          especificador_nome: at.especificador_nome || '',
+          rt_percent: at.rt_percent || '',
+          historico: at.historico || '',
+        });
+        setInitialForm({
+          cliente: at.cliente || '',
+          codigo: at.codigo || '',
+          procedencia: at.procedencia || '',
+          vendedor: at.vendedor || '',
+          telefone: at.telefone || '',
+          email: at.email || '',
+          rua: at.rua || '',
+          numero: at.numero || '',
+          cidade: at.cidade || '',
+          estado: at.estado || '',
+          cep: at.cep || '',
+          projetos: at.projetos ? at.projetos.split(',').map(p => p.trim()).filter(Boolean) : [],
+          previsao_fechamento: at.previsao_fechamento || '',
+          temperatura: at.temperatura || '',
+          tem_especificador: Boolean(at.tem_especificador),
+          especificador_nome: at.especificador_nome || '',
+          rt_percent: at.rt_percent || '',
+          historico: at.historico || '',
+        });
+      } catch (err) {
+        console.error('Erro ao carregar atendimento', err);
+      }
+    };
+    carregar();
+  }, [id]);
+
+  useEffect(() => {
+    if (id) return;
     const codigo = `AT-${String(sequencial).padStart(4, '0')}`;
     setForm(prev => ({ ...prev, codigo }));
-  }, [sequencial]);
+  }, [sequencial, id]);
 
   const handle = campo => e => {
     let value = e.target.value;
@@ -128,6 +186,9 @@ function AtendimentoForm() {
     }
     const encontrado = lista.find(c => c.nome === value);
     setClienteInfo(encontrado || null);
+    if (encontrado && encontrado.procedencia) {
+      setForm(prev => ({ ...prev, procedencia: encontrado.procedencia }));
+    }
   };
 
   const handleFileChange = async e => {
@@ -146,17 +207,25 @@ function AtendimentoForm() {
   };
 
   const salvar = async () => {
-    await fetchComAuth('/comercial/atendimentos', {
-      method: 'POST',
-      body: JSON.stringify({
-        ...form,
-        projetos: form.projetos.join(','),
-        tem_especificador: form.tem_especificador ? 1 : 0,
-        arquivos: files,
-      }),
-    });
-    localStorage.setItem('atendimentoCodigoSeq', String(sequencial + 1));
-    setSequencial(s => s + 1);
+    const payload = {
+      ...form,
+      projetos: form.projetos.join(','),
+      tem_especificador: form.tem_especificador ? 1 : 0,
+      arquivos: files,
+    };
+    if (id) {
+      await fetchComAuth(`/comercial/atendimentos/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await fetchComAuth('/comercial/atendimentos', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      localStorage.setItem('atendimentoCodigoSeq', String(sequencial + 1));
+      setSequencial(s => s + 1);
+    }
   };
 
   const handleSubmit = async e => {
@@ -165,7 +234,7 @@ function AtendimentoForm() {
       await salvar();
       navigate('..');
     } catch (err) {
-      console.error('Erro ao criar atendimento', err);
+      console.error('Erro ao salvar atendimento', err);
     }
   };
 
@@ -237,6 +306,22 @@ function AtendimentoForm() {
         <label className="block">
           <span className="text-sm">E-mail</span>
           <input type="email" className="input" value={form.email} onChange={handle('email')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Como chegou até nós?</span>
+          <select className="input" value={form.procedencia} onChange={handle('procedencia')}>
+            <option value="">Selecione</option>
+            <option>Google</option>
+            <option>Instagram</option>
+            <option>Facebook</option>
+            <option>Indicação Clientes</option>
+            <option>Indicação Corretor</option>
+            <option>Indicação Arquiteto</option>
+            <option>Ja é Cliente</option>
+            <option>Vitrine</option>
+            <option>Telefone</option>
+            <option>Outros</option>
+          </select>
         </label>
         <label className="block">
           <span className="text-sm">Rua</span>
