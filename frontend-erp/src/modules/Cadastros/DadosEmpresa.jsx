@@ -19,19 +19,33 @@ function DadosEmpresa() {
     telefone1: '',
     telefone2: '',
     slogan: '',
-    logo: null,
+    logo: '',
+    logoFile: null,
   };
   const [form, setForm] = useState(initialForm);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     const existente = JSON.parse(localStorage.getItem('empresa') || 'null');
-    if (existente) setForm({ ...initialForm, ...existente });
+    if (existente) setForm({ ...initialForm, ...existente, logoFile: null });
   }, []);
 
   const handle = campo => e => {
-    const value = campo === 'logo' ? e.target.files[0] : e.target.value;
-    setForm(prev => ({ ...prev, [campo]: value }));
+    if (campo === 'logo') {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          setForm(prev => ({ ...prev, logoFile: file, logo: ev.target.result }));
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setForm(prev => ({ ...prev, logoFile: null, logo: '' }));
+      }
+    } else {
+      const value = e.target.value;
+      setForm(prev => ({ ...prev, [campo]: value }));
+    }
     setDirty(true);
   };
 
@@ -58,15 +72,27 @@ function DadosEmpresa() {
   const salvar = async () => {
     const data = new FormData();
     Object.entries(form).forEach(([k, v]) => {
-      if (v) data.append(k, v);
+      if (k === 'logoFile' || !v) return;
+      if (k !== 'logo') data.append(k, v);
     });
+    if (form.logoFile) {
+      data.append('logo', form.logoFile);
+    } else if (form.logo) {
+      const base64 = form.logo.split(',')[1];
+      const mime = form.logo.split(',')[0].match(/:(.*);/)[1];
+      const bytes = atob(base64);
+      const arr = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+      data.append('logo', new Blob([arr], { type: mime }));
+    }
     try {
       await fetchComAuth('/empresa', { method: 'PUT', body: data });
     } catch (err) {
       console.warn('Falha ao salvar remotamente, usando localStorage', err);
     }
-
-    localStorage.setItem('empresa', JSON.stringify(form));
+    const toSave = { ...form };
+    delete toSave.logoFile;
+    localStorage.setItem('empresa', JSON.stringify(toSave));
     alert('Dados salvos');
     setDirty(false);
   };
