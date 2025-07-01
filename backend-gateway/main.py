@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 import httpx
 from typing import List
 from database import get_db_connection
@@ -29,6 +29,15 @@ MARKETING_IA_BACKEND_URL = "http://localhost:8015"
 PRODUCAO_BACKEND_URL = "http://localhost:8020"
 COMERCIAL_BACKEND_URL = "http://localhost:8030"
 
+
+def create_response(response: httpx.Response):
+    """Transforma a resposta do backend em uma resposta FastAPI apropriada."""
+    content_type = response.headers.get("content-type", "")
+    if content_type.startswith("application/json"):
+        return JSONResponse(response.json(), status_code=response.status_code)
+    headers = dict(response.headers)
+    return Response(content=response.content, status_code=response.status_code, headers=headers)
+
 @app.get("/")
 async def read_root():
     return {"message": "Radha ERP Gateway API is running!"}
@@ -52,7 +61,7 @@ async def call_marketing_ia_backend(path: str, request: Request):
                 content=await request.body()
             )
             response.raise_for_status()
-            return JSONResponse(response.json(), status_code=response.status_code)
+            return create_response(response)
         except httpx.HTTPStatusError as e:
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
@@ -73,7 +82,7 @@ async def call_producao_backend(path: str, request: Request):
                 content=await request.body()
             )
             response.raise_for_status()
-            return JSONResponse(response.json(), status_code=response.status_code)
+            return create_response(response)
         except httpx.HTTPStatusError as e:
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
@@ -94,7 +103,7 @@ async def call_comercial_backend(path: str, request: Request):
                 content=await request.body(),
             )
             response.raise_for_status()
-            return JSONResponse(response.json(), status_code=response.status_code)
+            return create_response(response)
         except httpx.HTTPStatusError as e:
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
@@ -108,7 +117,7 @@ async def login(request: Request):
         try:
             response = await client.post(url, content=await request.body())
             response.raise_for_status()
-            return JSONResponse(response.json(), status_code=response.status_code)
+            return create_response(response)
         except httpx.HTTPStatusError as e:
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
