@@ -12,7 +12,7 @@ import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
 /*
-Campos do tipo "auto" ou "logo" armazenam a chave do dado do ERP na
+Campos do tipo "auto" armazenam a chave do dado do ERP na
 propriedade `autoCampo`. Na geração do documento final, substitua o
 placeholder exibido no builder (ex.: `{{empresa.cnpj}}`) pelo valor
 real obtido do ERP. Exemplo:
@@ -25,6 +25,14 @@ if (campo.autoCampo === 'empresa.cnpj') {
 
 Essa substituição é feita percorrendo os campos salvos e trocando cada
 `{{campo.autoCampo}}` pelo valor correspondente no HTML ou PDF gerado.
+*/
+
+/*
+Cada campo possui a propriedade `largura` que define se ele ocupa a
+linha inteira (`full`) ou metade (`half`). O preview utiliza CSS Grid com
+duas colunas. Campos com `largura: 'full'` recebem `col-span-2` e os
+demais `col-span-1`. Dessa forma, templates antigos continuam válidos e
+podem ser editados com o novo layout em grid.
 */
 
 // Os templates antigos utilizam um array "campos" com objetos
@@ -50,7 +58,6 @@ const FIELD_TYPES = [
 
 const AUTO_FIELDS = {
   empresa: [
-    { value: 'empresa.logo', label: 'Logotipo' },
     { value: 'empresa.nomeFantasia', label: 'Nome Fantasia' },
     { value: 'empresa.razaoSocial', label: 'Razão Social' },
     { value: 'empresa.cnpj', label: 'CNPJ' },
@@ -122,8 +129,7 @@ function TemplateBuilder() {
   const [selected, setSelected] = useState(null);
 
   const addAutoCampo = autoCampo => {
-    const tipoCampo = autoCampo === 'empresa.logo' ? 'logo' : 'auto';
-    const novo = { tipo: tipoCampo, autoCampo, label: AUTO_LABELS[autoCampo], largura: 'full' };
+    const novo = { tipo: 'auto', autoCampo, label: AUTO_LABELS[autoCampo], largura: 'full' };
     setForm(prev => ({ ...prev, campos: [...prev.campos, novo] }));
   };
 
@@ -132,7 +138,10 @@ function TemplateBuilder() {
       fetchComAuth(`/comercial/templates/${id}`)
         .then(d => {
           const t = d.template;
-          if (t) setForm({ titulo: t.titulo, campos: t.campos || [] });
+          if (t) {
+            const campos = (t.campos || []).filter(c => c.autoCampo !== 'empresa.logo');
+            setForm({ titulo: t.titulo, campos });
+          }
         })
         .catch(() => {});
     }
@@ -157,7 +166,7 @@ function TemplateBuilder() {
       const autoCampo = String(aId).slice(4);
       setForm(prev => {
         const insertIdx = over ? prev.campos.findIndex((_, i) => i.toString() === over.id) + 1 : prev.campos.length;
-        const novo = { tipo: autoCampo === 'empresa.logo' ? 'logo' : 'auto', autoCampo, label: AUTO_LABELS[autoCampo], largura: 'full' };
+        const novo = { tipo: 'auto', autoCampo, label: AUTO_LABELS[autoCampo], largura: 'full' };
         const campos = [...prev.campos];
         campos.splice(insertIdx, 0, novo);
         return { ...prev, campos };
@@ -186,18 +195,22 @@ function TemplateBuilder() {
     if (campo.tipo === 'section') {
       return <div className="col-span-2 font-bold pt-4">{campo.label}</div>;
     }
-    const wClass = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
+    const colClass = campo.largura === 'half' ? 'col-span-1' : 'col-span-2';
     const common = 'mb-2';
+    const style = {
+      textAlign: campo.textAlign || undefined,
+      fontSize: campo.fontSize ? `${campo.fontSize}px` : undefined,
+    };
     return (
-      <div className={wClass + ' ' + common} onClick={() => setSelected(idx)}>
+      <div className={colClass + ' ' + common + ' px-2'} onClick={() => setSelected(idx)} style={style}>
         {campo.tipo === 'titulo' && (
-          <h3 className="text-lg font-semibold" contentEditable={selected === idx} suppressContentEditableWarning onBlur={e => atualizarCampo(idx, 'label', e.target.innerText)}>
+          <h3 className="font-semibold" contentEditable={selected === idx} suppressContentEditableWarning onBlur={e => atualizarCampo(idx, 'label', e.target.innerText)}>
             {campo.label}
           </h3>
         )}
         {campo.tipo === 'texto' && (
           <div
-            className="whitespace-pre-wrap text-sm"
+            className="whitespace-pre-wrap"
             contentEditable={selected === idx}
             suppressContentEditableWarning
             onBlur={e => atualizarCampo(idx, 'texto', e.target.innerText)}
@@ -207,10 +220,7 @@ function TemplateBuilder() {
         )}
         {campo.tipo === 'separator' && <hr className="my-2" />}
         {campo.tipo === 'auto' && (
-          <div className="text-sm">{'{{' + campo.autoCampo + '}}'}</div>
-        )}
-        {campo.tipo === 'logo' && (
-          <div className="h-12 flex items-center justify-center border text-xs">
+          <div className="text-sm bg-purple-100 rounded px-1 inline-block">
             {'{{' + campo.autoCampo + '}}'}
           </div>
         )}
@@ -275,15 +285,13 @@ function TemplateBuilder() {
           <div className="border p-2 bg-background rounded">
             <h4 className="font-semibold mb-2">Editar Campo</h4>
             <div className="space-y-2">
-              {form.campos[selected].tipo !== 'logo' && (
-                <input
-                  className="input w-full"
-                  placeholder="Descrição"
-                  value={form.campos[selected].label || ''}
-                  disabled={form.campos[selected].tipo === 'auto'}
-                  onChange={e => atualizarCampo(selected, 'label', e.target.value)}
-                />
-              )}
+              <input
+                className="input w-full"
+                placeholder="Descrição"
+                value={form.campos[selected].label || ''}
+                disabled={form.campos[selected].tipo === 'auto'}
+                onChange={e => atualizarCampo(selected, 'label', e.target.value)}
+              />
               <select
                 className="input w-full"
                 value={form.campos[selected].largura}
@@ -293,12 +301,56 @@ function TemplateBuilder() {
                 <option value="half">Meia largura</option>
               </select>
               {form.campos[selected].tipo === 'texto' && (
-                <textarea
-                  className="input w-full"
-                  rows="3"
-                  value={form.campos[selected].texto || ''}
-                  onChange={e => atualizarCampo(selected, 'texto', e.target.value)}
-                />
+                <>
+                  <textarea
+                    className="input w-full"
+                    rows="3"
+                    value={form.campos[selected].texto || ''}
+                    onChange={e => atualizarCampo(selected, 'texto', e.target.value)}
+                  />
+                  <div className="flex gap-2">
+                    <select
+                      className="input"
+                      value={form.campos[selected].textAlign || 'left'}
+                      onChange={e => atualizarCampo(selected, 'textAlign', e.target.value)}
+                    >
+                      <option value="left">Esquerda</option>
+                      <option value="center">Centro</option>
+                      <option value="right">Direita</option>
+                    </select>
+                    <select
+                      className="input"
+                      value={form.campos[selected].fontSize || '14'}
+                      onChange={e => atualizarCampo(selected, 'fontSize', e.target.value)}
+                    >
+                      <option value="12">12</option>
+                      <option value="14">14</option>
+                      <option value="16">16</option>
+                    </select>
+                  </div>
+                </>
+              )}
+              {form.campos[selected].tipo === 'titulo' && (
+                <div className="flex gap-2">
+                  <select
+                    className="input"
+                    value={form.campos[selected].textAlign || 'center'}
+                    onChange={e => atualizarCampo(selected, 'textAlign', e.target.value)}
+                  >
+                    <option value="left">Esquerda</option>
+                    <option value="center">Centro</option>
+                    <option value="right">Direita</option>
+                  </select>
+                  <select
+                    className="input"
+                    value={form.campos[selected].fontSize || '18'}
+                    onChange={e => atualizarCampo(selected, 'fontSize', e.target.value)}
+                  >
+                    <option value="16">16</option>
+                    <option value="18">18</option>
+                    <option value="24">24</option>
+                  </select>
+                </div>
               )}
               <Button
                 variant="destructive"
@@ -320,13 +372,21 @@ function TemplateBuilder() {
         </div>
       </div>
       <div className="w-1/2 border-l pl-2">
-        <div className="p-2 bg-white border rounded" style={{ width: '210mm', minHeight: '297mm' }}>
-          <h2 className="text-center font-bold mb-4">{form.titulo}</h2>
-          <div className="flex flex-wrap">
+        <div className="p-4 bg-white border rounded" style={{ width: '210mm', minHeight: '297mm' }}>
+          <header className="text-center mb-4 space-y-1">
+            <img src={'{{empresa.logo}}'} alt="Logo" className="h-16 mx-auto" />
+            <div className="font-semibold text-lg">{'{{empresa.nomeFantasia}}'}</div>
+            <div className="text-sm">{'{{empresa.slogan}}'}</div>
+          </header>
+          <h2 className="text-center font-bold text-xl mb-4">{form.titulo || 'Título do Template'}</h2>
+          <div className="grid grid-cols-2 gap-x-4">
             {form.campos.map((c, i) => (
               <React.Fragment key={i}>{renderPreview(c, i)}</React.Fragment>
             ))}
           </div>
+          <footer className="mt-6 text-center text-xs text-muted-foreground">
+            {'{{empresa.nomeFantasia}}'} - página 1/1
+          </footer>
         </div>
       </div>
     </div>
