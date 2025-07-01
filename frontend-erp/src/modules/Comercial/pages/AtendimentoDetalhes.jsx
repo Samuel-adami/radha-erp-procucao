@@ -3,6 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
+const currency = v =>
+  Number(v || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
 function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
   const [edit, setEdit] = useState(false);
   const [dados, setDados] = useState(() => tarefa.dados || {});
@@ -28,6 +34,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         }
       );
       await onChange();
+      setDados({});
       setEdit(false);
     } catch (err) {
       alert('Senha incorreta ou erro ao desfazer');
@@ -283,7 +290,9 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           )}
           {tarefa.concluida && tarefa.dados?.total && (
             <div className="text-sm text-gray-700">
-              {tarefa.dados.total} - {tarefa.dados.condicaoNome || ''} - {tarefa.dados.numParcelas || 0} parcelas
+              R$ {currency(tarefa.dados.total)} - {tarefa.dados.condicaoNome || ''}
+              {tarefa.dados.numParcelas ? ` - ${tarefa.dados.numParcelas} parcelas` : ''}
+              {tarefa.dados.descricao_pagamento ? ` - ${tarefa.dados.descricao_pagamento}` : ''}
             </div>
           )}
         </div>

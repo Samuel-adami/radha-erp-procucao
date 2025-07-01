@@ -6,6 +6,21 @@ import { formatDateBr } from '../../../utils/formatDateBr';
 
 function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
+  const [coluna, setColuna] = useState('Todas');
+  const [ordenar, setOrdenar] = useState({ col: 'dataCadastroRaw', dir: 'asc' });
+
+  const colunas = [
+    { id: 'dataCadastro', label: 'Data de Cadastro', sortKey: 'dataCadastroRaw' },
+    { id: 'codigo', label: 'Código', sortKey: 'codigo' },
+    { id: 'cliente', label: 'Cliente', sortKey: 'cliente' },
+    { id: 'setor', label: 'Setor', sortKey: 'setor' },
+    { id: 'status', label: 'Status', sortKey: 'status' },
+    {
+      id: 'ultimaAtualizacao',
+      label: 'Última Atualização',
+      sortKey: 'ultimaAtualizacaoRaw',
+    },
+  ];
 
   const carregar = async () => {
     try {
@@ -32,9 +47,11 @@ function Atendimentos() {
             return {
               ...at,
               dataCadastro: formatDateBr(dataCadastroRaw),
+              dataCadastroRaw,
               setor: 'Comercial',
               status: next ? next.nome : 'Finalizado',
               ultimaAtualizacao: formatDateBr(ultimaRaw),
+              ultimaAtualizacaoRaw: ultimaRaw,
             };
           } catch {
             return { ...at, setor: 'Comercial' };
@@ -57,9 +74,35 @@ function Atendimentos() {
     carregar();
   };
 
+  const listaOrdenada = [...atendimentos].sort((a, b) => {
+    const col = ordenar.col;
+    const av = a[col] || '';
+    const bv = b[col] || '';
+    if (col.includes('Raw')) {
+      const ad = new Date(av);
+      const bd = new Date(bv);
+      return ordenar.dir === 'asc' ? ad - bd : bd - ad;
+    }
+    if (av < bv) return ordenar.dir === 'asc' ? -1 : 1;
+    if (av > bv) return ordenar.dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   return (
     <div>
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between mb-4">
+        <select
+          className="border px-2 py-1"
+          value={coluna}
+          onChange={e => setColuna(e.target.value)}
+        >
+          <option value="Todas">Todas</option>
+          {colunas.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.label}
+            </option>
+          ))}
+        </select>
         <Link to="novo" className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
           Novo Atendimento
         </Link>
@@ -67,28 +110,50 @@ function Atendimentos() {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border px-2">Data de Cadastro</th>
-            <th className="border px-2">Código</th>
-            <th className="border px-2">Cliente</th>
-            <th className="border px-2">Setor</th>
-            <th className="border px-2">Status</th>
-            <th className="border px-2">Última Atualização</th>
+            {colunas.map(c =>
+              coluna === 'Todas' || coluna === c.id ? (
+                <th
+                  key={c.id}
+                  className="border px-2 cursor-pointer"
+                  onClick={() =>
+                    setOrdenar(prev => ({
+                      col: c.sortKey,
+                      dir: prev.col === c.sortKey && prev.dir === 'asc' ? 'desc' : 'asc',
+                    }))
+                  }
+                >
+                  {c.label}
+                </th>
+              ) : null
+            )}
             <th className="border px-2"></th>
           </tr>
         </thead>
         <tbody>
-          {atendimentos.map((at) => (
+          {listaOrdenada.map(at => (
             <tr key={at.id}>
-              <td className="border px-2">{at.dataCadastro || '-'}</td>
-              <td className="border px-2">
-                <Link to={String(at.id)} className="hover:underline">
-                  {at.codigo}
-                </Link>
-              </td>
-              <td className="border px-2">{at.cliente}</td>
-              <td className="border px-2">{at.setor || '-'}</td>
-              <td className="border px-2">{at.status || '-'}</td>
-              <td className="border px-2">{at.ultimaAtualizacao || '-'}</td>
+              {(coluna === 'Todas' || coluna === 'dataCadastro') && (
+                <td className="border px-2">{at.dataCadastro || '-'}</td>
+              )}
+              {(coluna === 'Todas' || coluna === 'codigo') && (
+                <td className="border px-2">
+                  <Link to={String(at.id)} className="hover:underline">
+                    {at.codigo}
+                  </Link>
+                </td>
+              )}
+              {(coluna === 'Todas' || coluna === 'cliente') && (
+                <td className="border px-2">{at.cliente}</td>
+              )}
+              {(coluna === 'Todas' || coluna === 'setor') && (
+                <td className="border px-2">{at.setor || '-'}</td>
+              )}
+              {(coluna === 'Todas' || coluna === 'status') && (
+                <td className="border px-2">{at.status || '-'}</td>
+              )}
+              {(coluna === 'Todas' || coluna === 'ultimaAtualizacao') && (
+                <td className="border px-2">{at.ultimaAtualizacao || '-'}</td>
+              )}
               <td className="border px-2 text-center">
                 <Button size="sm" variant="destructive" onClick={() => remover(at.id)}>
                   Excluir
