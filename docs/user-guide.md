@@ -21,11 +21,15 @@ Faça login com seu usuário e navegue pelos módulos de acordo com suas permiss
  - **Dados da Empresa** – informações institucionais, logotipo e slogan.
 - **Clientes** – cadastro de clientes com endereços e contatos.
 - **Fornecedores** – cadastro de fornecedores utilizados na produção.
+- **Condições de Pagamento** – define prazos e parcelamentos aceitos nos orçamentos.
 - **Usuários** – gestão de contas do sistema e permissões de acesso.
 - **Templates** – define modelos para orçamentos, pedidos e outros documentos. Cadastre ao menos um template de Orçamento para usar a opção **Baixar Orçamento**.
 
 ## Comercial
 - **Atendimentos** – registra o processo de venda desde o contato inicial até a pasta final, marcando tarefas e etapas concluídas. Requer a permissão `comercial/atendimentos` para aparecer no menu.
+
+## Formulários
+- **Briefing Vendas** – formulário vinculado a um atendimento para coletar informações detalhadas do cliente.
 
 Sempre utilize a opção de **Sair** no canto superior para encerrar sua sessão.
 

@@ -29,4 +29,6 @@ Verifique se as portas 8010 (gateway), 8015 (marketing), 8020 (produção) e 803
 
 ### Templates do Comercial
 Os modelos de documentos ficam armazenados no banco `comercial.db`. Para que usuários consigam baixar orçamentos, cadastre templates do tipo **Orçamento** acessando o menu *Cadastros > Templates* no frontend.
+### Condições de Pagamento
+As condições de pagamento também são gravadas em `comercial.db`. Utilize *Cadastros > Condições de Pagamento* para definir parcelamentos e juros padrão.
 

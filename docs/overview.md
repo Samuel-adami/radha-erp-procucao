@@ -7,7 +7,7 @@ Radha ERP é um conjunto de serviços voltados para a gestão de marketing digit
 - **marketing-digital-ia** – módulo de marketing digital com IA (backend FastAPI e frontend React).
 - **producao** – módulo de produção com backend FastAPI, rotinas de DXF e ferramentas de nesting.
 - **comercial-backend** – backend responsável por registros comerciais e atendimentos a clientes.
-- **frontend-erp** – aplicativo web principal (React + Vite) que integra todos os módulos via gateway.
+- **frontend-erp** – aplicativo web principal (React + Vite) que integra todos os módulos via gateway. Inclui submódulos MarketingDigitalIA, Producao, Cadastros, Comercial e Formularios.
 
 Cada módulo possui seu próprio `requirements.txt` ou `package.json` para dependências.
 
@@ -21,7 +21,8 @@ Cada módulo possui seu próprio `requirements.txt` ou `package.json` para depen
 - Exportação e leitura de arquivos **DXF** e **XML** no módulo de Produção.
 - Geração de relatórios de ocorrências e arquivos de Nesting para corte.
 - Gerenciamento de públicos, campanhas e publicações com IA.
-- Cadastro de empresas, clientes, fornecedores e usuários.
+- Cadastro de empresas, clientes, fornecedores, condições de pagamento e usuários.
+- Formulários de briefing de vendas integrados ao módulo Comercial.
 
 A pasta `rodar_ambientes.txt` contém comandos úteis para iniciar cada serviço separadamente. A automação em produção pode ser feita através do serviço `radha-erp.service` para o `systemd`.
 
