@@ -157,7 +157,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
       }));
     };
 
-    const handleFilePromob = async e => {
+    const handleFilePromob = amb => async e => {
       const file = e.target.files[0];
       if (!file) return;
       const form = new FormData();
@@ -167,11 +167,14 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         body: form,
       });
       const projetosResp = info.projetos || {};
-      const projetosNovos = {};
-      Object.keys(projetosResp).forEach(amb => {
-        projetosNovos[amb] = { ...projetosResp[amb], arquivo: file.name };
-      });
-      setDados(prev => ({ ...prev, projetos: projetosNovos }));
+      const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
+      setDados(prev => ({
+        ...prev,
+        projetos: {
+          ...prev.projetos,
+          [amb]: { arquivo: file.name, ...dadosAmb },
+        },
+      }));
     };
 
     return (
@@ -214,21 +217,25 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           </div>
         )}
         {programa === 'Promob' && (
-          <div className="space-y-2">
-            <input type="file" accept=".xml" onChange={handleFilePromob} />
-            {Object.keys(dadosProj).map(amb => (
-              <div key={amb} className="flex items-center gap-2">
-                <span>{amb}</span>
-                <Link
-                  to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
-                  className="text-sm text-blue-600 underline"
-                >
-                  Listagem
-                </Link>
+          <div className="space-y-1">
+            {projetos.map(amb => (
+              <div key={amb} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span>{amb}</span>
+                  <input type="file" accept=".xml" onChange={handleFilePromob(amb)} />
+                  {dadosProj[amb] && (
+                    <Link
+                      to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Listagem
+                    </Link>
+                  )}
+                </div>
                 {dadosProj[amb] && dadosProj[amb].total > 0 && (
-                  <span className="text-sm text-gray-700 ml-2">
+                  <div className="text-sm text-gray-700 ml-2">
                     {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].total}
-                  </span>
+                  </div>
                 )}
               </div>
             ))}
