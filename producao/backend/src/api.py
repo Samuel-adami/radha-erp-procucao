@@ -302,15 +302,39 @@ async def listar_lotes():
 
 @app.get("/nestings")
 async def listar_nestings():
-    """Retorna as otimizações de nesting registradas."""
+    """Retorna as otimizações de nesting registradas.
+
+    Se existirem pastas de nesting na estrutura de ``SAIDA_DIR`` que ainda não
+    estejam registradas no banco de dados, elas são adicionadas automaticamente.
+    """
+    dados: list[dict] = []
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
                 "SELECT id, lote, pasta_resultado, criado_em FROM nestings ORDER BY id DESC"
             ).fetchall()
             dados = [dict(r) for r in rows]
+
+            existentes = {d["pasta_resultado"] for d in dados}
+            for lote_dir in SAIDA_DIR.glob("Lote_*/"):
+                pasta_nest = lote_dir / "nesting"
+                if pasta_nest.is_dir() and str(pasta_nest) not in existentes:
+                    cur = conn.execute(
+                        "INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES (?, ?, ?)",
+                        (str(lote_dir), str(pasta_nest), datetime.now().isoformat()),
+                    )
+                    conn.commit()
+                    dados.append(
+                        {
+                            "id": cur.lastrowid,
+                            "lote": str(lote_dir),
+                            "pasta_resultado": str(pasta_nest),
+                            "criado_em": datetime.now().isoformat(),
+                        }
+                    )
     except Exception:
-        dados = []
+        pass
+    dados.sort(key=lambda d: d.get("id") or 0, reverse=True)
     return {"nestings": dados}
 
 
