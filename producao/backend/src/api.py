@@ -18,6 +18,7 @@ from operacoes import (
 )
 from nesting import gerar_nesting
 import ezdxf
+from typing import Union
 
 init_db()
 
@@ -26,10 +27,15 @@ BASE_DIR = Path(__file__).resolve().parent
 SAIDA_DIR = BASE_DIR / "saida"
 
 
-def resolve_saidadir_path(p: str | Path) -> Path:
-    """Resolve `p` ensuring the resulting path is inside ``SAIDA_DIR``."""
+def resolve_saidadir_path(p: Union[str, Path]) -> Path:
+    """Resolve ``p`` ensuring the resulting path is inside ``SAIDA_DIR``.
+
+    This avoids ``Path.is_relative_to`` for compatibility with Python < 3.9.
+    """
     resolved = Path(p).resolve()
-    if not resolved.is_relative_to(SAIDA_DIR):
+    try:
+        resolved.relative_to(SAIDA_DIR)
+    except ValueError:
         raise ValueError("Caminho fora de SAIDA_DIR")
     return resolved
 
