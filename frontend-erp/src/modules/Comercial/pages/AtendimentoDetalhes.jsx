@@ -139,10 +139,10 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
   }
 
   if (tarefa.nome === 'Projeto 3D') {
-    const ambientes = projetos;
     const dadosProj = dados.projetos || {};
+    const programa = dados.programa || 'Gabster';
 
-    const handleFile = amb => async e => {
+    const handleFileGabster = amb => async e => {
       const file = e.target.files[0];
       if (!file) return;
       const form = new FormData();
@@ -152,34 +152,88 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         body: form,
       });
       setDados(prev => ({
+        ...prev,
         projetos: { ...prev.projetos, [amb]: { arquivo: file.name, ...info } },
       }));
+    };
+
+    const handleFilePromob = async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const form = new FormData();
+      form.append('file', file);
+      const info = await fetchComAuth('/comercial/leitor-orcamento-promob', {
+        method: 'POST',
+        body: form,
+      });
+      const projetosResp = info.projetos || {};
+      const projetosNovos = {};
+      Object.keys(projetosResp).forEach(amb => {
+        projetosNovos[amb] = { ...projetosResp[amb], arquivo: file.name };
+      });
+      setDados(prev => ({ ...prev, projetos: projetosNovos }));
     };
 
     return (
       <li className={`space-y-2 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
         <div className="font-medium mb-1">{tarefa.nome}</div>
-        {ambientes.map(amb => (
-          <div key={amb} className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span>{amb}</span>
-              <input type="file" accept="application/pdf" onChange={handleFile(amb)} />
-              {dadosProj[amb] && (
+        <div className="flex items-center gap-2">
+          <span>Programa:</span>
+          <select
+            className="input"
+            value={programa}
+            onChange={e => setDados(prev => ({ ...prev, programa: e.target.value }))}
+          >
+            <option value="Gabster">Gabster</option>
+            <option value="Promob">Promob</option>
+          </select>
+        </div>
+        {programa === 'Gabster' && (
+          <div className="space-y-1">
+            {projetos.map(amb => (
+              <div key={amb} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span>{amb}</span>
+                  <input type="file" accept="application/pdf" onChange={handleFileGabster(amb)} />
+                  {dadosProj[amb] && (
+                    <Link
+                      to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
+                      className="text-sm text-blue-600 underline"
+                    >
+                      Listagem
+                    </Link>
+                  )}
+                </div>
+                {dadosProj[amb] && dadosProj[amb].total > 0 && (
+                  <div className="text-sm text-gray-700 ml-2">
+                    {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].total}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {programa === 'Promob' && (
+          <div className="space-y-2">
+            <input type="file" accept=".xml" onChange={handleFilePromob} />
+            {Object.keys(dadosProj).map(amb => (
+              <div key={amb} className="flex items-center gap-2">
+                <span>{amb}</span>
                 <Link
                   to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
                   className="text-sm text-blue-600 underline"
                 >
                   Listagem
                 </Link>
-              )}
-            </div>
-            {dadosProj[amb] && dadosProj[amb].total > 0 && (
-              <div className="text-sm text-gray-700 ml-2">
-                {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].total}
+                {dadosProj[amb] && dadosProj[amb].total > 0 && (
+                  <span className="text-sm text-gray-700 ml-2">
+                    {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].total}
+                  </span>
+                )}
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        )}
         <div className="flex gap-2">
           <Button size="sm" className="bg-white text-black" onClick={() => salvar(true)}>
             Salvar Projeto 3D
