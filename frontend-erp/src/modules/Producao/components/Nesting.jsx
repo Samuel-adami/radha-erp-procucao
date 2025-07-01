@@ -183,9 +183,9 @@ const Nesting = () => {
     try {
       await fetchComAuth('/remover-nesting', {
         method: 'POST',
-        body: JSON.stringify({ id: n.id })
+        body: JSON.stringify({ id: n.id, pasta_resultado: n.pasta_resultado })
       });
-      setNestings((prev) => prev.filter((x) => x.id !== n.id));
+      setNestings((prev) => prev.filter((x) => x.pasta_resultado !== n.pasta_resultado));
     } catch (e) {
       alert('Falha ao remover nesting');
     }
