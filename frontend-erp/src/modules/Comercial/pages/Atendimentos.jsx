@@ -162,50 +162,36 @@ function Atendimentos() {
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-gray-100">
-            {colunas.map(c =>
-              coluna === 'Todas' || coluna === c.id ? (
-                <th
-                  key={c.id}
-                  className="border px-2 cursor-pointer"
-                  onClick={() =>
-                    setOrdenar(prev => ({
-                      col: c.sortKey,
-                      dir: prev.col === c.sortKey && prev.dir === 'asc' ? 'desc' : 'asc',
-                    }))
-                  }
-                >
-                  {c.label}
-                </th>
-              ) : null
-            )}
+            {colunas.map(c => (
+              <th
+                key={c.id}
+                className="border px-2 cursor-pointer"
+                onClick={() =>
+                  setOrdenar(prev => ({
+                    col: c.sortKey,
+                    dir: prev.col === c.sortKey && prev.dir === 'asc' ? 'desc' : 'asc',
+                  }))
+                }
+              >
+                {c.label}
+              </th>
+            ))}
             <th className="border px-2"></th>
           </tr>
         </thead>
         <tbody>
           {listaOrdenada.map(at => (
             <tr key={at.id}>
-              {(coluna === 'Todas' || coluna === 'dataCadastro') && (
-                <td className="border px-2">{at.dataCadastro || '-'}</td>
-              )}
-              {(coluna === 'Todas' || coluna === 'codigo') && (
-                <td className="border px-2">
-                  <Link to={String(at.id)} className="hover:underline">
-                    {at.codigo}
-                  </Link>
-                </td>
-              )}
-              {(coluna === 'Todas' || coluna === 'cliente') && (
-                <td className="border px-2">{at.cliente}</td>
-              )}
-              {(coluna === 'Todas' || coluna === 'setor') && (
-                <td className="border px-2">{at.setor || '-'}</td>
-              )}
-              {(coluna === 'Todas' || coluna === 'status') && (
-                <td className="border px-2">{at.status || '-'}</td>
-              )}
-              {(coluna === 'Todas' || coluna === 'ultimaAtualizacao') && (
-                <td className="border px-2">{at.ultimaAtualizacao || '-'}</td>
-              )}
+              <td className="border px-2">{at.dataCadastro || '-'}</td>
+              <td className="border px-2">
+                <Link to={String(at.id)} className="hover:underline">
+                  {at.codigo}
+                </Link>
+              </td>
+              <td className="border px-2">{at.cliente}</td>
+              <td className="border px-2">{at.setor || '-'}</td>
+              <td className="border px-2">{at.status || '-'}</td>
+              <td className="border px-2">{at.ultimaAtualizacao || '-'}</td>
               <td className="border px-2 text-center">
                 <Button size="sm" variant="destructive" onClick={() => remover(at.id)}>
                   Excluir
