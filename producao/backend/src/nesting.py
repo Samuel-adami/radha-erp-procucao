@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
 from shapely.geometry import box
@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw
 from database import get_db_connection
 
 
-def _sanitize_extension(ext: str | None, default: str = "bmp") -> str:
+def _sanitize_extension(ext: Optional[str], default: str = "bmp") -> str:
     """Normalize and validate an image extension."""
     ext = str(ext or "").strip().lower().lstrip(".")
     if not ext or f".{ext}" not in Image.registered_extensions():
@@ -23,15 +23,15 @@ def _sanitize_extension(ext: str | None, default: str = "bmp") -> str:
     return ext
 
 
-def _medidas_dxf(path: Path) -> tuple[float, float] | None:
+def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
     # (Sem alteração — mesma função de extração de medidas do DXF)
     try:
         doc = ezdxf.readfile(path)
     except Exception:
         return None
     msp = doc.modelspace()
-    xs: list[float] = []
-    ys: list[float] = []
+    xs: List[float] = []
+    ys: List[float] = []
     for ent in msp:
         layer = str(ent.dxf.layer).lower()
         if layer in ("borda_externa", "contorno"):
@@ -101,14 +101,14 @@ def _gcode_peca(
     p: Dict,
     ox: float = 0,
     oy: float = 0,
-    ferramentas: list[dict] | None = None,
-    dxf_path: Path | None = None,
-    config_layers: list[dict] | None = None,
-    config_maquina: dict | None = None,
-    templates: dict | None = None,
+    ferramentas: Optional[List[Dict]] = None,
+    dxf_path: Optional[Path] = None,
+    config_layers: Optional[List[Dict]] = None,
+    config_maquina: Optional[Dict] = None,
+    templates: Optional[Dict] = None,
     tipo: str = "Peça",
     etapa: str = "todas",
-    ferramenta_atual: dict | None = None,
+    ferramenta_atual: Optional[Dict] = None,
 ):
     # (Sem alteração estrutural — função já estava em bom padrão, só pequenas correções de nomenclatura.)
     def substituir(texto: str, valores: dict) -> str:
@@ -116,7 +116,7 @@ def _gcode_peca(
             texto = texto.replace(f'[{k}]', str(v))
         return texto
 
-    def buscar_ferramenta(nome: str) -> dict | None:
+    def buscar_ferramenta(nome: str) -> Optional[Dict]:
         if not ferramentas:
             return None
         for f in ferramentas:
@@ -210,7 +210,7 @@ def _gcode_peca(
             ops.append(contorno_op)
 
     atual = ferramenta_atual
-    usadas: list[str] = []
+    usadas: List[str] = []
 
     for op in ops:
         tool = op["tool"]
@@ -314,7 +314,7 @@ def _gerar_imagens_chapas(
     saida: Path,
     largura_chapa: float,
     altura_chapa: float,
-    config_maquina: dict | None = None,
+    config_maquina: Optional[Dict] = None,
 ) -> None:
     escala = 800 / max(largura_chapa, altura_chapa)
     largura_img = int(largura_chapa * escala)
@@ -342,7 +342,6 @@ def _gerar_imagens_chapas(
                 img = img.rotate(180, expand=True)
             elif angulo.startswith("270"):
                 img = img.rotate(-270, expand=True)
-tt9aei-codex/corrigir-erro-de-extensão-desconhecida
         ext = _sanitize_extension(
             config_maquina.get("formatoImagemChapa") if config_maquina else None
         )
@@ -356,8 +355,8 @@ tt9aei-codex/corrigir-erro-de-extensão-desconhecida
 def _gerar_etiquetas(
     chapas: List[List[Dict]],
     saida: Path,
-    config_maquina: dict | None = None,
-    sobras: List[List[Dict]] | None = None,
+    config_maquina: Optional[Dict] = None,
+    sobras: Optional[List[List[Dict]]] = None,
 ) -> None:
     if not config_maquina or not config_maquina.get("layoutEtiqueta"):
         return
@@ -365,7 +364,6 @@ def _gerar_etiquetas(
     largura = float(config_maquina.get("tamanhoEtiquetadoraX", 50))
     altura = float(config_maquina.get("tamanhoEtiquetadoraY", 30))
     escala = 4
-tt9aei-codex/corrigir-erro-de-extensão-desconhecida
     ext = _sanitize_extension(config_maquina.get("formatoImagemEtiqueta", "bmp"))
 
     pecas = [pc for placa in chapas for pc in placa]
@@ -395,10 +393,10 @@ def _gerar_gcodes(
     saida: Path,
     largura_chapa: float,
     altura_chapa: float,
-    ferramentas: list[dict] | None = None,
-    config_layers: list[dict] | None = None,
-    config_maquina: dict | None = None,
-    pasta_lote: Path | None = None,
+    ferramentas: Optional[List[Dict]] = None,
+    config_layers: Optional[List[Dict]] = None,
+    config_maquina: Optional[Dict] = None,
+    pasta_lote: Optional[Path] = None,
 ):
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
@@ -407,8 +405,8 @@ def _gerar_gcodes(
 
     data_criacao = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
 
-    def coletar_ferramentas(pecas: List[Dict]) -> list[str]:
-        usadas: list[str] = []
+    def coletar_ferramentas(pecas: List[Dict]) -> List[str]:
+        usadas: List[str] = []
         for p in pecas:
             dxf_path = None
             if pasta_lote and p.get("Filename"):
@@ -594,9 +592,9 @@ def gerar_nesting(
     pasta_lote: str,
     largura_chapa: float = 2750,
     altura_chapa: float = 1850,
-    ferramentas: list | None = None,
-    config_layers: list[dict] | None = None,
-    config_maquina: dict | None = None,
+    ferramentas: Optional[List] = None,
+    config_layers: Optional[List[Dict]] = None,
+    config_maquina: Optional[Dict] = None,
 ) -> str:
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
@@ -608,7 +606,7 @@ def gerar_nesting(
     pecas = _ler_dxt(dxts[0])
 
     # Carregar configuracoes de chapas
-    chapas_cfg: dict[str, dict] = {}
+    chapas_cfg: Dict[str, Dict] = {}
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
