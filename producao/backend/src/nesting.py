@@ -15,6 +15,14 @@ from PIL import Image, ImageDraw
 from database import get_db_connection
 
 
+def _sanitize_extension(ext: str | None, default: str = "bmp") -> str:
+    """Normalize and validate an image extension."""
+    ext = str(ext or "").strip().lower().lstrip(".")
+    if not ext or f".{ext}" not in Image.registered_extensions():
+        return default
+    return ext
+
+
 def _medidas_dxf(path: Path) -> tuple[float, float] | None:
     # (Sem alteração — mesma função de extração de medidas do DXF)
     try:
@@ -334,20 +342,14 @@ def _gerar_imagens_chapas(
                 img = img.rotate(180, expand=True)
             elif angulo.startswith("270"):
                 img = img.rotate(-270, expand=True)
-        ext = "bmp"
-        if config_maquina and config_maquina.get("formatoImagemChapa"):
-            ext = (
-                str(config_maquina["formatoImagemChapa"])\
-                .strip().lower().lstrip(".")
-            )
-        if not ext or f".{ext}" not in Image.registered_extensions():
-            ext = "bmp"
+        ext = _sanitize_extension(
+            config_maquina.get("formatoImagemChapa") if config_maquina else None
+        )
         path = saida / f"{i}.{ext}"
         try:
             img.save(path)
         except ValueError:
-            ext = "bmp"
-            img.save(saida / f"{i}.{ext}")
+            img.save(saida / f"{i}.bmp")
 
 def _gerar_etiquetas(
     chapas: List[List[Dict]],
@@ -361,14 +363,7 @@ def _gerar_etiquetas(
     largura = float(config_maquina.get("tamanhoEtiquetadoraX", 50))
     altura = float(config_maquina.get("tamanhoEtiquetadoraY", 30))
     escala = 4
-    ext = (
-        str(config_maquina.get("formatoImagemEtiqueta", "bmp"))
-        .strip()
-        .lower()
-        .lstrip(".")
-    )
-    if not ext or f".{ext}" not in Image.registered_extensions():
-        ext = "bmp"
+    ext = _sanitize_extension(config_maquina.get("formatoImagemEtiqueta", "bmp"))
     pecas = [pc for placa in chapas for pc in placa]
     if sobras:
         for s in sobras:
