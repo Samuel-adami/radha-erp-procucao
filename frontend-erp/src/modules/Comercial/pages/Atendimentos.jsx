@@ -8,6 +8,9 @@ function Atendimentos() {
   const [atendimentos, setAtendimentos] = useState([]);
   const [coluna, setColuna] = useState('Todas');
   const [ordenar, setOrdenar] = useState({ col: 'dataCadastroRaw', dir: 'asc' });
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [filtroInicio, setFiltroInicio] = useState('');
+  const [filtroFim, setFiltroFim] = useState('');
 
   const colunas = [
     { id: 'dataCadastro', label: 'Data de Cadastro', sortKey: 'dataCadastroRaw' },
@@ -68,13 +71,35 @@ function Atendimentos() {
     carregar();
   }, []);
 
+  useEffect(() => {
+    setFiltroTexto('');
+    setFiltroInicio('');
+    setFiltroFim('');
+  }, [coluna]);
+
   const remover = async (id) => {
     if (!window.confirm('Excluir atendimento?')) return;
     await fetchComAuth(`/comercial/atendimentos/${id}`, { method: 'DELETE' });
     carregar();
   };
 
-  const listaOrdenada = [...atendimentos].sort((a, b) => {
+  const listaFiltrada = atendimentos.filter((at) => {
+    if (coluna === 'Todas') return true;
+    const info = colunas.find((c) => c.id === coluna);
+    if (!info) return true;
+    const valor = at[coluna] || '';
+    if (coluna === 'dataCadastro' || coluna === 'ultimaAtualizacao') {
+      const raw = at[info.sortKey];
+      if (!raw) return false;
+      const dt = new Date(raw);
+      if (filtroInicio && new Date(filtroInicio) > dt) return false;
+      if (filtroFim && new Date(filtroFim) < dt) return false;
+      return true;
+    }
+    return String(valor).toLowerCase().includes(filtroTexto.toLowerCase());
+  });
+
+  const listaOrdenada = [...listaFiltrada].sort((a, b) => {
     const col = ordenar.col;
     const av = a[col] || '';
     const bv = b[col] || '';
@@ -91,18 +116,45 @@ function Atendimentos() {
   return (
     <div>
       <div className="flex justify-between mb-4">
-        <select
-          className="border px-2 py-1"
-          value={coluna}
-          onChange={e => setColuna(e.target.value)}
-        >
-          <option value="Todas">Todas</option>
-          {colunas.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.label}
-            </option>
-          ))}
-        </select>
+        <div className="flex gap-2 items-end">
+          <select
+            className="border px-2 py-1"
+            value={coluna}
+            onChange={e => setColuna(e.target.value)}
+          >
+            <option value="Todas">Todas</option>
+            {colunas.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          {coluna !== 'Todas' && (
+            coluna === 'dataCadastro' || coluna === 'ultimaAtualizacao' ? (
+              <>
+                <input
+                  type="date"
+                  className="border px-2 py-1"
+                  value={filtroInicio}
+                  onChange={e => setFiltroInicio(e.target.value)}
+                />
+                <input
+                  type="date"
+                  className="border px-2 py-1"
+                  value={filtroFim}
+                  onChange={e => setFiltroFim(e.target.value)}
+                />
+              </>
+            ) : (
+              <input
+                className="border px-2 py-1"
+                placeholder="Filtrar..."
+                value={filtroTexto}
+                onChange={e => setFiltroTexto(e.target.value)}
+              />
+            )
+          )}
+        </div>
         <Link to="novo" className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
           Novo Atendimento
         </Link>
