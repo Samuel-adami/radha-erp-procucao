@@ -342,6 +342,7 @@ def _gerar_imagens_chapas(
                 img = img.rotate(180, expand=True)
             elif angulo.startswith("270"):
                 img = img.rotate(-270, expand=True)
+tt9aei-codex/corrigir-erro-de-extensão-desconhecida
         ext = _sanitize_extension(
             config_maquina.get("formatoImagemChapa") if config_maquina else None
         )
@@ -350,6 +351,7 @@ def _gerar_imagens_chapas(
             img.save(path)
         except ValueError:
             img.save(saida / f"{i}.bmp")
+
 
 def _gerar_etiquetas(
     chapas: List[List[Dict]],
@@ -363,7 +365,9 @@ def _gerar_etiquetas(
     largura = float(config_maquina.get("tamanhoEtiquetadoraX", 50))
     altura = float(config_maquina.get("tamanhoEtiquetadoraY", 30))
     escala = 4
+tt9aei-codex/corrigir-erro-de-extensão-desconhecida
     ext = _sanitize_extension(config_maquina.get("formatoImagemEtiqueta", "bmp"))
+
     pecas = [pc for placa in chapas for pc in placa]
     if sobras:
         for s in sobras:
