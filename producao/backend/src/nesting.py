@@ -336,8 +336,8 @@ def _gerar_imagens_chapas(
                 img = img.rotate(-270, expand=True)
         ext = "bmp"
         if config_maquina and config_maquina.get("formatoImagemChapa"):
-            ext = str(config_maquina["formatoImagemChapa"]).lower()
-        if f".{ext}" not in Image.registered_extensions():
+            ext = str(config_maquina["formatoImagemChapa"]).lower().lstrip(".")
+        if not ext or f".{ext}" not in Image.registered_extensions():
             ext = "bmp"
         img.save(saida / f"{i}.{ext}")
 
@@ -353,8 +353,8 @@ def _gerar_etiquetas(
     largura = float(config_maquina.get("tamanhoEtiquetadoraX", 50))
     altura = float(config_maquina.get("tamanhoEtiquetadoraY", 30))
     escala = 4
-    ext = str(config_maquina.get("formatoImagemEtiqueta", "bmp")).lower()
-    if f".{ext}" not in Image.registered_extensions():
+    ext = str(config_maquina.get("formatoImagemEtiqueta", "bmp")).lower().lstrip(".")
+    if not ext or f".{ext}" not in Image.registered_extensions():
         ext = "bmp"
     pecas = [pc for placa in chapas for pc in placa]
     if sobras:
