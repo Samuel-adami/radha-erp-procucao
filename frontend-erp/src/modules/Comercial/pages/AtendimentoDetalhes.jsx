@@ -7,9 +7,36 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
   const [edit, setEdit] = useState(false);
   const [dados, setDados] = useState(() => tarefa.dados || {});
 
+  const desfazer = async () => {
+    const senha = window.prompt('Digite sua senha para desfazer a tarefa');
+    if (!senha) return;
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    try {
+      const auth = await fetchComAuth('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: usuario.username, password: senha }),
+      });
+      if (!['Diretor', 'Gerente', 'Coordenador'].includes(auth.usuario?.cargo)) {
+        alert('Usuário sem permissão para desfazer');
+        return;
+      }
+      await fetchComAuth(
+        `/comercial/atendimentos/${atendimentoId}/tarefas/${tarefa.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ concluida: false, dados: JSON.stringify({}) }),
+        }
+      );
+      await onChange();
+      setEdit(false);
+    } catch (err) {
+      alert('Senha incorreta ou erro ao desfazer');
+    }
+  };
+
   if (bloqueada && !tarefa.concluida) {
     return (
-      <li className="p-2 border rounded text-gray-500">
+      <li className="p-2 border rounded bg-yellow-100 text-gray-500">
         <span>{tarefa.nome} - aguarde a conclusão da tarefa anterior</span>
       </li>
     );
@@ -32,12 +59,17 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
 
   if (tarefa.nome === 'Contato Inicial' || tarefa.nome === 'Apresentação') {
     return (
-      <li className="space-y-1 p-2 border rounded">
+      <li className={`space-y-1 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
         <div className="flex items-center gap-2">
-          <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+          <span>{tarefa.nome}</span>
           {!edit && (
             <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
               {tarefa.concluida ? 'Editar' : 'Preencher'}
+            </Button>
+          )}
+          {tarefa.concluida && (
+            <Button size="sm" variant="destructive" onClick={desfazer}>
+              Desfazer
             </Button>
           )}
         </div>
@@ -72,15 +104,20 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
 
   if (tarefa.nome === 'Visita Técnica/Briefing') {
     return (
-      <li className="space-y-1 p-2 border rounded">
+      <li className={`space-y-1 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
         <div className="flex items-center gap-2">
-          <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+          <span>{tarefa.nome}</span>
           <Link
             to={`/formularios/briefing-vendas/${atendimentoId}/${tarefa.id}`}
             className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
           >
             {tarefa.concluida ? 'Editar' : 'Preencher'}
           </Link>
+          {tarefa.concluida && (
+            <Button size="sm" variant="destructive" onClick={desfazer}>
+              Desfazer
+            </Button>
+          )}
         </div>
       </li>
     );
@@ -105,7 +142,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     };
 
     return (
-      <li className="space-y-2 p-2 border rounded">
+      <li className={`space-y-2 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
         <div className="font-medium mb-1">{tarefa.nome}</div>
         {ambientes.map(amb => (
           <div key={amb} className="space-y-1">
@@ -128,17 +165,24 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             )}
           </div>
         ))}
-        <Button size="sm" onClick={() => salvar(true)}>
-          Salvar Projeto 3D
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => salvar(true)}>
+            Salvar Projeto 3D
+          </Button>
+          {tarefa.concluida && (
+            <Button size="sm" variant="destructive" onClick={desfazer}>
+              Desfazer
+            </Button>
+          )}
+        </div>
       </li>
     );
   }
 
-  if (tarefa.nome === 'Orçamento') {
+  if (tarefa.nome === 'Orçamento' || tarefa.nome === 'Negociação') {
     return (
-      <li className="space-y-2 p-2 border rounded">
-        <div className="font-medium mb-1">{tarefa.nome}</div>
+      <li className={`space-y-2 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
+        <div className="font-medium mb-1">Negociação</div>
         <div className="flex items-center gap-2 mt-2">
           <Link
             to={`negociacao/${tarefa.id}`}
@@ -152,19 +196,29 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
               {tarefa.dados.descricao_pagamento ? ` - ${tarefa.dados.descricao_pagamento}` : ''}
             </div>
           )}
+          {tarefa.concluida && (
+            <Button size="sm" variant="destructive" onClick={desfazer}>
+              Desfazer
+            </Button>
+          )}
         </div>
       </li>
     );
   }
 
-  if (tarefa.nome === 'Venda Concluída') {
+  if (tarefa.nome === 'Venda Concluída' || tarefa.nome === 'Fechamento da Venda') {
     return (
-      <li className="space-y-1 p-2 border rounded">
+      <li className={`space-y-1 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
         <div className="flex items-center gap-2">
-          <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+          <span>Fechamento da Venda</span>
           {!edit && (
             <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
               {tarefa.concluida ? 'Refazer' : 'Gerar Contrato'}
+            </Button>
+          )}
+          {tarefa.concluida && (
+            <Button size="sm" variant="destructive" onClick={desfazer}>
+              Desfazer
             </Button>
           )}
         </div>
@@ -188,10 +242,53 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     );
   }
 
+  if (tarefa.nome === 'Pasta Final') {
+    const docs = [
+      { campo: 'contrato_assinado', label: 'Contrato Assinado' },
+      { campo: 'projeto_executivo_assinado', label: 'Projeto Executivo Assinado' },
+      { campo: 'termo_preparacao_assinado', label: 'Termo de Preparação Assinado' },
+      { campo: 'ficha_medidas', label: 'Ficha de Medidas' },
+    ];
+    const todos = docs.every(d => dados[d.campo]);
+
+    const handleDoc = campo => e => {
+      const file = e.target.files[0];
+      if (file) setDados(prev => ({ ...prev, [campo]: file.name }));
+    };
+
+    return (
+      <li className={`space-y-2 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
+        <div className="font-medium">Pasta Final</div>
+        {docs.map(doc => (
+          <div key={doc.campo} className="flex items-center gap-2">
+            <span>{doc.label}</span>
+            <input type="file" accept=".pdf,.doc,.docx" onChange={handleDoc(doc.campo)} />
+            {dados[doc.campo] && <span className="text-sm text-gray-700">{dados[doc.campo]}</span>}
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => salvar(true)} disabled={!todos}>
+            Finalizar Pasta
+          </Button>
+          {tarefa.concluida && (
+            <Button size="sm" variant="destructive" onClick={desfazer}>
+              Desfazer
+            </Button>
+          )}
+        </div>
+      </li>
+    );
+  }
+
   // tarefas não implementadas - exibir apenas nome
   return (
-    <li className="flex items-center gap-2 p-2 border rounded">
-      <span className={tarefa.concluida ? 'line-through' : ''}>{tarefa.nome}</span>
+    <li className={`flex items-center gap-2 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
+      <span>{tarefa.nome}</span>
+      {tarefa.concluida && (
+        <Button size="sm" variant="destructive" onClick={desfazer}>
+          Desfazer
+        </Button>
+      )}
     </li>
   );
 }
@@ -256,7 +353,7 @@ function AtendimentoDetalhes() {
         </Link>
       </div>
       <div>
-        <h4 className="font-medium mb-2">Tarefas</h4>
+        <h4 className="font-medium mb-2">Tarefas do Comercial</h4>
         <ul className="space-y-2">
           {tarefas.map((t, idx) => (
             <TarefaItem
