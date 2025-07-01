@@ -30,8 +30,8 @@ Essa substituição é feita percorrendo os campos salvos e trocando cada
 /*
 Cada campo possui a propriedade `largura` que define se ele ocupa a
 linha inteira (`full`) ou metade (`half`). O preview utiliza CSS Grid com
-duas colunas. Campos com `largura: 'full'` recebem `col-span-2` e os
-demais `col-span-1`. Dessa forma, templates antigos continuam válidos e
+três colunas. Campos com `largura: 'full'` recebem `col-span-3` e os
+demais `col-span-2`. Dessa forma, templates antigos continuam válidos e
 podem ser editados com o novo layout em grid.
 */
 
@@ -58,7 +58,6 @@ const FIELD_TYPES = [
 
 const AUTO_FIELDS = {
   empresa: [
-    { value: 'empresa.nomeFantasia', label: 'Nome Fantasia' },
     { value: 'empresa.razaoSocial', label: 'Razão Social' },
     { value: 'empresa.cnpj', label: 'CNPJ' },
     { value: 'empresa.inscricaoEstadual', label: 'Inscrição Estadual' },
@@ -67,7 +66,6 @@ const AUTO_FIELDS = {
     { value: 'empresa.estado', label: 'Estado' },
     { value: 'empresa.telefone', label: 'Telefone' },
     { value: 'empresa.email', label: 'E-mail' },
-    { value: 'empresa.slogan', label: 'Slogan' },
   ],
   atendimento: [
     { value: 'atendimento.cliente', label: 'Cliente' },
@@ -127,6 +125,7 @@ function TemplateBuilder() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ titulo: '', campos: [] });
   const [selected, setSelected] = useState(null);
+  const empresa = JSON.parse(localStorage.getItem('empresa') || '{}');
 
   const addAutoCampo = autoCampo => {
     const novo = { tipo: 'auto', autoCampo, label: AUTO_LABELS[autoCampo], largura: 'full' };
@@ -193,9 +192,9 @@ function TemplateBuilder() {
 
   const renderPreview = (campo, idx) => {
     if (campo.tipo === 'section') {
-      return <div className="col-span-2 font-bold pt-4">{campo.label}</div>;
+      return <div className="col-span-3 font-bold pt-4">{campo.label}</div>;
     }
-    const colClass = campo.largura === 'half' ? 'col-span-1' : 'col-span-2';
+    const colClass = campo.largura === 'half' ? 'col-span-2' : 'col-span-3';
     const common = 'mb-2';
     const style = {
       textAlign: campo.textAlign || undefined,
@@ -374,12 +373,12 @@ function TemplateBuilder() {
       <div className="w-1/2 border-l pl-2">
         <div className="p-4 bg-white border rounded" style={{ width: '210mm', minHeight: '297mm' }}>
           <header className="text-center mb-4 space-y-1">
-            <img src={'{{empresa.logo}}'} alt="Logo" className="h-16 mx-auto" />
-            <div className="font-semibold text-lg">{'{{empresa.nomeFantasia}}'}</div>
-            <div className="text-sm">{'{{empresa.slogan}}'}</div>
+            {empresa.logo && <img src={empresa.logo} alt="Logo" className="h-16 mx-auto" />}
+            <div className="font-semibold text-lg">{empresa.nomeFantasia || ''}</div>
+            <div className="text-sm">{empresa.slogan || ''}</div>
           </header>
           <h2 className="text-center font-bold text-xl mb-4">{form.titulo || 'Título do Template'}</h2>
-          <div className="grid grid-cols-2 gap-x-4">
+          <div className="grid grid-cols-3 gap-4">
             {form.campos.map((c, i) => (
               <React.Fragment key={i}>{renderPreview(c, i)}</React.Fragment>
             ))}
