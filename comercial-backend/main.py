@@ -10,9 +10,9 @@ TASKS = [
     "Contato Inicial",
     "Visita Técnica/Briefing",
     "Projeto 3D",
-    "Orçamento",
+    "Negociação",
     "Apresentação",
-    "Venda Concluída",
+    "Fechamento da Venda",
     "Pasta Final",
 ]
 
