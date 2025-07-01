@@ -210,12 +210,6 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           >
             {tarefa.concluida ? 'Editar' : 'Negociar'}
           </Link>
-          {tarefa.concluida && tarefa.dados?.total && (
-            <div className="text-sm text-gray-700">
-              Valor Final: {tarefa.dados.total}
-              {tarefa.dados.descricao_pagamento ? ` - ${tarefa.dados.descricao_pagamento}` : ''}
-            </div>
-          )}
           {tarefa.concluida && (
             <Button
               size="sm"
@@ -225,6 +219,11 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             >
               Desfazer
             </Button>
+          )}
+          {tarefa.concluida && tarefa.dados?.total && (
+            <div className="text-sm text-gray-700">
+              {tarefa.dados.total} - {tarefa.dados.condicaoNome || ''} - {tarefa.dados.numParcelas || 0} parcelas
+            </div>
           )}
         </div>
       </li>

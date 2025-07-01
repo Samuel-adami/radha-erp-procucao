@@ -6,6 +6,7 @@ import AtendimentoForm from './pages/AtendimentoForm';
 import AtendimentoDetalhes from './pages/AtendimentoDetalhes';
 import Negociacao from './pages/Negociacao';
 import ListagemProjeto from './pages/ListagemProjeto';
+import ContratoAssinar from './pages/ContratoAssinar';
 import './Comercial.css';
 
 function ComercialLayout() {
@@ -42,6 +43,7 @@ function Comercial() {
         <Route path=":id" element={<AtendimentoDetalhes />} />
         <Route path=":id/negociacao/:tarefaId" element={<Negociacao />} />
         <Route path=":id/listagem/:tarefaId/:ambiente" element={<ListagemProjeto />} />
+        <Route path=":id/contrato/:tarefaId" element={<ContratoAssinar />} />
       </Route>
     </Routes>
   );

@@ -11,6 +11,7 @@ const FIELD_TYPES = [
   { value: 'number', label: 'Número' },
   { value: 'document', label: 'Documento' },
   { value: 'table', label: 'Tabela' },
+  { value: 'assinatura', label: 'Assinatura digital' },
   { value: 'negociacao', label: 'Negociação' },
 ];
 
@@ -256,7 +257,10 @@ function TemplateForm() {
             {c.tipo === 'negociacao' && (
               <div className="text-sm text-gray-600">Tabela da negociação será exibida neste local.</div>
             )}
-            {c.tipo !== 'table' && c.tipo !== 'negociacao' && (
+            {c.tipo === 'assinatura' && (
+              <div className="text-sm text-gray-600">Área para captura da assinatura digital.</div>
+            )}
+            {c.tipo !== 'table' && c.tipo !== 'negociacao' && c.tipo !== 'assinatura' && (
               <>
                 <button type="button" className="text-blue-600 underline" onClick={() => toggleAuto(idx)}>
                   Carregamento automático

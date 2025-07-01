@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, UploadFile, File
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection
 from orcamento_pdf import parse_gabster_pdf
 from datetime import datetime
@@ -397,4 +397,39 @@ async def excluir_template(template_id: int):
         conn.execute("DELETE FROM templates WHERE id=?", (template_id,))
         conn.commit()
     return {"ok": True}
+
+
+@app.post("/contratos/assinar")
+async def assinar_contrato(request: Request):
+    """Gerar PDF simples com a assinatura enviada."""
+    data = await request.json()
+    assinatura = data.get("assinatura")
+    usuario = data.get("usuario")
+    agora = datetime.utcnow().isoformat()
+    ip = request.client.host if request.client else ""
+
+    from base64 import b64decode
+    from io import BytesIO
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+    from reportlab.lib.utils import ImageReader
+
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    c.drawString(50, 800, f"Assinado por: {usuario}")
+    c.drawString(50, 785, f"Data: {agora} IP: {ip}")
+
+    if assinatura:
+        try:
+            _, b64 = assinatura.split(",", 1) if "," in assinatura else ("", assinatura)
+            img_data = b64decode(b64)
+            img = ImageReader(BytesIO(img_data))
+            c.drawImage(img, 50, 650, width=200, height=100)
+        except Exception:
+            pass
+
+    c.showPage()
+    c.save()
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type="application/pdf")
 
