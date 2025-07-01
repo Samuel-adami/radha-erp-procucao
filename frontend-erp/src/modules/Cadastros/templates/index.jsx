@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet } from 'react-router-dom';
 import ListaTemplates from './ListaTemplates';
-import TemplateForm from './TemplateForm';
+import TemplateBuilder from './TemplateBuilder';
 import TemplatePreview from './TemplatePreview';
 
 const tipos = [
@@ -41,8 +41,8 @@ function Templates() {
       <Route path="/" element={<TemplatesLayout />}>
         <Route index element={<TemplatesMenu />} />
         <Route path=":tipo" element={<ListaTemplates />} />
-        <Route path=":tipo/novo" element={<TemplateForm />} />
-        <Route path=":tipo/editar/:id" element={<TemplateForm />} />
+        <Route path=":tipo/novo" element={<TemplateBuilder />} />
+        <Route path=":tipo/editar/:id" element={<TemplateBuilder />} />
         <Route path=":tipo/preview/:id" element={<TemplatePreview />} />
       </Route>
     </Routes>
