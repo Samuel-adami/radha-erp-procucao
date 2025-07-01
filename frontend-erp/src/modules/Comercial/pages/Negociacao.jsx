@@ -150,9 +150,11 @@ function Negociacao() {
     const descricao = parcelas
       .map(p => `Parcela ${p.numero} = R$ ${currency(p.valor)}`)
       .join(', ');
+    const condNome = condicoes.find(c => String(c.id) === String(condicaoId))?.nome || '';
     const dados = {
       pontuacao,
       condicaoId,
+      condicaoNome: condNome,
       entrada,
       numParcelas,
       desconto1: desc1,
@@ -307,7 +309,7 @@ function Negociacao() {
         div.appendChild(table);
       } else if (campo.tipo === 'negociacao') {
         const desc = document.createElement('div');
-        desc.textContent = valores.negociacao.descricao_pagamento || '';
+        desc.textContent = valores.negociacao.condicao || '';
         div.appendChild(desc);
 
         const tableProj = document.createElement('table');
@@ -373,6 +375,15 @@ function Negociacao() {
         tot.className = 'mt-1 font-semibold';
         tot.textContent = `Total: R$ ${currency(totalVenda || total)}`;
         div.appendChild(tot);
+      } else if (campo.tipo === 'assinatura') {
+        const ass = document.createElement('div');
+        ass.className = 'text-center mt-4';
+        ass.textContent = `${valores.atendimento.cliente || ''} / ${valores.empresa.nomeFantasia || ''}`;
+        const line = document.createElement('div');
+        line.style.marginTop = '40px';
+        line.textContent = '______________________________';
+        div.appendChild(line);
+        div.appendChild(ass);
       } else if (campo.autoCampo === 'empresa.dados_completos') {
         const bloco = document.createElement('div');
         bloco.className = 'space-y-1';

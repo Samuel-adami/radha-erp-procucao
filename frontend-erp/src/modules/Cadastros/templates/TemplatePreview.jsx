@@ -70,7 +70,7 @@ function TemplatePreview() {
     } else if (campo.tipo === 'negociacao') {
       content = (
         <div className="space-y-1 text-sm">
-          <div>Descrição da condição de pagamento</div>
+          <div>Condição de pagamento</div>
           <table className="w-full">
             <thead>
               <tr>
@@ -100,6 +100,14 @@ function TemplatePreview() {
             </tbody>
           </table>
           <div>Total: R$ 0,00</div>
+        </div>
+      );
+    } else if (campo.tipo === 'assinatura') {
+      content = (
+        <div className="space-y-1 text-sm text-center">
+          <div>__________________________________</div>
+          <div>Assinatura</div>
+          <div>Nome do Cliente / Nome da Empresa</div>
         </div>
       );
     } else {
