@@ -129,6 +129,15 @@ def _gcode_peca(
     z_seg = float(config_maquina.get("zSeguranca", 48)) if config_maquina else 48
     z_pre = float(config_maquina.get("zAntesTrabalho", 20)) if config_maquina else 20
 
+    casas_dec = int(config_maquina.get("casasDecimais", 4)) if config_maquina else 4
+
+    def fmt(val: float) -> str:
+        return f"{float(val):.{casas_dec}f}"
+
+    mov_rapida = config_maquina.get("movRapida", "G0 X[X] Y[Y] Z[Z]") if config_maquina else "G0 X[X] Y[Y] Z[Z]"
+    mov_corte_ini = config_maquina.get("primeiraMovCorte", "G1 X[X] Y[Y] Z[Z] F[F]") if config_maquina else "G1 X[X] Y[Y] Z[Z] F[F]"
+    mov_corte = config_maquina.get("movCorte", "G1 X[X] Y[Y] Z[Z] F[F]") if config_maquina else "G1 X[X] Y[Y] Z[Z] F[F]"
+
     ops = []
     if dxf_path and config_layers:
         try:
@@ -230,23 +239,23 @@ def _gcode_peca(
 
         if op.get("contorno"):
             linhas.extend([
-                f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
-                f"G0 X{ox:.4f} Y{oy:.4f} Z{z_pre:.4f}",
+                substituir(mov_rapida, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(z_seg)}),
+                substituir(mov_rapida, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(z_pre)}),
                 "(Step:1/1)",
-                f"G1 X{ox + l:.4f} Y{oy:.4f} Z-0.2000 F3500.0",
-                f"G1 X{ox + l:.4f} Y{oy + w:.4f} Z-0.2000 F7000.0",
-                f"G1 X{ox:.4f} Y{oy + w:.4f} Z-0.2000",
-                f"G1 X{ox:.4f} Y{oy:.4f} Z-0.2000",
-                f"G0 X{ox:.4f} Y{oy:.4f} Z{z_seg:.4f}",
+                substituir(mov_corte_ini, {"X": fmt(ox + l), "Y": fmt(oy), "Z": fmt(-0.2), "F": fmt(3500.0)}),
+                substituir(mov_corte, {"X": fmt(ox + l), "Y": fmt(oy + w), "Z": fmt(-0.2), "F": fmt(7000.0)}),
+                substituir(mov_corte, {"X": fmt(ox), "Y": fmt(oy + w), "Z": fmt(-0.2), "F": fmt(7000.0)}),
+                substituir(mov_corte, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(-0.2), "F": fmt(7000.0)}),
+                substituir(mov_rapida, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(z_seg)}),
             ])
         else:
             linhas.extend([
                 f"({op['layer']})",
-                f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
-                f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_pre:.4f}",
+                substituir(mov_rapida, {"X": fmt(op['x']), "Y": fmt(op['y']), "Z": fmt(z_seg)}),
+                substituir(mov_rapida, {"X": fmt(op['x']), "Y": fmt(op['y']), "Z": fmt(z_pre)}),
                 "(Step:1/1)",
-                f"G1 X{op['x']:.4f} Y{op['y']:.4f} Z-{op['prof']:.4f} F5000.0",
-                f"G0 X{op['x']:.4f} Y{op['y']:.4f} Z{z_seg:.4f}",
+                substituir(mov_corte_ini, {"X": fmt(op['x']), "Y": fmt(op['y']), "Z": fmt(-op['prof']), "F": fmt(5000.0)}),
+                substituir(mov_rapida, {"X": fmt(op['x']), "Y": fmt(op['y']), "Z": fmt(z_seg)}),
             ])
 
     return "\n".join(linhas), atual, usadas
@@ -345,6 +354,7 @@ def _gerar_etiquetas(
     chapas: List[List[Dict]],
     saida: Path,
     config_maquina: dict | None = None,
+    sobras: List[List[Dict]] | None = None,
 ) -> None:
     """Gera imagens das etiquetas conforme layout configurado."""
     if not config_maquina or not config_maquina.get("layoutEtiqueta"):
@@ -354,7 +364,11 @@ def _gerar_etiquetas(
     altura = float(config_maquina.get("tamanhoEtiquetadoraY", 30))
     escala = 4
     ext = str(config_maquina.get("formatoImagemEtiqueta", "bmp")).lower()
-    for p in [pc for placa in chapas for pc in placa]:
+    pecas = [pc for placa in chapas for pc in placa]
+    if sobras:
+        for s in sobras:
+            pecas.extend(s)
+    for p in pecas:
         img = Image.new("RGB", (int(largura * escala), int(altura * escala)), "white")
         draw = ImageDraw.Draw(img)
         for item in layout:
@@ -427,6 +441,7 @@ def _gerar_gcodes(
     header_tpl = config_maquina.get('cabecalho', '') if config_maquina else ''
     footer_tpl = config_maquina.get('rodape', '') if config_maquina else ''
 
+    sobras_por_chapa: List[List[Dict]] = []
     for i, pecas in enumerate(chapas, start=1):
         material = pecas[0].get('Material', 'chapa') if pecas else 'chapa'
         thickness = float(pecas[0].get('Thickness', 0)) if pecas else 0.0
@@ -455,6 +470,8 @@ def _gerar_gcodes(
             'CMD_EXTRA': primeira_ferramenta.get('comandoExtra', '') if primeira_ferramenta else '',
         }
         linhas.extend(substituir(header_tpl, valores_header).splitlines())
+        if config_maquina and config_maquina.get('furos'):
+            linhas.extend(substituir(config_maquina['furos'], valores_header).splitlines())
         # A operação CHAPA não deve constar nas linhas de G-code
 
         last_tool = primeira_ferramenta
@@ -526,6 +543,7 @@ def _gerar_gcodes(
         placa_poly = box(0, 0, largura_chapa, altura_chapa)
         pecas_polys = [box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width']) for p in pecas]
         sobra_geo = placa_poly.difference(unary_union(pecas_polys))
+        sobras_chapa: List[Dict] = []
         if not sobra_geo.is_empty:
             geoms = [sobra_geo] if sobra_geo.geom_type == 'Polygon' else list(sobra_geo.geoms)
             for g in geoms:
@@ -536,6 +554,7 @@ def _gerar_gcodes(
                     'Width': maxy - miny,
                     'Thickness': thickness,
                     'Material': material,
+                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
                     'Filename': '',
                     'x': minx,
                     'y': miny,
@@ -549,14 +568,18 @@ def _gerar_gcodes(
                     None,
                     config_maquina,
                     tpl_troca,
-                    tipo='SOBRAS',
+                    tipo='Sobra',
                     etapa='contorno',
                     ferramenta_atual=last_tool,
                 )
+                sobras_chapa.append(sobra)
                 linhas.extend(codigo.split('\n'))
+        sobras_por_chapa.append(sobras_chapa)
 
         linhas.extend(substituir(footer_tpl, valores_header).splitlines())
         (saida / f'{prefix}.nc').write_text('\n'.join(linhas), encoding='utf-8')
+
+    return sobras_por_chapa
 
 
 def gerar_nesting(
@@ -624,7 +647,7 @@ def gerar_nesting(
 
     pasta_saida = pasta / 'nesting'
     pasta_saida.mkdir(exist_ok=True)
-    _gerar_gcodes(
+    sobras = _gerar_gcodes(
         chapas,
         pasta_saida,
         largura_chapa,
@@ -647,6 +670,7 @@ def gerar_nesting(
         chapas,
         pasta_saida,
         config_maquina,
+        sobras,
     )
     return str(pasta_saida)
 
