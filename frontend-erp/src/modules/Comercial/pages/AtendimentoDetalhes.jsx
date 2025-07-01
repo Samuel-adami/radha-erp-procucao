@@ -63,12 +63,22 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         <div className="flex items-center gap-2">
           <span>{tarefa.nome}</span>
           {!edit && (
-            <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-white text-black"
+              onClick={() => setEdit(true)}
+            >
               {tarefa.concluida ? 'Editar' : 'Preencher'}
             </Button>
           )}
           {tarefa.concluida && (
-            <Button size="sm" variant="destructive" onClick={desfazer}>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-white text-black"
+              onClick={desfazer}
+            >
               Desfazer
             </Button>
           )}
@@ -88,7 +98,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
               value={dados.resumo || ''}
               onChange={e => setDados({ ...dados, resumo: e.target.value })}
             />
-            <Button size="sm" onClick={() => salvar(true)}>
+            <Button size="sm" className="bg-white text-black" onClick={() => salvar(true)}>
               Salvar
             </Button>
           </div>
@@ -109,12 +119,17 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           <span>{tarefa.nome}</span>
           <Link
             to={`/formularios/briefing-vendas/${atendimentoId}/${tarefa.id}`}
-            className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
+            className="px-2 py-1 text-sm rounded bg-white text-black"
           >
             {tarefa.concluida ? 'Editar' : 'Preencher'}
           </Link>
           {tarefa.concluida && (
-            <Button size="sm" variant="destructive" onClick={desfazer}>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-white text-black"
+              onClick={desfazer}
+            >
               Desfazer
             </Button>
           )}
@@ -166,11 +181,16 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           </div>
         ))}
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => salvar(true)}>
+          <Button size="sm" className="bg-white text-black" onClick={() => salvar(true)}>
             Salvar Projeto 3D
           </Button>
           {tarefa.concluida && (
-            <Button size="sm" variant="destructive" onClick={desfazer}>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-white text-black"
+              onClick={desfazer}
+            >
               Desfazer
             </Button>
           )}
@@ -186,7 +206,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         <div className="flex items-center gap-2 mt-2">
           <Link
             to={`negociacao/${tarefa.id}`}
-            className="px-2 py-1 text-sm rounded bg-blue-600 text-white"
+            className="px-2 py-1 text-sm rounded bg-white text-black"
           >
             {tarefa.concluida ? 'Editar' : 'Negociar'}
           </Link>
@@ -197,7 +217,12 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             </div>
           )}
           {tarefa.concluida && (
-            <Button size="sm" variant="destructive" onClick={desfazer}>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-white text-black"
+              onClick={desfazer}
+            >
               Desfazer
             </Button>
           )}
@@ -212,12 +237,22 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         <div className="flex items-center gap-2">
           <span>Fechamento da Venda</span>
           {!edit && (
-            <Button size="sm" variant="outline" onClick={() => setEdit(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-white text-black"
+              onClick={() => setEdit(true)}
+            >
               {tarefa.concluida ? 'Refazer' : 'Gerar Contrato'}
             </Button>
           )}
           {tarefa.concluida && (
-            <Button size="sm" variant="destructive" onClick={desfazer}>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-white text-black"
+              onClick={desfazer}
+            >
               Desfazer
             </Button>
           )}
@@ -230,7 +265,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
               value={dados.data || ''}
               onChange={e => setDados({ ...dados, data: e.target.value })}
             />
-            <Button size="sm" onClick={() => salvar(true)}>
+            <Button size="sm" className="bg-white text-black" onClick={() => salvar(true)}>
               Gerar Contrato
             </Button>
           </div>
@@ -267,11 +302,21 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           </div>
         ))}
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => salvar(true)} disabled={!todos}>
+          <Button
+            size="sm"
+            className="bg-white text-black"
+            onClick={() => salvar(true)}
+            disabled={!todos}
+          >
             Finalizar Pasta
           </Button>
           {tarefa.concluida && (
-            <Button size="sm" variant="destructive" onClick={desfazer}>
+            <Button
+              size="sm"
+              variant="destructive"
+              className="bg-white text-black"
+              onClick={desfazer}
+            >
               Desfazer
             </Button>
           )}
@@ -285,7 +330,12 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     <li className={`flex items-center gap-2 p-2 border rounded ${tarefa.concluida ? 'bg-green-200' : 'bg-yellow-100'}`}>
       <span>{tarefa.nome}</span>
       {tarefa.concluida && (
-        <Button size="sm" variant="destructive" onClick={desfazer}>
+        <Button
+          size="sm"
+          variant="destructive"
+          className="bg-white text-black"
+          onClick={desfazer}
+        >
           Desfazer
         </Button>
       )}
@@ -367,7 +417,9 @@ function AtendimentoDetalhes() {
           ))}
         </ul>
       </div>
-      <Button onClick={() => window.history.back()}>Voltar</Button>
+      <Button className="bg-white text-black" onClick={() => window.history.back()}>
+        Voltar
+      </Button>
     </div>
   );
 }
