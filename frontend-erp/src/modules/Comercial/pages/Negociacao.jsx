@@ -240,9 +240,9 @@ function Negociacao() {
     document.body.appendChild(cont);
 
     const content = document.createElement('div');
-    content.className = 'border bg-white p-4 flex flex-col';
+    content.className = 'border bg-white p-4 flex flex-col justify-between';
     content.style.width = '210mm';
-    content.style.minHeight = '297mm';
+    content.style.height = '297mm';
     cont.appendChild(content);
 
     const header = document.createElement('div');
@@ -337,16 +337,39 @@ function Negociacao() {
         table.appendChild(tbody);
         div.appendChild(table);
       } else if (campo.tipo === 'negociacao') {
-        const desc = document.createElement('div');
-        desc.textContent = valores.negociacao.condicao || '';
-        div.appendChild(desc);
+        const wrapNeg = document.createElement('div');
+        wrapNeg.className = 'text-sm';
+
+        const infoTable = document.createElement('table');
+        infoTable.className = 'pdf-table';
+        infoTable.style.margin = '24px 0';
+        infoTable.style.width = '90%';
+        const infoBody = document.createElement('tbody');
+
+        const addRow = (label, value) => {
+          const tr = document.createElement('tr');
+          const th = document.createElement('th');
+          th.className = 'text-left';
+          th.textContent = label;
+          const td = document.createElement('td');
+          td.className = 'border';
+          td.textContent = value;
+          tr.appendChild(th);
+          tr.appendChild(td);
+          infoBody.appendChild(tr);
+        };
+
+        addRow('Condição de Pagamento', valores.negociacao.condicao || '');
+        addRow('Entrada (R$)', `R$ ${currency(valores.negociacao.entrada)}`);
+        addRow('Parcelas', valores.negociacao.numParcelas || '');
+        infoTable.appendChild(infoBody);
+        wrapNeg.appendChild(infoTable);
 
         const tableProj = document.createElement('table');
-        tableProj.className = 'pdf-table mt-1';
+        tableProj.className = 'pdf-table';
         const thdP = document.createElement('thead');
         const trP = document.createElement('tr');
-        trP.className = 'bg-gray-100';
-        ['Projeto', 'Valor'].forEach(tx => {
+        ['Ambiente', 'Orçamento'].forEach(tx => {
           const th = document.createElement('th');
           th.className = 'border px-2 text-center align-middle';
           th.textContent = tx;
@@ -359,23 +382,22 @@ function Negociacao() {
           if (!selecionados[a.nome]) return;
           const tr = document.createElement('tr');
           const tdN = document.createElement('td');
-          tdN.className = 'border px-2 text-center align-middle';
+          tdN.className = 'border px-2 text-left align-middle';
           tdN.textContent = a.nome;
           const tdV = document.createElement('td');
-          tdV.className = 'border px-2 text-center align-middle';
-          tdV.textContent = currency(valorOrcamento(a.nome));
+          tdV.className = 'border px-2 text-right align-middle';
+          tdV.textContent = `R$ ${currency(valorOrcamento(a.nome))}`;
           tr.appendChild(tdN);
           tr.appendChild(tdV);
           tbP.appendChild(tr);
         });
         tableProj.appendChild(tbP);
-        div.appendChild(tableProj);
+        wrapNeg.appendChild(tableProj);
 
         const table = document.createElement('table');
         table.className = 'pdf-table';
         const thead2 = document.createElement('thead');
         const tr2 = document.createElement('tr');
-        tr2.className = 'bg-gray-100';
         ['Número', 'Valor'].forEach(tx => {
           const th = document.createElement('th');
           th.className = 'border px-2 text-center align-middle';
@@ -391,19 +413,21 @@ function Negociacao() {
           tdNum.className = 'border px-2 text-center align-middle';
           tdNum.textContent = p.numero;
           const tdVal = document.createElement('td');
-          tdVal.className = 'border px-2 text-center align-middle';
-          tdVal.textContent = currency(p.valor);
+          tdVal.className = 'border px-2 text-right align-middle';
+          tdVal.textContent = `R$ ${currency(p.valor)}`;
           tr.appendChild(tdNum);
           tr.appendChild(tdVal);
           tbody2.appendChild(tr);
         });
         table.appendChild(tbody2);
-        div.appendChild(table);
+        wrapNeg.appendChild(table);
 
         const tot = document.createElement('div');
-        tot.className = 'mt-1 font-semibold';
+        tot.className = 'text-right font-bold';
         tot.textContent = `Total: R$ ${currency(totalVenda || total)}`;
-        div.appendChild(tot);
+        wrapNeg.appendChild(tot);
+
+        div.appendChild(wrapNeg);
       } else if (campo.tipo === 'assinatura') {
         const ass = document.createElement('div');
         ass.className = 'text-center mt-4';
@@ -414,25 +438,42 @@ function Negociacao() {
         div.appendChild(line);
         div.appendChild(ass);
       } else if (campo.autoCampo === 'negociacao.tabela') {
-        const cond = document.createElement('div');
-        cond.textContent = `Condição de Pagamento: ${valores.negociacao.condicao || ''}`;
-        div.appendChild(cond);
+        const wrapNeg = document.createElement('div');
+        wrapNeg.className = 'text-sm';
+
+        const infoTable = document.createElement('table');
+        infoTable.className = 'pdf-table';
+        infoTable.style.margin = '24px 0';
+        infoTable.style.width = '90%';
+        const infoBody = document.createElement('tbody');
+
+        const addRow = (label, value) => {
+          const tr = document.createElement('tr');
+          const th = document.createElement('th');
+          th.className = 'text-left';
+          th.textContent = label;
+          const td = document.createElement('td');
+          td.className = 'border';
+          td.textContent = value;
+          tr.appendChild(th);
+          tr.appendChild(td);
+          infoBody.appendChild(tr);
+        };
+
+        addRow('Condição de Pagamento', valores.negociacao.condicao || '');
         if (valores.negociacao.entrada) {
-          const ent = document.createElement('div');
-          ent.textContent = `Entrada: R$ ${currency(valores.negociacao.entrada)}`;
-          div.appendChild(ent);
+          addRow('Entrada (R$)', `R$ ${currency(valores.negociacao.entrada)}`);
         }
         if (valores.negociacao.numParcelas) {
-          const parcInfo = document.createElement('div');
-          parcInfo.textContent = `Parcelas: ${valores.negociacao.numParcelas}`;
-          div.appendChild(parcInfo);
+          addRow('Parcelas', valores.negociacao.numParcelas);
         }
+        infoTable.appendChild(infoBody);
+        wrapNeg.appendChild(infoTable);
 
         const tableAmb = document.createElement('table');
         tableAmb.className = 'pdf-table';
         const theadAmb = document.createElement('thead');
         const trAmb = document.createElement('tr');
-        trAmb.className = 'bg-gray-100';
         ['Ambiente', 'Orçamento'].forEach(tx => {
           const th = document.createElement('th');
           th.className = 'border px-2 text-center align-middle';
@@ -446,23 +487,22 @@ function Negociacao() {
           if (!selecionados[a.nome]) return;
           const tr = document.createElement('tr');
           const tdN = document.createElement('td');
-          tdN.className = 'border px-2 text-center align-middle';
+          tdN.className = 'border px-2 text-left align-middle';
           tdN.textContent = a.nome;
           const tdV = document.createElement('td');
-          tdV.className = 'border px-2 text-center align-middle';
-          tdV.textContent = currency(valorOrcamento(a.nome));
+          tdV.className = 'border px-2 text-right align-middle';
+          tdV.textContent = `R$ ${currency(valorOrcamento(a.nome))}`;
           tr.appendChild(tdN);
           tr.appendChild(tdV);
           tbodyAmb.appendChild(tr);
         });
         tableAmb.appendChild(tbodyAmb);
-        div.appendChild(tableAmb);
+        wrapNeg.appendChild(tableAmb);
 
         const tablePar = document.createElement('table');
         tablePar.className = 'pdf-table';
         const theadPar = document.createElement('thead');
         const trPar = document.createElement('tr');
-        trPar.className = 'bg-gray-100';
         ['Número', 'Valor'].forEach(tx => {
           const th = document.createElement('th');
           th.className = 'border px-2 text-center align-middle';
@@ -478,19 +518,21 @@ function Negociacao() {
           tdNum.className = 'border px-2 text-center align-middle';
           tdNum.textContent = p.numero;
           const tdVal = document.createElement('td');
-          tdVal.className = 'border px-2 text-center align-middle';
-          tdVal.textContent = currency(p.valor);
+          tdVal.className = 'border px-2 text-right align-middle';
+          tdVal.textContent = `R$ ${currency(p.valor)}`;
           tr.appendChild(tdNum);
           tr.appendChild(tdVal);
           tbodyPar.appendChild(tr);
         });
         tablePar.appendChild(tbodyPar);
-        div.appendChild(tablePar);
+        wrapNeg.appendChild(tablePar);
 
         const tot = document.createElement('div');
-        tot.className = 'mt-1 font-semibold';
+        tot.className = 'text-right font-bold';
         tot.textContent = `Total: R$ ${currency(totalVenda || total)}`;
-        div.appendChild(tot);
+        wrapNeg.appendChild(tot);
+
+        div.appendChild(wrapNeg);
       } else if (campo.autoCampo === 'empresa.dados_completos') {
         const bloco = document.createElement('div');
         bloco.className = 'space-y-1';
