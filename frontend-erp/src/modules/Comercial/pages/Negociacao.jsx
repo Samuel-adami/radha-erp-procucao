@@ -414,6 +414,84 @@ function Negociacao() {
         line.textContent = '______________________________';
         div.appendChild(line);
         div.appendChild(ass);
+      } else if (campo.autoCampo === 'negociacao.tabela') {
+        const cond = document.createElement('div');
+        cond.textContent = `Condição de Pagamento: ${valores.negociacao.condicao || ''}`;
+        div.appendChild(cond);
+        if (valores.negociacao.entrada) {
+          const ent = document.createElement('div');
+          ent.textContent = `Entrada: R$ ${currency(valores.negociacao.entrada)}`;
+          div.appendChild(ent);
+        }
+        if (valores.negociacao.numParcelas) {
+          const parcInfo = document.createElement('div');
+          parcInfo.textContent = `Parcelas: ${valores.negociacao.numParcelas}`;
+          div.appendChild(parcInfo);
+        }
+
+        const tableAmb = document.createElement('table');
+        tableAmb.className = 'w-full text-sm mt-2';
+        const theadAmb = document.createElement('thead');
+        const trAmb = document.createElement('tr');
+        trAmb.className = 'bg-gray-100';
+        ['Ambiente', 'Orçamento'].forEach(tx => {
+          const th = document.createElement('th');
+          th.className = 'border px-2';
+          th.textContent = tx;
+          trAmb.appendChild(th);
+        });
+        theadAmb.appendChild(trAmb);
+        tableAmb.appendChild(theadAmb);
+        const tbodyAmb = document.createElement('tbody');
+        ambientes.forEach(a => {
+          if (!selecionados[a.nome]) return;
+          const tr = document.createElement('tr');
+          const tdN = document.createElement('td');
+          tdN.className = 'border px-2';
+          tdN.textContent = a.nome;
+          const tdV = document.createElement('td');
+          tdV.className = 'border px-2';
+          tdV.textContent = currency(valorOrcamento(a.nome));
+          tr.appendChild(tdN);
+          tr.appendChild(tdV);
+          tbodyAmb.appendChild(tr);
+        });
+        tableAmb.appendChild(tbodyAmb);
+        div.appendChild(tableAmb);
+
+        const tablePar = document.createElement('table');
+        tablePar.className = 'w-full text-sm mt-2';
+        const theadPar = document.createElement('thead');
+        const trPar = document.createElement('tr');
+        trPar.className = 'bg-gray-100';
+        ['Número', 'Valor'].forEach(tx => {
+          const th = document.createElement('th');
+          th.className = 'border px-2';
+          th.textContent = tx;
+          trPar.appendChild(th);
+        });
+        theadPar.appendChild(trPar);
+        tablePar.appendChild(theadPar);
+        const tbodyPar = document.createElement('tbody');
+        parcelas.forEach(p => {
+          const tr = document.createElement('tr');
+          const tdNum = document.createElement('td');
+          tdNum.className = 'border px-2';
+          tdNum.textContent = p.numero;
+          const tdVal = document.createElement('td');
+          tdVal.className = 'border px-2';
+          tdVal.textContent = currency(p.valor);
+          tr.appendChild(tdNum);
+          tr.appendChild(tdVal);
+          tbodyPar.appendChild(tr);
+        });
+        tablePar.appendChild(tbodyPar);
+        div.appendChild(tablePar);
+
+        const tot = document.createElement('div');
+        tot.className = 'mt-1 font-semibold';
+        tot.textContent = `Total: R$ ${currency(totalVenda || total)}`;
+        div.appendChild(tot);
       } else if (campo.autoCampo === 'empresa.dados_completos') {
         const bloco = document.createElement('div');
         bloco.className = 'space-y-1';

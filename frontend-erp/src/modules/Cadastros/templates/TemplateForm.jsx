@@ -185,7 +185,9 @@ function TemplateForm() {
               </select>
               <select className="input" value={c.largura || 'full'} onChange={e => updateCampo(idx, 'largura', e.target.value)}>
                 <option value="full">Linha inteira</option>
-                <option value="half">Meia largura</option>
+                {c.autoCampo !== 'negociacao.tabela' && (
+                  <option value="half">Meia largura</option>
+                )}
               </select>
               <button type="button" className="text-xl" onClick={() => moverCampo(idx, -1)}>&uarr;</button>
               <button type="button" className="text-xl" onClick={() => moverCampo(idx, 1)}>&darr;</button>

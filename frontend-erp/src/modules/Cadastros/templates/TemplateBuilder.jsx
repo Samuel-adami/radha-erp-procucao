@@ -84,6 +84,7 @@ const AUTO_FIELDS = {
     { value: 'negociacao.parcelas', label: 'Parcelas' },
     { value: 'negociacao.condicao', label: 'Condição Pagamento' },
     { value: 'negociacao.valorTotal', label: 'Valor Total' },
+    { value: 'negociacao.tabela', label: 'Tabela Negociação' },
   ],
 };
 
@@ -297,7 +298,9 @@ function TemplateBuilder() {
                 onChange={e => atualizarCampo(selected, 'largura', e.target.value)}
               >
                 <option value="full">Linha inteira</option>
-                <option value="half">Meia largura</option>
+                {form.campos[selected].autoCampo !== 'negociacao.tabela' && (
+                  <option value="half">Meia largura</option>
+                )}
               </select>
               {form.campos[selected].tipo === 'texto' && (
                 <>
