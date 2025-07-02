@@ -194,7 +194,10 @@ function VisualTemplateBuilder() {
                   <button
                     type="button"
                     className="text-red-600 ml-2"
+                    onPointerDown={e => e.stopPropagation()}
+                    onMouseDown={e => e.stopPropagation()}
                     onClick={e => {
+                      e.preventDefault();
                       e.stopPropagation();
                       removerCampo(idx);
                     }}
