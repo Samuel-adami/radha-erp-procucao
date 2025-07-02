@@ -21,3 +21,13 @@ def get_projeto(cd_projeto: int, *, user: Optional[str] = None, api_key: Optiona
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     return response.json()
+
+
+def list_orcamentos_cliente(*, user: Optional[str] = None, api_key: Optional[str] = None) -> dict[str, Any]:
+    """Return list of budgets available for the authenticated user."""
+    url = f"{BASE_URL}orcamento_cliente/?format=json"
+    headers = _auth_header(user, api_key)
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+

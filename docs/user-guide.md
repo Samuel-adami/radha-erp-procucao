@@ -27,6 +27,7 @@ Faça login com seu usuário e navegue pelos módulos de acordo com suas permiss
 
 ## Comercial
 - **Atendimentos** – registra o processo de venda desde o contato inicial até a pasta final, marcando tarefas e etapas concluídas. Requer a permissão `comercial/atendimentos` para aparecer no menu.
+- **Projeto 3D** – em cada atendimento utilize o botão *Importar do Gabster* para buscar os valores do orçamento diretamente pela API (é preciso configurar `GABSTER_API_USER` e `GABSTER_API_KEY` no backend).
 
 ## Formulários
 - **Briefing Vendas** – formulário vinculado a um atendimento para coletar informações detalhadas do cliente.

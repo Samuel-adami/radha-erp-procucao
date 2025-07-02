@@ -99,6 +99,9 @@ Registrar atendimentos comerciais, controlar tarefas do processo de venda e cond
   - `POST /contratos/assinar` – gera PDF simples com a assinatura
 - **Integrações**
   - Importação de orçamentos Gabster via API (`gabster_api.get_projeto`)
+
+  - Consulta de orçamentos disponíveis (`gabster_api.list_orcamentos_cliente`)
+
 - **Banco de dados**
   - SQLite `comercial.db` definido em `database.py`
 - **Lógica principal**

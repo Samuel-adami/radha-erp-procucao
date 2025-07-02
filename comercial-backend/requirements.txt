@@ -2,3 +2,5 @@ fastapi
 uvicorn
 pdfplumber==0.7.6
 requests
+python-multipart
+
