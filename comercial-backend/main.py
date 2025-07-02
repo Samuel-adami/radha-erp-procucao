@@ -80,6 +80,8 @@ async def criar_atendimento(request: Request):
             data.get("email"),
             data.get("rua"),
             data.get("numero"),
+            data.get("complemento"),
+            data.get("bairro"),
             data.get("cidade"),
             data.get("estado"),
             data.get("cep"),
@@ -90,9 +92,11 @@ async def criar_atendimento(request: Request):
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
                 rt_percent, entrega_diferente, historico, arquivos_json,
-                procedencia, vendedor, telefone, email, rua, numero, cidade, estado, cep,
+                procedencia, vendedor, telefone, email,
+                rua, numero, complemento, bairro,
+                cidade, estado, cep,
                 data_cadastro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
@@ -144,6 +148,8 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
         "email",
         "rua",
         "numero",
+        "complemento",
+        "bairro",
         "cidade",
         "estado",
         "cep",
