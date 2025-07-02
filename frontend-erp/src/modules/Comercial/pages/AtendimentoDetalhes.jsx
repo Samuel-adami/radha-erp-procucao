@@ -149,18 +149,16 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     const dadosProj = dados.projetos || {};
     const programa = dados.programa || 'Gabster';
 
-    const handleFileGabster = amb => async e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const form = new FormData();
-      form.append('file', file);
+    const importarGabster = amb => async () => {
+      const codigo = window.prompt('Código do projeto Gabster');
+      if (!codigo) return;
       const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
         method: 'POST',
-        body: form,
+        body: JSON.stringify({ cd_projeto: codigo }),
       });
       setDados(prev => ({
         ...prev,
-        projetos: { ...prev.projetos, [amb]: { arquivo: file.name, ...info } },
+        projetos: { ...prev.projetos, [amb]: { codigo, ...info } },
       }));
     };
 
@@ -204,7 +202,9 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
               <div key={amb} className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span>{amb}</span>
-                  <input type="file" accept="application/pdf" onChange={handleFileGabster(amb)} />
+                  <Button size="sm" className="bg-white text-black" onClick={importarGabster(amb)}>
+                    Importar do Gabster
+                  </Button>
                   {dadosProj[amb] && (
                     <Link
                       to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
@@ -216,7 +216,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                 </div>
                 {dadosProj[amb] && dadosProj[amb].total > 0 && (
                   <div className="text-sm text-gray-700 ml-2">
-                    {dadosProj[amb].arquivo} - Valor: {dadosProj[amb].total}
+                    Projeto {dadosProj[amb].codigo} - Valor: {dadosProj[amb].total}
                   </div>
                 )}
               </div>

@@ -98,7 +98,7 @@ Registrar atendimentos comerciais, controlar tarefas do processo de venda e cond
   - `POST /condicoes-pagamento` e rotas `GET/PUT/DELETE` para condições de pagamento
   - `POST /contratos/assinar` – gera PDF simples com a assinatura
 - **Integrações**
-  - Leitura de orçamento PDF externo via `orcamento_pdf.parse_gabster_pdf`
+  - Importação de orçamentos Gabster via API (`gabster_api.get_projeto`)
 - **Banco de dados**
   - SQLite `comercial.db` definido em `database.py`
 - **Lógica principal**
