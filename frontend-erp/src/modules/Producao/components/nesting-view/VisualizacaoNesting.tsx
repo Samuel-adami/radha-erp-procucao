@@ -24,7 +24,11 @@ const VisualizacaoNesting: React.FC = () => {
         const params = cfg ? JSON.parse(cfg) : {};
         const dados = await fetchComAuth('/nesting-preview', {
           method: 'POST',
-          body: JSON.stringify(params),
+          body: JSON.stringify({
+            pasta_lote: params.pastaLote,
+            largura_chapa: params.larguraChapa,
+            altura_chapa: params.alturaChapa,
+          }),
         });
         if (dados?.erro) {
           alert(dados.erro);
@@ -87,7 +91,11 @@ const VisualizacaoNesting: React.FC = () => {
       const params = cfg ? JSON.parse(cfg) : {};
       await fetchComAuth('/executar-nesting-final', {
         method: 'POST',
-        body: JSON.stringify(params),
+        body: JSON.stringify({
+          pasta_lote: params.pastaLote,
+          largura_chapa: params.larguraChapa,
+          altura_chapa: params.alturaChapa,
+        }),
       });
       setConfirmado(true);
     } catch (e) {
