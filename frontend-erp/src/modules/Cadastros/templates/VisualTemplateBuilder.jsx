@@ -68,6 +68,25 @@ function FieldModal({ field, onChange, onSave, onClose }) {
             />
           </div>
         )}
+        <select
+          className="input w-full"
+          value={field.largura || 'full'}
+          onChange={e => onChange({ ...field, largura: e.target.value })}
+        >
+          <option value="full">Linha inteira</option>
+          <option value="half">Meia página</option>
+        </select>
+        {field.largura === 'half' && (
+          <select
+            className="input w-full"
+            value={field.halfAlign || 'left'}
+            onChange={e => onChange({ ...field, halfAlign: e.target.value })}
+          >
+            <option value="left">À esquerda</option>
+            <option value="center">Centralizado</option>
+            <option value="right">À direita</option>
+          </select>
+        )}
         <div>
           <label className="text-sm block mb-1">Vincular a dado do ERP</label>
           <AutoFieldSelect value={field.autoCampo} onChange={v => onChange({ ...field, autoCampo: v })} />
@@ -103,7 +122,7 @@ function VisualTemplateBuilder() {
   }, [id]);
 
   const addCampo = tipoCampo => {
-    const novo = { tipo: tipoCampo };
+    const novo = { tipo: tipoCampo, largura: 'full' };
     setEditing({ field: novo, index: campos.length });
   };
 
@@ -172,7 +191,14 @@ function VisualTemplateBuilder() {
                   >
                     {c.label || c.tipo}
                   </div>
-                  <button type="button" className="text-red-600 ml-2" onClick={() => removerCampo(idx)}>
+                  <button
+                    type="button"
+                    className="text-red-600 ml-2"
+                    onClick={e => {
+                      e.stopPropagation();
+                      removerCampo(idx);
+                    }}
+                  >
                     Remover
                   </button>
                 </div>
@@ -189,11 +215,23 @@ function VisualTemplateBuilder() {
         <div className="p-4 bg-white border rounded" style={{ width: '210mm', minHeight: '297mm' }}>
           <h2 className="text-center font-bold text-xl mb-4">{titulo || 'Título do Template'}</h2>
           <div className="grid grid-cols-3 gap-4">
-            {campos.map((c, i) => (
-              <div key={i} className="col-span-3" style={{ textAlign: c.textAlign }}>
-                {c.label || c.tipo}
-              </div>
-            ))}
+            {campos.map((c, i) => {
+              const colClass = c.largura === 'half' ? 'col-span-2' : 'col-span-3';
+              const posClass = c.largura === 'half' && c.halfAlign === 'right'
+                ? 'ml-auto'
+                : c.largura === 'half' && c.halfAlign === 'center'
+                ? 'mx-auto'
+                : '';
+              return (
+                <div
+                  key={i}
+                  className={`${colClass} ${posClass}`.trim()}
+                  style={{ textAlign: c.textAlign }}
+                >
+                  {c.label || c.tipo}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

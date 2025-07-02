@@ -33,6 +33,11 @@ function TemplatePreview() {
 
   const renderField = (campo, idx) => {
     const wClass = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
+    const posClass = campo.largura === 'half' && campo.halfAlign === 'right'
+      ? 'ml-auto'
+      : campo.largura === 'half' && campo.halfAlign === 'center'
+      ? 'mx-auto'
+      : '';
     const style = {
       textAlign: campo.textAlign || undefined,
       fontSize: campo.fontSize ? `${campo.fontSize}px` : undefined,
@@ -195,7 +200,9 @@ function TemplatePreview() {
       );
     }
     return (
-      <div key={idx} className={wClass} style={style}>{content}</div>
+      <div key={idx} className={`${wClass} ${posClass}`.trim()} style={style}>
+        {content}
+      </div>
     );
   };
 
