@@ -17,6 +17,7 @@ export interface Chapa {
   descricao: string;
   largura: number;
   altura: number;
+  temVeio?: boolean;
   operacoes: Operacao[];
 }
 
@@ -38,6 +39,21 @@ const ChapaViewer: React.FC<Props> = ({ chapa, onSelect, destaqueId }) => {
   return (
     <svg width={300} height={alturaSvg} className="border bg-white">
       <rect width={300} height={alturaSvg} fill="#f9fafb" stroke="#000" />
+      {chapa.temVeio &&
+        Array.from({ length: 8 }).map((_, i) => {
+          const x = ((i + 1) * chapa.largura) / 9 * escala;
+          return (
+            <line
+              key={`veio-${i}`}
+              x1={x}
+              y1={0}
+              x2={x}
+              y2={alturaSvg}
+              stroke="#bbb"
+              strokeDasharray="4 4"
+            />
+          );
+        })}
       {chapa.operacoes.map((op) => {
         const x = op.x * escala;
         const y = op.y * escala;
