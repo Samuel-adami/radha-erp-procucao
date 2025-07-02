@@ -125,7 +125,7 @@ def processar_dxf_producao(caminho_dxf, dimensoes_xml, is_porta=False):
             except Exception:
                 pass
 
-        match_usinar = re.search(r"USINAR_([\d\.\-]+)_([\w\-]+)", layer_nome)
+        match_usinar = re.search(r"(?:USINAR|PuxadorCava1|PuxadorCava2|PuxadorCavaCurvo1|PuxadorCavaCurvo2|Corte45|PuxadorCava30)_([\d\.\-]+)_([\w\-]+)", layer_nome)
         if match_usinar:
             try:
                 profundidade = float(match_usinar.group(1).replace('-', '.'))
