@@ -594,60 +594,53 @@ def _gerar_gcodes(
             )
             linhas.extend(codigo.split('\n'))
 
-        # Geração de sobras nas bordas da chapa
-        x_min = min((p['x'] for p in pecas), default=0)
-        y_min = min((p['y'] for p in pecas), default=0)
-        x_max = max((p['x'] + p['Length'] for p in pecas), default=0)
-        y_max = max((p['y'] + p['Width'] for p in pecas), default=0)
+        # Geração de sobras considerando todos os espaços livres
+        placa_poly = box(0, 0, largura_chapa, altura_chapa)
+        pecas_polys = [
+            box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width'])
+            for p in pecas
+        ]
+        livre = placa_poly.difference(unary_union(pecas_polys))
 
         sobras_chapa: List[Dict] = []
-        sobras_polys: List[Polygon] = []
 
-        def add_sobra(px: float, py: float, w: float, h: float):
-            nonlocal last_tool, sobras_polys
-            if w <= 0 or h <= 0:
+        def add_sobra_poly(g: Polygon):
+            nonlocal last_tool
+            minx, miny, maxx, maxy = g.bounds
+            if maxx - minx <= 0 or maxy - miny <= 0:
                 return
-            nova = box(px, py, px + w, py + h)
-            for p_exist in sobras_polys:
-                nova = nova.difference(p_exist)
-                if nova.is_empty:
-                    return
-            geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
-            for g in geoms:
-                minx, miny, maxx, maxy = g.bounds
-                sobra = {
-                    'PartName': 'SB',
-                    'Length': maxx - minx,
-                    'Width': maxy - miny,
-                    'Thickness': thickness,
-                    'Material': material,
-                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
-                    'Filename': '',
-                    'Program1': f"{next(proximo_id):08d}",
-                    'x': minx,
-                    'y': miny,
-                }
-                codigo, last_tool, _ = _gcode_peca(
-                    sobra,
-                    sobra['x'],
-                    sobra['y'],
-                    ferramentas,
-                    None,
-                    None,
-                    config_maquina,
-                    tpl_troca,
-                    tipo='Sobra',
-                    etapa='contorno',
-                    ferramenta_atual=last_tool,
-                )
-                sobras_chapa.append(sobra)
-                sobras_polys.append(g)
-                linhas.extend(codigo.split('\n'))
+            sobra = {
+                'PartName': 'SB',
+                'Length': maxx - minx,
+                'Width': maxy - miny,
+                'Thickness': thickness,
+                'Material': material,
+                'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
+                'Filename': '',
+                'Program1': f"{next(proximo_id):08d}",
+                'x': minx,
+                'y': miny,
+            }
+            codigo, last_tool, _ = _gcode_peca(
+                sobra,
+                sobra['x'],
+                sobra['y'],
+                ferramentas,
+                None,
+                None,
+                config_maquina,
+                tpl_troca,
+                tipo='Sobra',
+                etapa='contorno',
+                ferramenta_atual=last_tool,
+            )
+            sobras_chapa.append(sobra)
+            linhas.extend(codigo.split('\n'))
 
-        add_sobra(0, 0, x_min, altura_chapa)
-        add_sobra(x_max, 0, largura_chapa - x_max, altura_chapa)
-        add_sobra(0, 0, largura_chapa, y_min)
-        add_sobra(0, y_max, largura_chapa, altura_chapa - y_max)
+        if not livre.is_empty:
+            geoms = [livre] if isinstance(livre, Polygon) else list(livre.geoms)
+            for g in geoms:
+                add_sobra_poly(g)
 
         sobras_por_chapa.append(sobras_chapa)
 
@@ -803,15 +796,23 @@ def gerar_nesting_preview(
 
     chapas: List[Dict] = []
     idx = 1
+    espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
+    ref_inf = float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
+    ref_sup = float(config_maquina.get("refiloSuperior", 0)) if config_maquina else 0
+    ref_esq = float(config_maquina.get("refiloEsquerda", 0)) if config_maquina else 0
+    ref_dir = float(config_maquina.get("refiloDireita", 0)) if config_maquina else 0
+    area_larg = largura_chapa - ref_esq - ref_dir
+    area_alt = altura_chapa - ref_inf - ref_sup
+
     for material, lista in pecas_por_material.items():
         cfg = chapas_cfg.get(material, {})
         rot = False if cfg.get("possui_veio") else True
-        largura = float(cfg.get("comprimento", largura_chapa))
-        altura = float(cfg.get("largura", altura_chapa))
+        largura = float(cfg.get("comprimento", area_larg))
+        altura = float(cfg.get("largura", area_alt))
 
         packer = newPacker(rotation=rot)
         for p in lista:
-            packer.add_rect(int(p["Length"]), int(p["Width"]), rid=p)
+            packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
         for _ in range(len(lista)):
             packer.add_bin(int(largura), int(altura))
         packer.pack()
@@ -820,20 +821,15 @@ def gerar_nesting_preview(
             if not abin:
                 continue
             operacoes: List[Dict] = []
-            sobras_polys: List[Polygon] = []
-            x_min = 1e9
-            y_min = 1e9
-            x_max = 0.0
-            y_max = 0.0
             op_id = 1
             for rect in abin:
                 p = rect.rid.copy()
                 orig_l = float(p.get("Length", 0))
                 orig_w = float(p.get("Width", 0))
-                p_x = float(rect.x)
-                p_y = float(rect.y)
-                w = float(rect.width)
-                h = float(rect.height)
+                p_x = float(rect.x) + ref_esq + espaco / 2
+                p_y = float(rect.y) + ref_inf + espaco / 2
+                w = float(rect.width) - espaco
+                h = float(rect.height) - espaco
                 rotated_piece = (
                     abs(w - orig_w) < 1e-6 and abs(h - orig_l) < 1e-6 and orig_l != orig_w
                 )
@@ -866,41 +862,37 @@ def gerar_nesting_preview(
                         d["id"] = op_id
                         operacoes.append(d)
                         op_id += 1
-                x_min = min(x_min, p_x)
-                y_min = min(y_min, p_y)
-                x_max = max(x_max, p_x + w)
-                y_max = max(y_max, p_y + h)
 
-            def add_sobra(px: float, py: float, w: float, h: float):
-                nonlocal op_id, sobras_polys
-                if w <= 0 or h <= 0:
+            placa_poly = box(0, 0, largura, altura)
+            pecas_poly = [
+                box(o["x"], o["y"], o["x"] + o["largura"], o["y"] + o["altura"])
+                for o in operacoes
+                if o["tipo"] == "Peca"
+            ]
+            livre = placa_poly.difference(unary_union(pecas_poly))
+
+            def add_sobra_poly(g: Polygon):
+                nonlocal op_id
+                minx, miny, maxx, maxy = g.bounds
+                if maxx - minx <= 0 or maxy - miny <= 0:
                     return
-                nova = box(px, py, px + w, py + h)
-                for p_exist in sobras_polys:
-                    nova = nova.difference(p_exist)
-                    if nova.is_empty:
-                        return
-                geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
-                for g in geoms:
-                    minx, miny, maxx, maxy = g.bounds
-                    operacoes.append(
-                        {
-                            "id": op_id,
-                            "nome": "Sobra",
-                            "tipo": "Sobra",
-                            "x": minx,
-                            "y": miny,
-                            "largura": maxx - minx,
-                            "altura": maxy - miny,
-                        }
-                    )
-                    sobras_polys.append(g)
-                    op_id += 1
+                operacoes.append(
+                    {
+                        "id": op_id,
+                        "nome": "Sobra",
+                        "tipo": "Sobra",
+                        "x": minx,
+                        "y": miny,
+                        "largura": maxx - minx,
+                        "altura": maxy - miny,
+                    }
+                )
+                op_id += 1
 
-            add_sobra(0, 0, x_min, altura)
-            add_sobra(x_max, 0, largura - x_max, altura)
-            add_sobra(0, 0, largura, y_min)
-            add_sobra(0, y_max, largura, altura - y_max)
+            if not livre.is_empty:
+                geoms = [livre] if isinstance(livre, Polygon) else list(livre.geoms)
+                for g in geoms:
+                    add_sobra_poly(g)
 
             if operacoes:
                 chapas.append(
@@ -952,15 +944,23 @@ def gerar_nesting(
         material = p.get("Material", "Desconhecido")
         pecas_por_material.setdefault(material, []).append(p)
 
+    espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
+    ref_inf = float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
+    ref_sup = float(config_maquina.get("refiloSuperior", 0)) if config_maquina else 0
+    ref_esq = float(config_maquina.get("refiloEsquerda", 0)) if config_maquina else 0
+    ref_dir = float(config_maquina.get("refiloDireita", 0)) if config_maquina else 0
+    area_larg = largura_chapa - ref_esq - ref_dir
+    area_alt = altura_chapa - ref_inf - ref_sup
+
     chapas: List[List[Dict]] = []
     for material, lista in pecas_por_material.items():
         cfg = chapas_cfg.get(material, {})
         rot = False if cfg.get("possui_veio") else True
-        largura = float(cfg.get("comprimento", largura_chapa))
-        altura = float(cfg.get("largura", altura_chapa))
+        largura = float(cfg.get("comprimento", area_larg))
+        altura = float(cfg.get("largura", area_alt))
         packer = newPacker(rotation=rot)
         for p in lista:
-            packer.add_rect(int(p['Length']), int(p['Width']), rid=p)
+            packer.add_rect(int(p['Length'] + espaco), int(p['Width'] + espaco), rid=p)
         for _ in range(len(lista)):
             packer.add_bin(int(largura), int(altura))
         packer.pack()
@@ -973,10 +973,10 @@ def gerar_nesting(
                 piece = rect.rid.copy()
                 orig_l = float(piece.get('Length', 0))
                 orig_w = float(piece.get('Width', 0))
-                piece['x'] = float(rect.x)
-                piece['y'] = float(rect.y)
-                piece['Length'] = float(rect.width)
-                piece['Width'] = float(rect.height)
+                piece['x'] = float(rect.x) + ref_esq + espaco / 2
+                piece['y'] = float(rect.y) + ref_inf + espaco / 2
+                piece['Length'] = float(rect.width) - espaco
+                piece['Width'] = float(rect.height) - espaco
                 piece['Material'] = material
                 rotated_piece = (
                     abs(rect.width - orig_w) < 1e-6 and abs(rect.height - orig_l) < 1e-6 and orig_l != orig_w
