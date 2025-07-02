@@ -602,44 +602,111 @@ def _gerar_gcodes(
             )
             linhas.extend(codigo.split('\n'))
 
-        # Calcular sobras reais da chapa subtraindo todas as peças posicionadas
+        # Geração de sobras nas bordas da chapa
+        # As posições das peças já incluem a margem de refilo. Para gerar as
+        # sobras corretamente precisamos considerar apenas a área útil da
+        # chapa (sem o refilo), por isso subtraímos o refilo das coordenadas
+        # absolutas das peças.
+        x_min = min((p['x'] - ref_esq for p in pecas), default=0)
+        y_min = min((p['y'] - ref_inf for p in pecas), default=0)
+        x_max = max((p['x'] - ref_esq + p['Length'] for p in pecas), default=0)
+        y_max = max((p['y'] - ref_inf + p['Width'] for p in pecas), default=0)
+
+        sobras_chapa: List[Dict] = []
+        sobras_polys: List[Polygon] = []
+
+        def add_sobra(px: float, py: float, w: float, h: float):
+            nonlocal last_tool, sobras_polys
+            if w <= 0 or h <= 0:
+                return
+            nova = box(px, py, px + w, py + h)
+            for p_exist in sobras_polys:
+                nova = nova.difference(p_exist)
+                if nova.is_empty:
+                    return
+            geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
+            for g in geoms:
+                minx, miny, maxx, maxy = g.bounds
+                sobra = {
+                    'PartName': 'SB',
+                    'Length': maxx - minx,
+                    'Width': maxy - miny,
+                    'Thickness': thickness,
+                    'Material': material,
+                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
+                    'Filename': '',
+                    'Program1': f"{next(proximo_id):08d}",
+                    'x': minx,
+                    'y': miny,
+                }
+                codigo, last_tool, _ = _gcode_peca(
+                    sobra,
+                    sobra['x'],
+                    sobra['y'],
+                    ferramentas,
+                    None,
+                    None,
+                    config_maquina,
+                    tpl_troca,
+                    tipo='Sobra',
+                    etapa='contorno',
+                    ferramenta_atual=last_tool,
+                )
+                sobras_chapa.append(sobra)
+                sobras_polys.append(g)
+                linhas.extend(codigo.split('\n'))
+
+        # As sobras devem considerar apenas a área útil da chapa, logo é
+        # necessário aplicar o deslocamento dos refilos nas coordenadas.
+        add_sobra(ref_esq, ref_inf, x_min, area_alt)
+        add_sobra(ref_esq + x_max, ref_inf, area_larg - x_max, area_alt)
+        add_sobra(ref_esq, ref_inf, area_larg, y_min)
+        add_sobra(ref_esq, ref_inf + y_max, area_larg, area_alt - y_max)
+
+        # Sobras internas (vazios entre peças)
         p_polys = [
             box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width'])
             for p in pecas
         ]
-        sobras_polys = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt)
-
-        sobras_chapa: List[Dict] = []
-        for g in sobras_polys:
-            minx, miny, maxx, maxy = g.bounds
-            sobra = {
-                'PartName': 'SB',
-                'Length': maxx - minx,
-                'Width': maxy - miny,
-                'Thickness': thickness,
-                'Material': material,
-                'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
-                'Filename': '',
-                'Program1': f"{next(proximo_id):08d}",
-                'x': minx,
-                'y': miny,
-                'polygon': list(g.exterior.coords),
-            }
-            codigo, last_tool, _ = _gcode_peca(
-                sobra,
-                sobra['x'],
-                sobra['y'],
-                ferramentas,
-                None,
-                None,
-                config_maquina,
-                tpl_troca,
-                tipo='Sobra',
-                etapa='contorno',
-                ferramenta_atual=last_tool,
-            )
-            sobras_chapa.append(sobra)
-            linhas.extend(codigo.split('\n'))
+        internas = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt)
+        if sobras_polys:
+            internas = [g.difference(unary_union(sobras_polys)) for g in internas]
+        for g in internas:
+            if g.is_empty:
+                continue
+            geoms = [g] if isinstance(g, Polygon) else list(g.geoms)
+            for geom in geoms:
+                if geom.is_empty:
+                    continue
+                minx, miny, maxx, maxy = geom.bounds
+                sobra = {
+                    'PartName': 'SB',
+                    'Length': maxx - minx,
+                    'Width': maxy - miny,
+                    'Thickness': thickness,
+                    'Material': material,
+                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
+                    'Filename': '',
+                    'Program1': f"{next(proximo_id):08d}",
+                    'x': minx,
+                    'y': miny,
+                }
+                codigo, last_tool, _ = _gcode_peca(
+                    sobra,
+                    sobra['x'],
+                    sobra['y'],
+                    ferramentas,
+                    None,
+                    None,
+                    config_maquina,
+                    tpl_troca,
+                    tipo='Sobra',
+                    etapa='contorno',
+                    ferramenta_atual=last_tool,
+                )
+                sobras_chapa.append(sobra)
+                sobras_polys.append(geom)
+                linhas.extend(codigo.split('\n'))
 
         sobras_por_chapa.append(sobras_chapa)
 
@@ -765,6 +832,7 @@ def _calcular_sobras_polys(
     area_alt: float,
 ) -> List[Polygon]:
     """Retorna polígonos de sobra da chapa considerando as peças posicionadas."""
+
     chapa = box(ref_esq, ref_inf, ref_esq + area_larg, ref_inf + area_alt)
     if not pecas_polys:
         sobra = chapa
@@ -887,29 +955,68 @@ def gerar_nesting_preview(
                 x_max = max(x_max, p_x - ref_esq + w)
                 y_max = max(y_max, p_y - ref_inf + h)
 
-            # Calcular sobras subtraindo todas as peças posicionadas
+            def add_sobra(px: float, py: float, w: float, h: float):
+                nonlocal op_id, sobras_polys
+                if w <= 0 or h <= 0:
+                    return
+                nova = box(px, py, px + w, py + h)
+                for p_exist in sobras_polys:
+                    nova = nova.difference(p_exist)
+                    if nova.is_empty:
+                        return
+                geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
+                for g in geoms:
+                    minx, miny, maxx, maxy = g.bounds
+                    operacoes.append(
+                        {
+                            "id": op_id,
+                            "nome": "Sobra",
+                            "tipo": "Sobra",
+                            "x": minx,
+                            "y": miny,
+                            "largura": maxx - minx,
+                            "altura": maxy - miny,
+                        }
+                    )
+                    sobras_polys.append(g)
+                    op_id += 1
+
+            # Ajusta as sobras considerando o deslocamento das margens de refilo
+            add_sobra(ref_esq, ref_inf, x_min, area_alt)
+            add_sobra(ref_esq + x_max, ref_inf, area_larg - x_max, area_alt)
+            add_sobra(ref_esq, ref_inf, area_larg, y_min)
+            add_sobra(ref_esq, ref_inf + y_max, area_larg, area_alt - y_max)
+
+            # Sobras internas
             p_polys = [
                 box(op['x'], op['y'], op['x'] + op['largura'], op['y'] + op['altura'])
                 for op in operacoes
                 if op['tipo'] == 'Peca'
             ]
-            sobras_polys = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt)
-
-            for g in sobras_polys:
-                minx, miny, maxx, maxy = g.bounds
-                operacoes.append(
-                    {
-                        "id": op_id,
-                        "nome": "Sobra",
-                        "tipo": "Sobra",
-                        "x": minx,
-                        "y": miny,
-                        "largura": maxx - minx,
-                        "altura": maxy - miny,
-                        "polygon": list(g.exterior.coords),
-                    }
-                )
-                op_id += 1
+            internas = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt)
+            if sobras_polys:
+                internas = [g.difference(unary_union(sobras_polys)) for g in internas]
+            for g in internas:
+                if g.is_empty:
+                    continue
+                geoms = [g] if isinstance(g, Polygon) else list(g.geoms)
+                for geom in geoms:
+                    if geom.is_empty:
+                        continue
+                    minx, miny, maxx, maxy = geom.bounds
+                    operacoes.append(
+                        {
+                            "id": op_id,
+                            "nome": "Sobra",
+                            "tipo": "Sobra",
+                            "x": minx,
+                            "y": miny,
+                            "largura": maxx - minx,
+                            "altura": maxy - miny,
+                        }
+                    )
+                    sobras_polys.append(geom)
+                    op_id += 1
 
             if operacoes:
                 chapas.append(
