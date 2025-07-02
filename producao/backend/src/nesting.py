@@ -600,7 +600,11 @@ def _gerar_gcodes(
             box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width'])
             for p in pecas
         ]
-        livre = placa_poly.difference(unary_union(pecas_polys))
+        livre = (
+            placa_poly.difference(unary_union(pecas_polys))
+            if pecas_polys
+            else None
+        )
 
         sobras_chapa: List[Dict] = []
 
@@ -637,7 +641,7 @@ def _gerar_gcodes(
             sobras_chapa.append(sobra)
             linhas.extend(codigo.split('\n'))
 
-        if not livre.is_empty:
+        if livre and not livre.is_empty:
             geoms = [livre] if isinstance(livre, Polygon) else list(livre.geoms)
             for g in geoms:
                 add_sobra_poly(g)
@@ -869,7 +873,11 @@ def gerar_nesting_preview(
                 for o in operacoes
                 if o["tipo"] == "Peca"
             ]
-            livre = placa_poly.difference(unary_union(pecas_poly))
+            livre = (
+                placa_poly.difference(unary_union(pecas_poly))
+                if pecas_poly
+                else None
+            )
 
             def add_sobra_poly(g: Polygon):
                 nonlocal op_id
@@ -889,7 +897,7 @@ def gerar_nesting_preview(
                 )
                 op_id += 1
 
-            if not livre.is_empty:
+            if livre and not livre.is_empty:
                 geoms = [livre] if isinstance(livre, Polygon) else list(livre.geoms)
                 for g in geoms:
                     add_sobra_poly(g)
