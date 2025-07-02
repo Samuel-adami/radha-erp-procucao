@@ -1,8 +1,8 @@
-from fastapi import FastAPI, Request, UploadFile, File
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection
-from orcamento_pdf import parse_gabster_pdf
 from orcamento_promob import parse_promob_xml
+from gabster_api import get_projeto
 from datetime import datetime
 import re
 import json
@@ -45,9 +45,19 @@ async def proximo_codigo():
 
 
 @app.post("/leitor-orcamento-gabster")
-async def leitor_orcamento_gabster(file: UploadFile = File(...)):
-    data = parse_gabster_pdf(file.file)
-    return data
+async def leitor_orcamento_gabster(request: Request):
+    """Retrieve Gabster project via API instead of PDF upload."""
+    params = await request.json()
+    cd_projeto = params.get("cd_projeto")
+    usuario = params.get("usuario")
+    chave = params.get("chave")
+    if not cd_projeto:
+        return JSONResponse({"detail": "cd_projeto ausente"}, status_code=400)
+    try:
+        projeto = get_projeto(cd_projeto, user=usuario, api_key=chave)
+    except Exception as exc:  # requests errors
+        raise HTTPException(status_code=400, detail=str(exc))
+    return projeto
 
 
 @app.post("/leitor-orcamento-promob")
