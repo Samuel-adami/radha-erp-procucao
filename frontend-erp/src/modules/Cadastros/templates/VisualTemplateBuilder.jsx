@@ -116,6 +116,10 @@ function VisualTemplateBuilder() {
     setEditing(null);
   };
 
+  const removerCampo = idx => {
+    setCampos(prev => prev.filter((_, i) => i !== idx));
+  };
+
   const moverCampo = event => {
     const { active, over } = event;
     if (active.id !== over.id) {
@@ -161,8 +165,16 @@ function VisualTemplateBuilder() {
           <SortableContext items={campos.map((_, i) => i.toString())} strategy={verticalListSortingStrategy}>
             {campos.map((c, idx) => (
               <SortableItem key={idx} id={idx.toString()}>
-                <div className="border p-2 bg-muted cursor-pointer" onClick={() => setEditing({ field: c, index: idx })}>
-                  {c.label || c.tipo}
+                <div className="border p-2 bg-muted flex justify-between items-center">
+                  <div
+                    className="flex-1 cursor-pointer"
+                    onDoubleClick={() => setEditing({ field: c, index: idx })}
+                  >
+                    {c.label || c.tipo}
+                  </div>
+                  <button type="button" className="text-red-600 ml-2" onClick={() => removerCampo(idx)}>
+                    Remover
+                  </button>
                 </div>
               </SortableItem>
             ))}

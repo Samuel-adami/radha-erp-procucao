@@ -62,6 +62,61 @@ function TemplatePreview() {
           <div>{empresa.telefone1 || ''}</div>
         </div>
       );
+    } else if (campo.autoCampo === 'empresa.cabecalho') {
+      content = (
+        <div className="space-y-1">
+          <div>{empresa.razaoSocial || 'Empresa LTDA'}</div>
+          <div>{`CNPJ: ${empresa.cnpj || '00.000.000/0000-00'}`}</div>
+          <div>{`${empresa.rua || 'Rua'}, ${empresa.numero || '0'}${empresa.complemento ? ' - ' + empresa.complemento : ''}`}</div>
+          <div>{`${empresa.bairro || ''} - ${empresa.cidade || ''}/${empresa.estado || ''}`}</div>
+          <div>{`CEP ${empresa.cep || ''}`}</div>
+          <div>{`Contato ${empresa.telefone1 || ''}`}</div>
+        </div>
+      );
+    } else if (campo.autoCampo === 'cliente.cabecalho_com_cpf') {
+      const cli = {
+        nome: 'Cliente',
+        documento: '000.000.000-00',
+        endereco: 'Rua',
+        numero: '0',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        cep: '',
+        telefone1: '',
+      };
+      content = (
+        <div className="space-y-1">
+          <div>{cli.nome}</div>
+          <div>{`CPF: ${cli.documento}`}</div>
+          <div>{`${cli.endereco}, ${cli.numero}${cli.complemento ? ' - ' + cli.complemento : ''}`}</div>
+          <div>{`${cli.bairro} - ${cli.cidade}/${cli.estado}`}</div>
+          <div>{`CEP ${cli.cep}`}</div>
+          <div>{`Contato ${cli.telefone1}`}</div>
+        </div>
+      );
+    } else if (campo.autoCampo === 'cliente.cabecalho_sem_cpf') {
+      const cli = {
+        nome: 'Cliente',
+        endereco: 'Rua',
+        numero: '0',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        cep: '',
+        telefone1: '',
+      };
+      content = (
+        <div className="space-y-1">
+          <div>{cli.nome}</div>
+          <div>{`${cli.endereco}, ${cli.numero}${cli.complemento ? ' - ' + cli.complemento : ''}`}</div>
+          <div>{`${cli.bairro} - ${cli.cidade}/${cli.estado}`}</div>
+          <div>{`CEP ${cli.cep}`}</div>
+          <div>{`Contato ${cli.telefone1}`}</div>
+        </div>
+      );
     } else if (campo.tipo === 'titulo') {
       content = <h3 className="font-semibold">{campo.label}</h3>;
     } else if (campo.tipo === 'texto') {

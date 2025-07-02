@@ -28,6 +28,7 @@ def init_db():
             cep TEXT,
             rua TEXT,
             numero TEXT,
+            complemento TEXT,
             bairro TEXT,
             cidade TEXT,
             estado TEXT,
@@ -40,6 +41,8 @@ def init_db():
     cols = [row[1] for row in cur.execute("PRAGMA table_info(empresa)")]
     if "slogan" not in cols:
         cur.execute("ALTER TABLE empresa ADD COLUMN slogan TEXT")
+    if "complemento" not in cols:
+        cur.execute("ALTER TABLE empresa ADD COLUMN complemento TEXT")
     conn.commit()
     conn.close()
 

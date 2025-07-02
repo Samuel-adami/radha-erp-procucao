@@ -143,6 +143,7 @@ async def criar_empresa(request: Request):
         form.get("cep"),
         form.get("rua"),
         form.get("numero"),
+        form.get("complemento"),
         form.get("bairro"),
         form.get("cidade"),
         form.get("estado"),
@@ -156,9 +157,9 @@ async def criar_empresa(request: Request):
             """INSERT INTO empresa (
                 codigo, razao_social, nome_fantasia, cnpj,
                 inscricao_estadual, cep, rua, numero,
-                bairro, cidade, estado, telefone1,
+                complemento, bairro, cidade, estado, telefone1,
                 telefone2, slogan, logo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         conn.commit()
@@ -200,6 +201,7 @@ async def atualizar_empresa(empresa_id: int, request: Request):
         form.get("cep"),
         form.get("rua"),
         form.get("numero"),
+        form.get("complemento"),
         form.get("bairro"),
         form.get("cidade"),
         form.get("estado"),
@@ -214,7 +216,7 @@ async def atualizar_empresa(empresa_id: int, request: Request):
             """UPDATE empresa SET
                 codigo=?, razao_social=?, nome_fantasia=?, cnpj=?,
                 inscricao_estadual=?, cep=?, rua=?, numero=?,
-                bairro=?, cidade=?, estado=?, telefone1=?,
+                complemento=?, bairro=?, cidade=?, estado=?, telefone1=?,
                 telefone2=?, slogan=?, logo=?
             WHERE id=?""",
             fields,
