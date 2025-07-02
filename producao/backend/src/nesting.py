@@ -494,6 +494,14 @@ def _gerar_gcodes(
         thickness = float(pecas[0].get('Thickness', 0)) if pecas else 0.0
         prefix = f"{i:03d}-MDF {thickness}mm {material}"
 
+        # Margens de refilo configuradas para a máquina
+        ref_inf = float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
+        ref_sup = float(config_maquina.get("refiloSuperior", 0)) if config_maquina else 0
+        ref_esq = float(config_maquina.get("refiloEsquerda", 0)) if config_maquina else 0
+        ref_dir = float(config_maquina.get("refiloDireita", 0)) if config_maquina else 0
+        area_larg = largura_chapa - ref_esq - ref_dir
+        area_alt = altura_chapa - ref_inf - ref_sup
+
         lista_ferramentas = coletar_ferramentas(pecas)
         valores_intro = {
             'CREATION_DATE_TIME': data_criacao,
@@ -595,10 +603,14 @@ def _gerar_gcodes(
             linhas.extend(codigo.split('\n'))
 
         # Geração de sobras nas bordas da chapa
-        x_min = min((p['x'] for p in pecas), default=0)
-        y_min = min((p['y'] for p in pecas), default=0)
-        x_max = max((p['x'] + p['Length'] for p in pecas), default=0)
-        y_max = max((p['y'] + p['Width'] for p in pecas), default=0)
+        # As posições das peças já incluem a margem de refilo. Para gerar as
+        # sobras corretamente precisamos considerar apenas a área útil da
+        # chapa (sem o refilo), por isso subtraímos o refilo das coordenadas
+        # absolutas das peças.
+        x_min = min((p['x'] - ref_esq for p in pecas), default=0)
+        y_min = min((p['y'] - ref_inf for p in pecas), default=0)
+        x_max = max((p['x'] - ref_esq + p['Length'] for p in pecas), default=0)
+        y_max = max((p['y'] - ref_inf + p['Width'] for p in pecas), default=0)
 
         sobras_chapa: List[Dict] = []
         sobras_polys: List[Polygon] = []
@@ -644,10 +656,12 @@ def _gerar_gcodes(
                 sobras_polys.append(g)
                 linhas.extend(codigo.split('\n'))
 
-        add_sobra(0, 0, x_min, altura_chapa)
-        add_sobra(x_max, 0, largura_chapa - x_max, altura_chapa)
-        add_sobra(0, 0, largura_chapa, y_min)
-        add_sobra(0, y_max, largura_chapa, altura_chapa - y_max)
+        # As sobras devem considerar apenas a área útil da chapa, logo é
+        # necessário aplicar o deslocamento dos refilos nas coordenadas.
+        add_sobra(ref_esq, ref_inf, x_min, area_alt)
+        add_sobra(ref_esq + x_max, ref_inf, area_larg - x_max, area_alt)
+        add_sobra(ref_esq, ref_inf, area_larg, y_min)
+        add_sobra(ref_esq, ref_inf + y_max, area_larg, area_alt - y_max)
 
         sobras_por_chapa.append(sobras_chapa)
 
@@ -874,10 +888,10 @@ def gerar_nesting_preview(
                         d["id"] = op_id
                         operacoes.append(d)
                         op_id += 1
-                x_min = min(x_min, p_x)
-                y_min = min(y_min, p_y)
-                x_max = max(x_max, p_x + w)
-                y_max = max(y_max, p_y + h)
+                x_min = min(x_min, p_x - ref_esq)
+                y_min = min(y_min, p_y - ref_inf)
+                x_max = max(x_max, p_x - ref_esq + w)
+                y_max = max(y_max, p_y - ref_inf + h)
 
             def add_sobra(px: float, py: float, w: float, h: float):
                 nonlocal op_id, sobras_polys
@@ -905,10 +919,11 @@ def gerar_nesting_preview(
                     sobras_polys.append(g)
                     op_id += 1
 
-            add_sobra(0, 0, x_min, altura)
-            add_sobra(x_max, 0, largura - x_max, altura)
-            add_sobra(0, 0, largura, y_min)
-            add_sobra(0, y_max, largura, altura - y_max)
+            # Ajusta as sobras considerando o deslocamento das margens de refilo
+            add_sobra(ref_esq, ref_inf, x_min, area_alt)
+            add_sobra(ref_esq + x_max, ref_inf, area_larg - x_max, area_alt)
+            add_sobra(ref_esq, ref_inf, area_larg, y_min)
+            add_sobra(ref_esq, ref_inf + y_max, area_larg, area_alt - y_max)
 
             if operacoes:
                 chapas.append(
