@@ -175,6 +175,8 @@ const Nesting = () => {
       return;
     }
 
+    await executarBackend();
+
     localStorage.setItem(
       'ultimaExecucaoNesting',
       JSON.stringify({
