@@ -180,6 +180,41 @@ function TemplatePreview() {
           <div>Total: R$ 0,00</div>
         </div>
       );
+    } else if (campo.autoCampo === 'negociacao.tabela') {
+      content = (
+        <div className="space-y-1 text-sm">
+          <div>Condição de pagamento</div>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="border px-1 text-center align-middle">Projeto</th>
+                <th className="border px-1 text-center align-middle">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border px-1 text-center align-middle">Projeto 1</td>
+                <td className="border px-1 text-center align-middle">R$ 0,00</td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className="border px-1 text-center align-middle">Número</th>
+                <th className="border px-1 text-center align-middle">Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border px-1 text-center align-middle">1</td>
+                <td className="border px-1 text-center align-middle">R$ 0,00</td>
+              </tr>
+            </tbody>
+          </table>
+          <div>Total: R$ 0,00</div>
+        </div>
+      );
     } else if (campo.tipo === 'assinatura') {
       content = (
         <div className="space-y-1 text-sm text-center">
