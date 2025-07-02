@@ -436,7 +436,7 @@ function Negociacao() {
         trAmb.className = 'bg-gray-100';
         ['Ambiente', 'Orçamento'].forEach(tx => {
           const th = document.createElement('th');
-          th.className = 'border px-2 text-center';
+          th.className = 'border px-2 text-center align-middle';
           th.textContent = tx;
           trAmb.appendChild(th);
         });
@@ -447,10 +447,10 @@ function Negociacao() {
           if (!selecionados[a.nome]) return;
           const tr = document.createElement('tr');
           const tdN = document.createElement('td');
-          tdN.className = 'border px-2 text-center';
+          tdN.className = 'border px-2 text-center align-middle';
           tdN.textContent = a.nome;
           const tdV = document.createElement('td');
-          tdV.className = 'border px-2 text-center';
+          tdV.className = 'border px-2 text-center align-middle';
           tdV.textContent = currency(valorOrcamento(a.nome));
           tr.appendChild(tdN);
           tr.appendChild(tdV);
@@ -466,7 +466,7 @@ function Negociacao() {
         trPar.className = 'bg-gray-100';
         ['Número', 'Valor'].forEach(tx => {
           const th = document.createElement('th');
-          th.className = 'border px-2 text-center';
+          th.className = 'border px-2 text-center align-middle';
           th.textContent = tx;
           trPar.appendChild(th);
         });
@@ -476,10 +476,10 @@ function Negociacao() {
         parcelas.forEach(p => {
           const tr = document.createElement('tr');
           const tdNum = document.createElement('td');
-          tdNum.className = 'border px-2 text-center';
+          tdNum.className = 'border px-2 text-center align-middle';
           tdNum.textContent = p.numero;
           const tdVal = document.createElement('td');
-          tdVal.className = 'border px-2 text-center';
+          tdVal.className = 'border px-2 text-center align-middle';
           tdVal.textContent = currency(p.valor);
           tr.appendChild(tdNum);
           tr.appendChild(tdVal);
