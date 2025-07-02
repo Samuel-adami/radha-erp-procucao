@@ -32,6 +32,8 @@ function AtendimentoForm() {
     email: '',
     rua: '',
     numero: '',
+    complemento: '',
+    bairro: '',
     cidade: '',
     estado: '',
     cep: '',
@@ -53,6 +55,8 @@ function AtendimentoForm() {
     email: '',
     rua: '',
     numero: '',
+    complemento: '',
+    bairro: '',
     cidade: '',
     estado: '',
     cep: '',
@@ -90,6 +94,8 @@ function AtendimentoForm() {
       email: '',
       rua: '',
       numero: '',
+      complemento: '',
+      bairro: '',
       cidade: '',
       estado: '',
       cep: '',
@@ -119,6 +125,8 @@ function AtendimentoForm() {
           email: at.email || '',
           rua: at.rua || '',
           numero: at.numero || '',
+          complemento: at.complemento || '',
+          bairro: at.bairro || '',
           cidade: at.cidade || '',
           estado: at.estado || '',
           cep: at.cep || '',
@@ -140,6 +148,8 @@ function AtendimentoForm() {
           email: at.email || '',
           rua: at.rua || '',
           numero: at.numero || '',
+          complemento: at.complemento || '',
+          bairro: at.bairro || '',
           cidade: at.cidade || '',
           estado: at.estado || '',
           cep: at.cep || '',
@@ -172,6 +182,8 @@ function AtendimentoForm() {
         ...prev,
         rua: clienteInfo.endereco || '',
         numero: clienteInfo.numero || '',
+        complemento: clienteInfo.complemento || '',
+        bairro: clienteInfo.bairro || '',
         cidade: clienteInfo.cidade || '',
         estado: clienteInfo.estado || '',
         cep: clienteInfo.cep || '',
@@ -224,6 +236,8 @@ function AtendimentoForm() {
         email: encontrado.email || '',
         rua: encontrado.endereco || '',
         numero: encontrado.numero || '',
+        complemento: encontrado.complemento || '',
+        bairro: encontrado.bairro || '',
         cidade: encontrado.cidade || '',
         estado: encontrado.estado || '',
         cep: encontrado.cep || '',
@@ -240,6 +254,8 @@ function AtendimentoForm() {
         entrega_diferente: val,
         rua: clienteInfo.endereco || '',
         numero: clienteInfo.numero || '',
+        complemento: clienteInfo.complemento || '',
+        bairro: clienteInfo.bairro || '',
         cidade: clienteInfo.cidade || '',
         estado: clienteInfo.estado || '',
         cep: clienteInfo.cep || '',
@@ -250,6 +266,8 @@ function AtendimentoForm() {
         entrega_diferente: val,
         rua: '',
         numero: '',
+        complemento: '',
+        bairro: '',
         cidade: '',
         estado: '',
         cep: '',
@@ -444,6 +462,14 @@ function AtendimentoForm() {
           <label className="block">
             <span className="text-sm">Número</span>
             <input className="input" value={form.numero} onChange={handle('numero')} />
+          </label>
+          <label className="block">
+            <span className="text-sm">Complemento</span>
+            <input className="input" value={form.complemento} onChange={handle('complemento')} />
+          </label>
+          <label className="block">
+            <span className="text-sm">Bairro</span>
+            <input className="input" value={form.bairro} onChange={handle('bairro')} />
           </label>
           <label className="block">
             <span className="text-sm">Cidade</span>

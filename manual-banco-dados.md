@@ -55,7 +55,7 @@ Este documento resume as tabelas atuais de cada módulo (utilizando SQLite) e or
 ### Estrutura Atual (SQLite)
 - **Arquivo**: `comercial.db`
 - **Tabelas**
-  - `atendimentos` (id, cliente, codigo, projetos, previsao_fechamento, temperatura, tem_especificador, especificador_nome, rt_percent, entrega_diferente, historico, arquivos_json, procedencia, vendedor, telefone, email, rua, numero, cidade, estado, cep, data_cadastro)
+  - `atendimentos` (id, cliente, codigo, projetos, previsao_fechamento, temperatura, tem_especificador, especificador_nome, rt_percent, entrega_diferente, historico, arquivos_json, procedencia, vendedor, telefone, email, rua, numero, complemento, bairro, cidade, estado, cep, data_cadastro)
   - `atendimento_tarefas` (id, atendimento_id, nome, concluida, dados, data_execucao)
   - `condicoes_pagamento` (id, nome, numero_parcelas, juros_parcela, dias_vencimento, ativa, parcelas_json)
   - `templates` (id, tipo, titulo, campos_json)
