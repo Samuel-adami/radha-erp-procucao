@@ -240,7 +240,7 @@ function Negociacao() {
     document.body.appendChild(cont);
 
     const content = document.createElement('div');
-    content.className = 'border bg-white p-4 flex flex-col justify-between';
+    content.className = 'border bg-white p-4 flex flex-col';
     content.style.width = '210mm';
     content.style.minHeight = '297mm';
     cont.appendChild(content);
@@ -349,7 +349,7 @@ function Negociacao() {
         trP.className = 'bg-gray-100';
         ['Projeto', 'Valor'].forEach(tx => {
           const th = document.createElement('th');
-          th.className = 'border px-2';
+          th.className = 'border px-2 text-center';
           th.textContent = tx;
           trP.appendChild(th);
         });
@@ -360,10 +360,10 @@ function Negociacao() {
           if (!selecionados[a.nome]) return;
           const tr = document.createElement('tr');
           const tdN = document.createElement('td');
-          tdN.className = 'border px-2';
+          tdN.className = 'border px-2 text-center';
           tdN.textContent = a.nome;
           const tdV = document.createElement('td');
-          tdV.className = 'border px-2';
+          tdV.className = 'border px-2 text-center';
           tdV.textContent = currency(valorOrcamento(a.nome));
           tr.appendChild(tdN);
           tr.appendChild(tdV);
@@ -379,7 +379,7 @@ function Negociacao() {
         tr2.className = 'bg-gray-100';
         ['Número', 'Valor'].forEach(tx => {
           const th = document.createElement('th');
-          th.className = 'border px-2';
+          th.className = 'border px-2 text-center';
           th.textContent = tx;
           tr2.appendChild(th);
         });
@@ -389,10 +389,10 @@ function Negociacao() {
         parcelas.forEach(p => {
           const tr = document.createElement('tr');
           const tdNum = document.createElement('td');
-          tdNum.className = 'border px-2';
+          tdNum.className = 'border px-2 text-center';
           tdNum.textContent = p.numero;
           const tdVal = document.createElement('td');
-          tdVal.className = 'border px-2';
+          tdVal.className = 'border px-2 text-center';
           tdVal.textContent = currency(p.valor);
           tr.appendChild(tdNum);
           tr.appendChild(tdVal);
@@ -436,7 +436,7 @@ function Negociacao() {
         trAmb.className = 'bg-gray-100';
         ['Ambiente', 'Orçamento'].forEach(tx => {
           const th = document.createElement('th');
-          th.className = 'border px-2';
+          th.className = 'border px-2 text-center';
           th.textContent = tx;
           trAmb.appendChild(th);
         });
@@ -447,10 +447,10 @@ function Negociacao() {
           if (!selecionados[a.nome]) return;
           const tr = document.createElement('tr');
           const tdN = document.createElement('td');
-          tdN.className = 'border px-2';
+          tdN.className = 'border px-2 text-center';
           tdN.textContent = a.nome;
           const tdV = document.createElement('td');
-          tdV.className = 'border px-2';
+          tdV.className = 'border px-2 text-center';
           tdV.textContent = currency(valorOrcamento(a.nome));
           tr.appendChild(tdN);
           tr.appendChild(tdV);
@@ -466,7 +466,7 @@ function Negociacao() {
         trPar.className = 'bg-gray-100';
         ['Número', 'Valor'].forEach(tx => {
           const th = document.createElement('th');
-          th.className = 'border px-2';
+          th.className = 'border px-2 text-center';
           th.textContent = tx;
           trPar.appendChild(th);
         });
@@ -476,10 +476,10 @@ function Negociacao() {
         parcelas.forEach(p => {
           const tr = document.createElement('tr');
           const tdNum = document.createElement('td');
-          tdNum.className = 'border px-2';
+          tdNum.className = 'border px-2 text-center';
           tdNum.textContent = p.numero;
           const tdVal = document.createElement('td');
-          tdVal.className = 'border px-2';
+          tdVal.className = 'border px-2 text-center';
           tdVal.textContent = currency(p.valor);
           tr.appendChild(tdNum);
           tr.appendChild(tdVal);
