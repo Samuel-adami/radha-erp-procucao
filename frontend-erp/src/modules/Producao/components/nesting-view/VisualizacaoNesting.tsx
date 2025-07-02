@@ -26,7 +26,11 @@ const VisualizacaoNesting: React.FC = () => {
           method: 'POST',
           body: JSON.stringify(params),
         });
-        if (Array.isArray(dados?.chapas)) setChapas(dados.chapas);
+        if (dados?.erro) {
+          alert(dados.erro);
+        } else if (Array.isArray(dados?.chapas)) {
+          setChapas(dados.chapas);
+        }
       } catch {
         // dados fictícios
         setChapas([

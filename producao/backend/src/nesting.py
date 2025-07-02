@@ -588,6 +588,14 @@ def _gerar_gcodes(
 
     return sobras_por_chapa
 
+def _encontrar_dxt(pasta: Path) -> Optional[Path]:
+    """Retorna o primeiro arquivo .dxt encontrado ignorando o case."""
+    for arq in pasta.iterdir():
+        if arq.is_file() and arq.suffix.lower() == ".dxt":
+            return arq
+    return None
+
+
 def gerar_nesting_preview(
     pasta_lote: str,
     largura_chapa: float = 2750,
@@ -599,11 +607,10 @@ def gerar_nesting_preview(
     if not pasta.is_dir():
         raise FileNotFoundError(f"Pasta '{pasta_lote}' não encontrada")
 
-    dxts = list(pasta.glob("*.dxt"))
-    if not dxts:
+    dxt_path = _encontrar_dxt(pasta)
+    if not dxt_path:
         raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
-
-    pecas = _ler_dxt(dxts[0])
+    pecas = _ler_dxt(dxt_path)
 
     # Configurações de chapas cadastradas
     chapas_cfg: Dict[str, Dict] = {}
@@ -682,11 +689,11 @@ def gerar_nesting(
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
         raise FileNotFoundError(f"Pasta '{pasta_lote}' não encontrada")
-    dxts = list(pasta.glob('*.dxt'))
-    if not dxts:
+    dxt_path = _encontrar_dxt(pasta)
+    if not dxt_path:
         raise FileNotFoundError('Arquivo DXT não encontrado na pasta do lote')
 
-    pecas = _ler_dxt(dxts[0])
+    pecas = _ler_dxt(dxt_path)
 
     # Carregar configuracoes de chapas
     chapas_cfg: Dict[str, Dict] = {}
