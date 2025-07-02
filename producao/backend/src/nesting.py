@@ -114,6 +114,9 @@ def _gcode_peca(
     tipo: str = "Peça",
     etapa: str = "todas",
     ferramenta_atual: Optional[Dict] = None,
+    rotated: bool = False,
+    orig_length: Optional[float] = None,
+    orig_width: Optional[float] = None,
 ):
     # (Sem alteração estrutural — função já estava em bom padrão, só pequenas correções de nomenclatura.)
     def substituir(texto: str, valores: dict) -> str:
@@ -167,8 +170,16 @@ def _gcode_peca(
                     continue
                 prof = float(cfg.get("profundidade", 1))
                 if ent.dxftype() == "CIRCLE":
-                    x = ox + float(ent.dxf.center.x)
-                    y = oy + float(ent.dxf.center.y)
+                    cx = float(ent.dxf.center.x)
+                    cy = float(ent.dxf.center.y)
+                    if rotated and orig_length and orig_width:
+                        rx = orig_width - cy
+                        ry = cx
+                    else:
+                        rx = cx
+                        ry = cy
+                    x = ox + rx
+                    y = oy + ry
                     ops.append({
                         "tool": ferramenta_cfg,
                         "x": x,
@@ -426,6 +437,9 @@ def _gerar_gcodes(
                 config_maquina,
                 {"header": "", "troca": ""},
                 etapa="todas",
+                rotated=p.get("rotated", False),
+                orig_length=p.get("originalLength"),
+                orig_width=p.get("originalWidth"),
             )
             for u in used:
                 if u not in usadas:
@@ -501,6 +515,9 @@ def _gerar_gcodes(
                 tipo='PECAS',
                 etapa='furos',
                 ferramenta_atual=last_tool,
+                rotated=p.get('rotated', False),
+                orig_length=p.get('originalLength'),
+                orig_width=p.get('originalWidth'),
             )
             linhas.extend(codigo.split('\n')[1:])
         if config_maquina and config_maquina.get('comandoFinalFuros') and last_tool and last_tool.get('tipo') == 'Broca':
@@ -523,6 +540,9 @@ def _gerar_gcodes(
                 tipo='PECAS',
                 etapa='fresas',
                 ferramenta_atual=last_tool,
+                rotated=p.get('rotated', False),
+                orig_length=p.get('originalLength'),
+                orig_width=p.get('originalWidth'),
             )
             linhas.extend(codigo.split('\n')[1:])
 
@@ -543,6 +563,9 @@ def _gerar_gcodes(
                 tipo='PECAS',
                 etapa='contorno',
                 ferramenta_atual=last_tool,
+                rotated=p.get('rotated', False),
+                orig_length=p.get('originalLength'),
+                orig_width=p.get('originalWidth'),
             )
             linhas.extend(codigo.split('\n'))
 
@@ -553,37 +576,47 @@ def _gerar_gcodes(
         y_max = max((p['y'] + p['Width'] for p in pecas), default=0)
 
         sobras_chapa: List[Dict] = []
+        sobras_polys: List[Polygon] = []
 
         def add_sobra(px: float, py: float, w: float, h: float):
-            nonlocal last_tool
+            nonlocal last_tool, sobras_polys
             if w <= 0 or h <= 0:
                 return
-            sobra = {
-                'PartName': 'Sobra',
-                'Length': w,
-                'Width': h,
-                'Thickness': thickness,
-                'Material': material,
-                'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
-                'Filename': '',
-                'x': px,
-                'y': py,
-            }
-            codigo, last_tool, _ = _gcode_peca(
-                sobra,
-                sobra['x'],
-                sobra['y'],
-                ferramentas,
-                None,
-                None,
-                config_maquina,
-                tpl_troca,
-                tipo='Sobra',
-                etapa='contorno',
-                ferramenta_atual=last_tool,
-            )
-            sobras_chapa.append(sobra)
-            linhas.extend(codigo.split('\n'))
+            nova = box(px, py, px + w, py + h)
+            for p_exist in sobras_polys:
+                nova = nova.difference(p_exist)
+                if nova.is_empty:
+                    return
+            geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
+            for g in geoms:
+                minx, miny, maxx, maxy = g.bounds
+                sobra = {
+                    'PartName': 'Sobra',
+                    'Length': maxx - minx,
+                    'Width': maxy - miny,
+                    'Thickness': thickness,
+                    'Material': material,
+                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
+                    'Filename': '',
+                    'x': minx,
+                    'y': miny,
+                }
+                codigo, last_tool, _ = _gcode_peca(
+                    sobra,
+                    sobra['x'],
+                    sobra['y'],
+                    ferramentas,
+                    None,
+                    None,
+                    config_maquina,
+                    tpl_troca,
+                    tipo='Sobra',
+                    etapa='contorno',
+                    ferramenta_atual=last_tool,
+                )
+                sobras_chapa.append(sobra)
+                sobras_polys.append(g)
+                linhas.extend(codigo.split('\n'))
 
         add_sobra(0, 0, x_min, altura_chapa)
         add_sobra(x_max, 0, largura_chapa - x_max, altura_chapa)
@@ -610,6 +643,9 @@ def _ops_from_dxf(
     config_layers: Optional[List[Dict]] = None,
     ox: float = 0.0,
     oy: float = 0.0,
+    rotated: bool = False,
+    orig_length: Optional[float] = None,
+    orig_width: Optional[float] = None,
 ) -> List[Dict]:
     """Retorna operações encontradas no DXF em ``caminho``.
 
@@ -641,8 +677,12 @@ def _ops_from_dxf(
             continue
         if ent.dxftype() == "CIRCLE":
             r = float(ent.dxf.radius)
-            cx = float(ent.dxf.center.x) + ox
-            cy = float(ent.dxf.center.y) + oy
+            cx = float(ent.dxf.center.x)
+            cy = float(ent.dxf.center.y)
+            if rotated and orig_length and orig_width:
+                cx, cy = orig_width - cy, cx
+            cx += ox
+            cy += oy
             ops.append(
                 {
                     "id": next_id,
@@ -667,10 +707,22 @@ def _ops_from_dxf(
             xs = [float(p[0]) for p in points]
             ys = [float(p[1]) for p in points]
             if xs and ys:
-                x = min(xs) + ox
-                y = min(ys) + oy
+                x = min(xs)
+                y = min(ys)
                 w = max(xs) - min(xs)
                 h = max(ys) - min(ys)
+                if rotated and orig_length and orig_width:
+                    x, y, w, h = (
+                        orig_width - (y + h),
+                        x,
+                        h,
+                        w,
+                    )
+                    x += ox
+                    y += oy
+                else:
+                    x = x + ox
+                    y = y + oy
                 ops.append(
                     {
                         "id": next_id,
@@ -742,6 +794,7 @@ def gerar_nesting_preview(
             if not abin:
                 continue
             operacoes: List[Dict] = []
+            sobras_polys: List[Polygon] = []
             x_min = 1e9
             y_min = 1e9
             x_max = 0.0
@@ -749,10 +802,18 @@ def gerar_nesting_preview(
             op_id = 1
             for rect in abin:
                 p = rect.rid.copy()
+                orig_l = float(p.get("Length", 0))
+                orig_w = float(p.get("Width", 0))
                 p_x = float(rect.x)
                 p_y = float(rect.y)
                 w = float(rect.width)
                 h = float(rect.height)
+                rotated_piece = (
+                    abs(w - orig_w) < 1e-6 and abs(h - orig_l) < 1e-6 and orig_l != orig_w
+                )
+                p["originalLength"] = orig_l
+                p["originalWidth"] = orig_w
+                p["rotated"] = rotated_piece
                 operacoes.append(
                     {
                         "id": op_id,
@@ -767,7 +828,13 @@ def gerar_nesting_preview(
                 op_id += 1
                 if p.get("Filename") and config_layers:
                     dxf_ops = _ops_from_dxf(
-                        pasta / p["Filename"], config_layers, p_x, p_y
+                        pasta / p["Filename"],
+                        config_layers,
+                        p_x,
+                        p_y,
+                        rotated_piece,
+                        orig_l,
+                        orig_w,
                     )
                     for d in dxf_ops:
                         d["id"] = op_id
@@ -779,21 +846,30 @@ def gerar_nesting_preview(
                 y_max = max(y_max, p_y + h)
 
             def add_sobra(px: float, py: float, w: float, h: float):
-                nonlocal op_id
+                nonlocal op_id, sobras_polys
                 if w <= 0 or h <= 0:
                     return
-                operacoes.append(
-                    {
-                        "id": op_id,
-                        "nome": "Sobra",
-                        "tipo": "Sobra",
-                        "x": px,
-                        "y": py,
-                        "largura": w,
-                        "altura": h,
-                    }
-                )
-                op_id += 1
+                nova = box(px, py, px + w, py + h)
+                for p_exist in sobras_polys:
+                    nova = nova.difference(p_exist)
+                    if nova.is_empty:
+                        return
+                geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
+                for g in geoms:
+                    minx, miny, maxx, maxy = g.bounds
+                    operacoes.append(
+                        {
+                            "id": op_id,
+                            "nome": "Sobra",
+                            "tipo": "Sobra",
+                            "x": minx,
+                            "y": miny,
+                            "largura": maxx - minx,
+                            "altura": maxy - miny,
+                        }
+                    )
+                    sobras_polys.append(g)
+                    op_id += 1
 
             add_sobra(0, 0, x_min, altura)
             add_sobra(x_max, 0, largura - x_max, altura)
@@ -869,11 +945,19 @@ def gerar_nesting(
             placa = []
             for rect in abin:
                 piece = rect.rid.copy()
+                orig_l = float(piece.get('Length', 0))
+                orig_w = float(piece.get('Width', 0))
                 piece['x'] = float(rect.x)
                 piece['y'] = float(rect.y)
                 piece['Length'] = float(rect.width)
                 piece['Width'] = float(rect.height)
                 piece['Material'] = material
+                rotated_piece = (
+                    abs(rect.width - orig_w) < 1e-6 and abs(rect.height - orig_l) < 1e-6 and orig_l != orig_w
+                )
+                piece['originalLength'] = orig_l
+                piece['originalWidth'] = orig_w
+                piece['rotated'] = rotated_piece
                 placa.append(piece)
             if placa:
                 chapas.append(placa)
