@@ -3,22 +3,27 @@ import React from 'react';
 interface Props {
   descricao: string;
   setDescricao: (v: string) => void;
+  opcoesDescricao: string[];
   codigo: string;
   setCodigo: (v: string) => void;
   busca: string;
   setBusca: (v: string) => void;
 }
 
-const FiltroChapa: React.FC<Props> = ({ descricao, setDescricao, codigo, setCodigo, busca, setBusca }) => {
+const FiltroChapa: React.FC<Props> = ({ descricao, setDescricao, opcoesDescricao, codigo, setCodigo, busca, setBusca }) => {
   return (
     <div className="flex flex-wrap gap-2 mb-4">
-      <input
-        type="text"
-        placeholder="Descrição"
+      <select
         value={descricao}
         onChange={(e) => setDescricao(e.target.value)}
         className="input"
-      />
+      >
+        {opcoesDescricao.map((op) => (
+          <option key={op} value={op}>
+            {op}
+          </option>
+        ))}
+      </select>
       <input
         type="text"
         placeholder="Código"

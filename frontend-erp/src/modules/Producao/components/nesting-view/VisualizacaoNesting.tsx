@@ -9,6 +9,7 @@ import OperacaoDetailModal from './OperacaoDetailModal';
 const VisualizacaoNesting: React.FC = () => {
   const [chapas, setChapas] = useState<Chapa[]>([]);
   const [descricao, setDescricao] = useState('');
+  const [indice, setIndice] = useState(0);
   const [codigo, setCodigo] = useState('');
   const [busca, setBusca] = useState('');
   const [selecionada, setSelecionada] = useState<Operacao | null>(null);
@@ -46,16 +47,34 @@ const VisualizacaoNesting: React.FC = () => {
     carregar();
   }, []);
 
+  const materiais = Array.from(new Set(chapas.map((c) => c.descricao)));
+
+  useEffect(() => {
+    if (!descricao && materiais.length > 0) {
+      setDescricao(materiais[0]);
+    }
+  }, [materiais]);
+
   const filtradas = chapas.filter((c) => {
     const buscaLower = busca.toLowerCase();
     return (
-      c.descricao.toLowerCase().includes(descricao.toLowerCase()) &&
+      (!descricao || c.descricao === descricao) &&
       c.codigo.toLowerCase().includes(codigo.toLowerCase()) &&
       (!busca ||
         c.descricao.toLowerCase().includes(buscaLower) ||
         c.codigo.toLowerCase().includes(buscaLower))
     );
   });
+
+  const chapaAtual = filtradas[indice] || null;
+
+  useEffect(() => {
+    setIndice(0);
+  }, [descricao]);
+
+  useEffect(() => {
+    if (indice >= filtradas.length) setIndice(0);
+  }, [filtradas.length]);
 
   const confirmar = async () => {
     setEnviando(true);
@@ -74,16 +93,25 @@ const VisualizacaoNesting: React.FC = () => {
       <FiltroChapa
         descricao={descricao}
         setDescricao={setDescricao}
+        opcoesDescricao={materiais}
         codigo={codigo}
         setCodigo={setCodigo}
         busca={busca}
         setBusca={setBusca}
       />
-      <div className="flex flex-wrap gap-4">
-        {filtradas.map((chapa) => (
-          <div key={chapa.id} className="flex gap-4">
+      <div className="flex flex-wrap gap-4 items-center">
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={indice === 0}
+          onClick={() => setIndice((i) => Math.max(i - 1, 0))}
+        >
+          ◀
+        </Button>
+        {chapaAtual && (
+          <div key={chapaAtual.id} className="flex gap-4 items-start">
             <ChapaViewer
-              chapa={chapa}
+              chapa={chapaAtual}
               onSelect={(op) => {
                 setSelecionada(op);
                 setDestaque(op.id);
@@ -91,7 +119,7 @@ const VisualizacaoNesting: React.FC = () => {
               destaqueId={destaque}
             />
             <OperacaoList
-              operacoes={chapa.operacoes}
+              operacoes={chapaAtual.operacoes}
               onSelect={(op) => {
                 setSelecionada(op);
                 setDestaque(op.id);
@@ -99,7 +127,15 @@ const VisualizacaoNesting: React.FC = () => {
               destaqueId={destaque}
             />
           </div>
-        ))}
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={indice >= filtradas.length - 1}
+          onClick={() => setIndice((i) => Math.min(i + 1, filtradas.length - 1))}
+        >
+          ▶
+        </Button>
       </div>
       <div className="pt-4">
         <Button disabled={confirmado || enviando} onClick={confirmar}>
