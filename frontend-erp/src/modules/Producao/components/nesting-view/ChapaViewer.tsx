@@ -33,18 +33,35 @@ const cores: Record<string, string> = {
 };
 
 const ChapaViewer: React.FC<Props> = ({ chapa, onSelect, destaqueId }) => {
-  const escala = 300 / chapa.largura;
+  const svgWidth = 500;
+  const escala = svgWidth / chapa.largura;
   const alturaSvg = chapa.altura * escala;
+  const isHorizontal = chapa.largura >= chapa.altura;
+  let sobraCount = 0;
 
   return (
-    <svg width={300} height={alturaSvg} className="border bg-white">
-      <rect width={300} height={alturaSvg} fill="#f9fafb" stroke="#000" />
+    <svg width={svgWidth} height={alturaSvg} className="border bg-white">
+      <rect width={svgWidth} height={alturaSvg} fill="#f9fafb" stroke="#000" />
       {chapa.temVeio &&
         Array.from({ length: 8 }).map((_, i) => {
+          if (isHorizontal) {
+            const y = ((i + 1) * chapa.altura) / 9 * escala;
+            return (
+              <line
+                key={`veio-h-${i}`}
+                x1={0}
+                y1={y}
+                x2={svgWidth}
+                y2={y}
+                stroke="#bbb"
+                strokeDasharray="4 4"
+              />
+            );
+          }
           const x = ((i + 1) * chapa.largura) / 9 * escala;
           return (
             <line
-              key={`veio-${i}`}
+              key={`veio-v-${i}`}
               x1={x}
               y1={0}
               x2={x}
@@ -62,19 +79,30 @@ const ChapaViewer: React.FC<Props> = ({ chapa, onSelect, destaqueId }) => {
         const cor = cores[op.tipo] || '#fca5a5';
         const stroke = destaqueId === op.id ? '#e11d48' : '#000';
         return (
-          <rect
-            key={op.id}
-            x={x}
-            y={y}
-            width={w}
-            height={h}
-            fill={cor}
-            opacity={op.tipo === 'Sobra' ? 0.3 : 0.6}
-            stroke={stroke}
-            strokeWidth={1}
-            onClick={() => onSelect(op)}
-            className="cursor-pointer"
-          />
+          <g key={op.id} onClick={() => onSelect(op)} className="cursor-pointer">
+            <rect
+              x={x}
+              y={y}
+              width={w}
+              height={h}
+              fill={cor}
+              opacity={op.tipo === 'Sobra' ? 0.3 : 0.6}
+              stroke={stroke}
+              strokeWidth={1}
+            />
+            {op.tipo === 'Sobra' && (
+              <text
+                x={x + w / 2}
+                y={y + h / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={12}
+                fill="#000"
+              >
+                {`S${String(++sobraCount).padStart(2, '0')}`}
+              </text>
+            )}
+          </g>
         );
       })}
     </svg>
