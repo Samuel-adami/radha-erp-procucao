@@ -193,6 +193,18 @@ const Nesting = () => {
     window.open(url, '_blank');
   };
 
+  const visualizarNesting = (n) => {
+    localStorage.setItem(
+      'ultimaExecucaoNesting',
+      JSON.stringify({
+        pastaLote: n.lote,
+        larguraChapa,
+        alturaChapa,
+      })
+    );
+    navigate('visualizacao');
+  };
+
   return (
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-semibold">Configuração de Nesting</h2>
@@ -245,6 +257,9 @@ const Nesting = () => {
               <li key={n.id} className="flex justify-between items-center border p-2 rounded">
                 <span>{n.lote.split(/[/\\]/).pop()}</span>
                 <div className="space-x-2">
+                  <Button size="sm" onClick={() => visualizarNesting(n)}>
+                    Visualizar
+                  </Button>
                   <Button size="sm" onClick={() => baixarNesting(n)}>Baixar</Button>
                   <Button variant="destructive" size="sm" onClick={() => removerNesting(n)}>
                     Excluir

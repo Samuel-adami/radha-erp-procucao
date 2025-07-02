@@ -355,7 +355,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
       localStorage.setItem("puxador_painel_" + pecaId, newPecaId);
 
       const originalMaterial = dadosPeca.material || "";
-      const novoMaterialPainel = originalMaterial.replace(/\d+mm/gi, '6mm');
+      const novoMaterialPainel = originalMaterial.replace(/\d+(?:\.\d+)?mm/gi, '6mm');
 
       const painelPuxador = {
         id: newPecaId, nome: `PAINEL PUXADOR P/ ${dadosPeca.nome}`,
