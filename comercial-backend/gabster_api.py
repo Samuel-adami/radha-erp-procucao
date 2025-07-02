@@ -1,6 +1,10 @@
 import os
 from typing import Any, Optional
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 import requests
 
 BASE_URL = "https://api.gabster.com.br/integracao/api/v2/"
