@@ -79,7 +79,12 @@ const VisualizacaoNesting: React.FC = () => {
   const confirmar = async () => {
     setEnviando(true);
     try {
-      await fetchComAuth('/executar-nesting-final', { method: 'POST' });
+      const cfg = localStorage.getItem('ultimaExecucaoNesting');
+      const params = cfg ? JSON.parse(cfg) : {};
+      await fetchComAuth('/executar-nesting-final', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
       setConfirmado(true);
     } catch (e) {
       alert('Falha ao confirmar');

@@ -588,6 +588,89 @@ def _gerar_gcodes(
 
     return sobras_por_chapa
 
+def gerar_nesting_preview(
+    pasta_lote: str,
+    largura_chapa: float = 2750,
+    altura_chapa: float = 1850,
+) -> List[Dict]:
+    """Gera apenas a disposição das chapas sem criar arquivos."""
+
+    pasta = Path(pasta_lote)
+    if not pasta.is_dir():
+        raise FileNotFoundError(f"Pasta '{pasta_lote}' não encontrada")
+
+    dxts = list(pasta.glob("*.dxt"))
+    if not dxts:
+        raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
+
+    pecas = _ler_dxt(dxts[0])
+
+    # Configurações de chapas cadastradas
+    chapas_cfg: Dict[str, Dict] = {}
+    try:
+        with get_db_connection() as conn:
+            rows = conn.execute(
+                "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+            ).fetchall()
+            for r in rows:
+                chapas_cfg[r["propriedade"]] = dict(r)
+    except Exception:
+        pass
+
+    pecas_por_material: Dict[str, List[Dict]] = {}
+    for p in pecas:
+        material = p.get("Material", "Desconhecido")
+        pecas_por_material.setdefault(material, []).append(p)
+
+    chapas: List[Dict] = []
+    idx = 1
+    for material, lista in pecas_por_material.items():
+        cfg = chapas_cfg.get(material, {})
+        rot = False if cfg.get("possui_veio") else True
+        largura = float(cfg.get("comprimento", largura_chapa))
+        altura = float(cfg.get("largura", altura_chapa))
+
+        packer = newPacker(rotation=rot)
+        for p in lista:
+            packer.add_rect(int(p["Length"]), int(p["Width"]), rid=p)
+        for _ in range(len(lista)):
+            packer.add_bin(int(largura), int(altura))
+        packer.pack()
+
+        for abin in packer:
+            if not abin:
+                continue
+            operacoes: List[Dict] = []
+            for j, rect in enumerate(abin, start=1):
+                p = rect.rid.copy()
+                p_x = float(rect.x)
+                p_y = float(rect.y)
+                operacoes.append(
+                    {
+                        "id": j,
+                        "nome": p.get("PartName", f"Peca {j}"),
+                        "tipo": "Peca",
+                        "x": p_x,
+                        "y": p_y,
+                        "largura": float(rect.width),
+                        "altura": float(rect.height),
+                    }
+                )
+            if operacoes:
+                chapas.append(
+                    {
+                        "id": idx,
+                        "codigo": f"{idx:03d}",
+                        "descricao": material,
+                        "largura": largura,
+                        "altura": altura,
+                        "operacoes": operacoes,
+                    }
+                )
+                idx += 1
+
+    return chapas
+
 def gerar_nesting(
     pasta_lote: str,
     largura_chapa: float = 2750,
