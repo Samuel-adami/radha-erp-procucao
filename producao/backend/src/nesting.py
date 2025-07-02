@@ -608,7 +608,6 @@ def _gerar_gcodes(
         # sobras corretamente precisamos considerar apenas a área útil da
         # chapa (sem o refilo), por isso subtraímos o refilo das coordenadas
         # absolutas das peças.
-nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
         x_min = min((p['x'] - ref_esq - espaco / 2 for p in pecas), default=0)
         y_min = min((p['y'] - ref_inf - espaco / 2 for p in pecas), default=0)
         x_max = max((p['x'] - ref_esq + p['Length'] + espaco / 2 for p in pecas), default=0)
@@ -661,7 +660,6 @@ nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
 
         # As sobras devem considerar apenas a área útil da chapa, logo é
         # necessário aplicar o deslocamento dos refilos nas coordenadas.
-nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
         cut_l = max(0.0, x_min)
         cut_b = max(0.0, y_min)
         cut_r = min(area_larg, x_max)
@@ -678,7 +676,6 @@ nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
             box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width'])
             for p in pecas
         ]
-nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
         internas = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt, espaco)
 
         if sobras_polys:
@@ -844,7 +841,6 @@ def _calcular_sobras_polys(
     area_alt: float,
     espaco: float = 0.0,
 ) -> List[Polygon]:
-nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
     """Retorna polígonos de sobra da chapa considerando as peças posicionadas.
 
     ``espaco`` corresponde ao afastamento entre as peças. Ele é subtraído da
@@ -1020,15 +1016,12 @@ def gerar_nesting_preview(
             add_sobra(ref_esq, ref_inf, area_larg, cut_b)
             add_sobra(ref_esq, ref_inf + cut_t, area_larg, area_alt - cut_t)
 
-nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
-
             # Sobras internas
             p_polys = [
                 box(op['x'], op['y'], op['x'] + op['largura'], op['y'] + op['altura'])
                 for op in operacoes
                 if op['tipo'] == 'Peca'
             ]
-nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
             internas = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt, espaco)
 
             if sobras_polys:
