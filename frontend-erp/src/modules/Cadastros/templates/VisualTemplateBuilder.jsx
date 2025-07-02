@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import AutoFieldSelect from './AutoFieldSelect';
 import { Button } from '../../Producao/components/ui/button';
+import { fetchComAuth } from '../../../utils/fetchComAuth';
 
 const FIELD_TYPES = [
   { value: 'short', label: 'Texto curto' },
@@ -81,11 +82,25 @@ function FieldModal({ field, onChange, onSave, onClose }) {
 }
 
 function VisualTemplateBuilder() {
-  const { tipo } = useParams();
+  const { tipo, id } = useParams();
   const navigate = useNavigate();
   const [titulo, setTitulo] = useState('');
   const [campos, setCampos] = useState([]);
   const [editing, setEditing] = useState(null); // { field, index }
+
+  useEffect(() => {
+    if (id) {
+      fetchComAuth(`/comercial/templates/${id}`)
+        .then(d => {
+          const t = d.template;
+          if (t) {
+            setTitulo(t.titulo);
+            setCampos(t.campos || []);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [id]);
 
   const addCampo = tipoCampo => {
     const novo = { tipo: tipoCampo };
@@ -112,9 +127,11 @@ function VisualTemplateBuilder() {
     }
   };
 
-  const salvarTemplate = () => {
+  const salvarTemplate = async () => {
     const body = { titulo, tipo, campos };
-    console.log('Salvar template', body);
+    const url = id ? `/comercial/templates/${id}` : '/comercial/templates';
+    const metodo = id ? 'PUT' : 'POST';
+    await fetchComAuth(url, { method: metodo, body: JSON.stringify(body) });
     navigate('..');
   };
 

@@ -21,7 +21,7 @@ Este documento descreve onde localizar os arquivos que controlam a aparência e 
 - As telas para gerenciar templates ficam em `frontend-erp/src/modules/Cadastros/templates/`.
   - **`index.jsx`** – roteamento e menu dos tipos de template.
   - **`ListaTemplates.jsx`** – lista, edição e exclusão de templates existentes.
-  - **`TemplateForm.jsx`** – formulário de criação/edição. Aqui são definidos os campos que compõem cada template.
+  - **`VisualTemplateBuilder.jsx`** – configurador visual usado na criação e edição de todos os templates.
   - **`TemplatePreview.jsx`** – visualização do template montado.
   - **`AutoFieldSelect.jsx`** – opções de preenchimento automático dos campos (cliente, empresa, negociação etc.).
 
