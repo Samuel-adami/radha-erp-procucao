@@ -541,46 +541,49 @@ def _gerar_gcodes(
             )
             linhas.extend(codigo.split('\n'))
 
-        # Geração de múltiplas sobras
-        placa_poly = box(0, 0, largura_chapa, altura_chapa)
-        pecas_polys = [box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width']) for p in pecas]
-        sobra_geo = placa_poly.difference(unary_union(pecas_polys))
+        # Geração de sobras nas bordas da chapa
+        x_min = min((p['x'] for p in pecas), default=0)
+        y_min = min((p['y'] for p in pecas), default=0)
+        x_max = max((p['x'] + p['Length'] for p in pecas), default=0)
+        y_max = max((p['y'] + p['Width'] for p in pecas), default=0)
+
         sobras_chapa: List[Dict] = []
-        if not sobra_geo.is_empty:
-            if sobra_geo.geom_type == 'Polygon':
-                sobra_list = [sobra_geo]
-            elif sobra_geo.geom_type == 'MultiPolygon':
-                sobra_list = list(sobra_geo.geoms)
-            else:
-                sobra_list = []
-            for g in sobra_list:
-                minx, miny, maxx, maxy = g.bounds
-                sobra = {
-                    'PartName': 'Sobra',
-                    'Length': maxx - minx,
-                    'Width': maxy - miny,
-                    'Thickness': thickness,
-                    'Material': material,
-                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
-                    'Filename': '',
-                    'x': minx,
-                    'y': miny,
-                }
-                codigo, last_tool, _ = _gcode_peca(
-                    sobra,
-                    sobra['x'],
-                    sobra['y'],
-                    ferramentas,
-                    None,
-                    None,
-                    config_maquina,
-                    tpl_troca,
-                    tipo='Sobra',
-                    etapa='contorno',
-                    ferramenta_atual=last_tool,
-                )
-                sobras_chapa.append(sobra)
-                linhas.extend(codigo.split('\n'))
+
+        def add_sobra(px: float, py: float, w: float, h: float):
+            if w <= 0 or h <= 0:
+                return
+            sobra = {
+                'PartName': 'Sobra',
+                'Length': w,
+                'Width': h,
+                'Thickness': thickness,
+                'Material': material,
+                'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
+                'Filename': '',
+                'x': px,
+                'y': py,
+            }
+            codigo, last_tool, _ = _gcode_peca(
+                sobra,
+                sobra['x'],
+                sobra['y'],
+                ferramentas,
+                None,
+                None,
+                config_maquina,
+                tpl_troca,
+                tipo='Sobra',
+                etapa='contorno',
+                ferramenta_atual=last_tool,
+            )
+            sobras_chapa.append(sobra)
+            linhas.extend(codigo.split('\n'))
+
+        add_sobra(0, 0, x_min, altura_chapa)
+        add_sobra(x_max, 0, largura_chapa - x_max, altura_chapa)
+        add_sobra(0, 0, largura_chapa, y_min)
+        add_sobra(0, y_max, largura_chapa, altura_chapa - y_max)
+
         sobras_por_chapa.append(sobras_chapa)
 
         linhas.extend(substituir(footer_tpl, valores_header).splitlines())
@@ -669,6 +672,7 @@ def gerar_nesting_preview(
                         "id": idx,
                         "codigo": f"{idx:03d}",
                         "descricao": material,
+                        "temVeio": bool(cfg.get("possui_veio")),
                         "largura": largura,
                         "altura": altura,
                         "operacoes": operacoes,
