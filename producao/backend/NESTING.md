@@ -39,6 +39,14 @@ Na função `_gerar_gcodes`:
 2. Insere cabeçalho e rodapé (templates) e escreve o programa em um arquivo com extensão `.nc` utilizando o prefixo definido.
 3. É criado um arquivo para cada chapa posicionada no nesting.
 
+### Pós-Processador
+Os dados cadastrados em `producao/nesting/config-maquina` são aplicados na função `_gerar_gcodes` durante a montagem dos programas `.nc`. Quando `introducao` está preenchido, seu conteúdo substitui o cabeçalho padrão e tem as chaves entre colchetes trocadas pelos valores do lote (material, medidas, etc.). Os campos `cabecalho` e `trocaFerramenta` geram respectivamente o bloco da primeira ferramenta e os blocos de troca subsequentes. Caso exista texto em `furos`, ele é inserido logo após o cabeçalho. Ao final das furações, se `comandoFinalFuros` estiver informado, esse comando é acrescentado. O template definido em `rodape` encerra o arquivo.
+O valor de `nome` é injetado na variável `[POST_PROCESSOR_NAME]` e aparece no início do arquivo. Já `extensaoArquivo` e `tamanhoNomeArquivo` não possuem uso no backend atual.
+
+### Configurações Extras de Movimentação
+Trechos de G-code armazenados nessa seção definem os movimentos básicos usados em cada peça. `movRapida`, `primeiraMovCorte` e `movCorte` são lidos por `_gcode_peca` e aplicados ao gerar os passos de corte. Os campos `primeiraMovCorteHorario`, `movCorteHorario`, `primeiraMovCorteAntiHorario` e `movCorteAntiHorario` estão presentes apenas na interface e ainda não são utilizados.
+
+
 ## Geração dos arquivos `.cyc`
 A função `_gerar_cyc`:
 1. Cria um XML contendo as posições das etiquetas de cada peça na chapa.
