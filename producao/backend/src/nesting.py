@@ -550,6 +550,7 @@ def _gerar_gcodes(
         sobras_chapa: List[Dict] = []
 
         def add_sobra(px: float, py: float, w: float, h: float):
+            nonlocal last_tool
             if w <= 0 or h <= 0:
                 return
             sobra = {
