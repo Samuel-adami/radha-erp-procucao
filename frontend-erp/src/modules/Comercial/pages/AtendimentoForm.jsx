@@ -343,7 +343,8 @@ function AtendimentoForm() {
               <div>Tel: {clienteInfo.telefone1}</div>
               <div>Email: {clienteInfo.email}</div>
               <div>
-                {clienteInfo.endereco} {clienteInfo.numero} - {clienteInfo.bairro}
+                {clienteInfo.endereco} {clienteInfo.numero}
+                {clienteInfo.complemento ? ` - ${clienteInfo.complemento}` : ''} - {clienteInfo.bairro}
               </div>
               <div>
                 {clienteInfo.cidade}/{clienteInfo.estado}

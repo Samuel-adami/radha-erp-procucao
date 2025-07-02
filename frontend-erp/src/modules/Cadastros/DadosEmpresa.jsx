@@ -13,6 +13,7 @@ function DadosEmpresa() {
     cep: '',
     rua: '',
     numero: '',
+    complemento: '',
     bairro: '',
     cidade: '',
     estado: '',
@@ -146,6 +147,10 @@ function DadosEmpresa() {
         <label className="block">
           <span className="text-sm">Número</span>
           <input className="input" value={form.numero} onChange={handle('numero')} />
+        </label>
+        <label className="block">
+          <span className="text-sm">Complemento</span>
+          <input className="input" value={form.complemento} onChange={handle('complemento')} />
         </label>
         <label className="block">
           <span className="text-sm">Bairro</span>

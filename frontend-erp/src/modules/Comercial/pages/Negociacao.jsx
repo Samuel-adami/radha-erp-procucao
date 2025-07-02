@@ -429,6 +429,44 @@ function Negociacao() {
         l5.textContent = empresa.telefone1 || '';
         [l1, l2, l3, l4, l5].forEach(el => bloco.appendChild(el));
         div.appendChild(bloco);
+      } else if (campo.autoCampo === 'empresa.cabecalho') {
+        const bloco = document.createElement('div');
+        bloco.className = 'space-y-1';
+        const l1 = document.createElement('div');
+        l1.textContent = empresa.razaoSocial || 'Empresa LTDA';
+        const l2 = document.createElement('div');
+        l2.textContent = `CNPJ: ${empresa.cnpj || ''}`;
+        const l3 = document.createElement('div');
+        l3.textContent = `${empresa.rua || ''}, ${empresa.numero || ''}${empresa.complemento ? ' - ' + empresa.complemento : ''}`;
+        const l4 = document.createElement('div');
+        l4.textContent = `${empresa.bairro || ''} - ${empresa.cidade || ''}/${empresa.estado || ''}`;
+        const l5 = document.createElement('div');
+        l5.textContent = `CEP ${empresa.cep || ''}`;
+        const l6 = document.createElement('div');
+        l6.textContent = `Contato ${empresa.telefone1 || ''}`;
+        [l1, l2, l3, l4, l5, l6].forEach(el => bloco.appendChild(el));
+        div.appendChild(bloco);
+      } else if (campo.autoCampo === 'cliente.cabecalho_com_cpf' || campo.autoCampo === 'cliente.cabecalho_sem_cpf') {
+        const cli = valores.atendimento || {};
+        const bloco = document.createElement('div');
+        bloco.className = 'space-y-1';
+        const l1 = document.createElement('div');
+        l1.textContent = cli.cliente || cli.nome || '';
+        if (campo.autoCampo === 'cliente.cabecalho_com_cpf') {
+          const lcpf = document.createElement('div');
+          lcpf.textContent = `CPF: ${cli.documento || ''}`;
+          bloco.appendChild(lcpf);
+        }
+        const l3 = document.createElement('div');
+        l3.textContent = `${cli.rua || cli.endereco || ''}, ${cli.numero || ''}${cli.complemento ? ' - ' + cli.complemento : ''}`;
+        const l4 = document.createElement('div');
+        l4.textContent = `${cli.bairro || ''} - ${cli.cidade || ''}/${cli.estado || ''}`;
+        const l5 = document.createElement('div');
+        l5.textContent = `CEP ${cli.cep || ''}`;
+        const l6 = document.createElement('div');
+        l6.textContent = `Contato ${cli.telefone || cli.telefone1 || ''}`;
+        [l1, l3, l4, l5, l6].forEach(el => bloco.appendChild(el));
+        div.appendChild(bloco);
       } else {
         const texto = document.createElement('div');
         texto.className = 'whitespace-pre-wrap';

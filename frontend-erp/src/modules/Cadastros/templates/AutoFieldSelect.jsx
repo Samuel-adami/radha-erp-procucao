@@ -35,6 +35,9 @@ const AUTO_OPTIONS = [
   { value: 'empresa.telefone1', label: 'Empresa - Telefone 1' },
   { value: 'empresa.telefone2', label: 'Empresa - Telefone 2' },
   { value: 'empresa.dados_completos', label: 'Empresa - Dados Completos' },
+  { value: 'empresa.cabecalho', label: 'Cabeçalho Empresa' },
+  { value: 'cliente.cabecalho_com_cpf', label: 'Cabeçalho Cliente c/ CPF' },
+  { value: 'cliente.cabecalho_sem_cpf', label: 'Cabeçalho Cliente s/ CPF' },
   // Negociação
   { value: 'negociacao.pontuacao', label: 'Negociação - Pontuação' },
   { value: 'negociacao.desconto1', label: 'Negociação - Desconto 1' },
