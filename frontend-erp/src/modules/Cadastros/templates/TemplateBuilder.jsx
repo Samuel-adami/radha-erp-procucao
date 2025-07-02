@@ -79,11 +79,12 @@ const AUTO_FIELDS = {
   ],
   negociacao: [
     { value: 'negociacao.pontuacao', label: 'Pontuação' },
-    { value: 'negociacao.descontos', label: 'Descontos' },
+    { value: 'negociacao.desconto1', label: 'Desconto 1' },
+    { value: 'negociacao.desconto2', label: 'Desconto 2' },
     { value: 'negociacao.entrada', label: 'Entrada' },
-    { value: 'negociacao.parcelas', label: 'Parcelas' },
+    { value: 'negociacao.numParcelas', label: 'Nº Parcelas' },
     { value: 'negociacao.condicao', label: 'Condição Pagamento' },
-    { value: 'negociacao.valorTotal', label: 'Valor Total' },
+    { value: 'negociacao.total', label: 'Valor Total' },
     { value: 'negociacao.tabela', label: 'Tabela Negociação' },
   ],
 };
