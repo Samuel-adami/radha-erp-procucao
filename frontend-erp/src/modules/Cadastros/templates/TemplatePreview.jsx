@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
+const currency = v =>
+  Number(v || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
 function TemplatePreview() {
   const { id } = useParams();
   const [template, setTemplate] = useState(null);
@@ -124,7 +130,7 @@ function TemplatePreview() {
       content = <div className="whitespace-pre-wrap">{campo.texto}</div>;
     } else if (campo.tipo === 'table') {
       content = (
-        <table className="w-full text-sm">
+        <table className="pdf-table text-sm">
           <thead>
             <tr>
               <th className="border px-1 text-center align-middle"></th>
@@ -147,72 +153,102 @@ function TemplatePreview() {
       );
     } else if (campo.tipo === 'negociacao') {
       content = (
-        <div className="space-y-1 text-sm">
-          <div>Condição de pagamento</div>
-          <table className="w-full">
+        <div className="text-sm">
+          <table className="pdf-table" style={{ margin: '24px 0', width: '90%' }}>
+            <tbody>
+              <tr>
+                <th className="text-left">Condição de Pagamento</th>
+                <td className="border">___</td>
+              </tr>
+              <tr>
+                <th className="text-left">Entrada (R$)</th>
+                <td className="border">R$ {currency(0)}</td>
+              </tr>
+              <tr>
+                <th className="text-left">Parcelas</th>
+                <td className="border">1</td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="pdf-table">
             <thead>
               <tr>
-                <th className="border px-1 text-center align-middle">Projeto</th>
-                <th className="border px-1 text-center align-middle">Valor</th>
+                <th className="border">Ambiente</th>
+                <th className="border">Orçamento</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border px-1 text-center align-middle">Projeto 1</td>
-                <td className="border px-1 text-center align-middle">R$ 0,00</td>
+                <td className="border text-left">Projeto 1</td>
+                <td className="border text-right">R$ {currency(0)}</td>
               </tr>
             </tbody>
           </table>
-          <table className="w-full">
+          <table className="pdf-table">
             <thead>
               <tr>
-                <th className="border px-1 text-center align-middle">Número</th>
-                <th className="border px-1 text-center align-middle">Valor</th>
+                <th className="border">Número</th>
+                <th className="border">Valor</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border px-1 text-center align-middle">1</td>
-                <td className="border px-1 text-center align-middle">R$ 0,00</td>
+                <td className="border text-center">1</td>
+                <td className="border text-right">R$ {currency(0)}</td>
               </tr>
             </tbody>
           </table>
-          <div>Total: R$ 0,00</div>
+          <div className="text-right font-bold">Total: R$ {currency(0)}</div>
         </div>
       );
     } else if (campo.autoCampo === 'negociacao.tabela') {
       content = (
-        <div className="space-y-1 text-sm">
-          <div>Condição de pagamento</div>
-          <table className="w-full">
+        <div className="text-sm">
+          <table className="pdf-table" style={{ margin: '24px 0', width: '90%' }}>
+            <tbody>
+              <tr>
+                <th className="text-left">Condição de Pagamento</th>
+                <td className="border">___</td>
+              </tr>
+              <tr>
+                <th className="text-left">Entrada (R$)</th>
+                <td className="border">R$ {currency(0)}</td>
+              </tr>
+              <tr>
+                <th className="text-left">Parcelas</th>
+                <td className="border">1</td>
+              </tr>
+            </tbody>
+          </table>
+          <table className="pdf-table">
             <thead>
               <tr>
-                <th className="border px-1 text-center align-middle">Projeto</th>
-                <th className="border px-1 text-center align-middle">Valor</th>
+                <th className="border">Ambiente</th>
+                <th className="border">Orçamento</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border px-1 text-center align-middle">Projeto 1</td>
-                <td className="border px-1 text-center align-middle">R$ 0,00</td>
+                <td className="border text-left">Projeto 1</td>
+                <td className="border text-right">R$ {currency(0)}</td>
               </tr>
             </tbody>
           </table>
-          <table className="w-full">
+          <table className="pdf-table">
             <thead>
               <tr>
-                <th className="border px-1 text-center align-middle">Número</th>
-                <th className="border px-1 text-center align-middle">Valor</th>
+                <th className="border">Número</th>
+                <th className="border">Valor</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border px-1 text-center align-middle">1</td>
-                <td className="border px-1 text-center align-middle">R$ 0,00</td>
+                <td className="border text-center">1</td>
+                <td className="border text-right">R$ {currency(0)}</td>
               </tr>
             </tbody>
           </table>
-          <div>Total: R$ 0,00</div>
+          <div className="text-right font-bold">Total: R$ {currency(0)}</div>
         </div>
       );
     } else if (campo.tipo === 'assinatura') {
