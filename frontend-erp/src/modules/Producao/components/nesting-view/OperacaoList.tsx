@@ -18,7 +18,10 @@ const OperacaoList: React.FC<Props> = ({ operacoes, onSelect, destaqueId }) => {
         >
           <div className="text-sm">
             <p className="font-semibold">{op.nome}</p>
-            <p className="text-xs text-muted-foreground">{op.tipo}</p>
+            <p className="text-xs text-muted-foreground">
+              {op.tipo}
+              {op.layer ? ` - ${op.layer}` : ''}
+            </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => onSelect(op)}>
             Destacar

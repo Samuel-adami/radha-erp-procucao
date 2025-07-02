@@ -5,6 +5,7 @@ export interface Operacao {
   nome: string;
   tipo: string;
   ferramenta?: string;
+  layer?: string;
   x: number;
   y: number;
   largura: number;

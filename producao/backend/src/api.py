@@ -240,7 +240,7 @@ async def executar_nesting(request: Request):
     except ValueError:
         return {"erro": "Caminho inválido"}
     try:
-        pasta_resultado = gerar_nesting(
+        chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
             largura_chapa,
             altura_chapa,
@@ -248,17 +248,10 @@ async def executar_nesting(request: Request):
             config_layers,
             config_maquina,
         )
-        with get_db_connection() as conn:
-            cur = conn.execute(
-                "INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES (?, ?, ?)",
-                (str(pasta_lote_resolved), pasta_resultado, datetime.now().isoformat()),
-            )
-            nid = cur.lastrowid
-            conn.commit()
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
         return {"erro": str(e)}
-    return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers, "id": nid}
+    return {"status": "ok", "preview": chapas, "layers": layers}
 
 
 @app.post("/nesting-preview")
@@ -271,6 +264,9 @@ async def nesting_preview(request: Request):
     pasta_lote = dados.get("pasta_lote")
     largura_chapa = float(dados.get("largura_chapa", 2750))
     altura_chapa = float(dados.get("altura_chapa", 1850))
+    ferramentas = dados.get("ferramentas", [])
+    config_maquina = dados.get("config_maquina")
+    config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
     try:
@@ -279,7 +275,12 @@ async def nesting_preview(request: Request):
         return {"erro": "Caminho inválido"}
     try:
         chapas = gerar_nesting_preview(
-            str(pasta_lote_resolved), largura_chapa, altura_chapa
+            str(pasta_lote_resolved),
+            largura_chapa,
+            altura_chapa,
+            ferramentas,
+            config_layers,
+            config_maquina,
         )
     except Exception as e:
         return {"erro": str(e)}

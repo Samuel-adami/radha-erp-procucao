@@ -26,6 +26,9 @@ const VisualizacaoNesting: React.FC = () => {
             pasta_lote: params.pastaLote,
             largura_chapa: params.larguraChapa,
             altura_chapa: params.alturaChapa,
+            ferramentas: JSON.parse(localStorage.getItem('ferramentasNesting') || '[]'),
+            config_maquina: JSON.parse(localStorage.getItem('configMaquina') || 'null'),
+            config_layers: JSON.parse(localStorage.getItem('configLayers') || '[]'),
           }),
         });
         if (dados?.erro) {
@@ -84,6 +87,9 @@ const VisualizacaoNesting: React.FC = () => {
           pasta_lote: params.pastaLote,
           largura_chapa: params.larguraChapa,
           altura_chapa: params.alturaChapa,
+          ferramentas: JSON.parse(localStorage.getItem('ferramentasNesting') || '[]'),
+          config_maquina: JSON.parse(localStorage.getItem('configMaquina') || 'null'),
+          config_layers: JSON.parse(localStorage.getItem('configLayers') || '[]'),
         }),
       });
       setConfirmado(true);
@@ -91,6 +97,11 @@ const VisualizacaoNesting: React.FC = () => {
       alert('Falha ao confirmar');
     }
     setEnviando(false);
+  };
+
+  const desfazer = () => {
+    localStorage.removeItem('ultimaExecucaoNesting');
+    setChapas([]);
   };
 
   return (
@@ -139,9 +150,12 @@ const VisualizacaoNesting: React.FC = () => {
           ▶
         </Button>
       </div>
-      <div className="pt-4">
+      <div className="pt-4 space-x-2">
         <Button disabled={confirmado || enviando} onClick={confirmar}>
           Confirmar e Gerar Arquivos
+        </Button>
+        <Button variant="outline" onClick={desfazer}>
+          Desfazer Otimização Nesting
         </Button>
         {confirmado && <span className="ml-2 text-green-600">Concluído!</span>}
       </div>

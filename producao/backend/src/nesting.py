@@ -600,10 +600,93 @@ def _encontrar_dxt(pasta: Path) -> Optional[Path]:
     return None
 
 
+def _ops_from_dxf(
+    caminho: Path,
+    config_layers: Optional[List[Dict]] = None,
+    ox: float = 0.0,
+    oy: float = 0.0,
+) -> List[Dict]:
+    """Retorna operações encontradas no DXF em ``caminho``.
+
+    Atualmente apenas círculos, linhas e polilinhas são considerados. O
+    ``ox``/``oy`` é aplicado como offset para posicionar a operação dentro da
+    chapa.
+    """
+    if not config_layers:
+        return []
+    try:
+        doc = ezdxf.readfile(caminho)
+    except Exception:
+        return []
+    msp = doc.modelspace()
+    ops: List[Dict] = []
+    next_id = 1
+    for ent in msp:
+        layer = str(ent.dxf.layer)
+        cfg = next(
+            (
+                c
+                for c in config_layers
+                if c.get("nome", "").lower() == layer.lower()
+                and c.get("tipo") == "Operação"
+            ),
+            None,
+        )
+        if not cfg:
+            continue
+        if ent.dxftype() == "CIRCLE":
+            r = float(ent.dxf.radius)
+            cx = float(ent.dxf.center.x) + ox
+            cy = float(ent.dxf.center.y) + oy
+            ops.append(
+                {
+                    "id": next_id,
+                    "nome": layer,
+                    "tipo": "Operacao",
+                    "layer": layer,
+                    "x": cx - r,
+                    "y": cy - r,
+                    "largura": 2 * r,
+                    "altura": 2 * r,
+                }
+            )
+            next_id += 1
+        elif ent.dxftype() in {"LINE", "LWPOLYLINE", "POLYLINE"}:
+            points = []
+            if ent.dxftype() == "LINE":
+                points = [ent.dxf.start, ent.dxf.end]
+            else:
+                points = list(ent.get_points("xy"))
+            xs = [float(p[0]) for p in points]
+            ys = [float(p[1]) for p in points]
+            if xs and ys:
+                x = min(xs) + ox
+                y = min(ys) + oy
+                w = max(xs) - min(xs)
+                h = max(ys) - min(ys)
+                ops.append(
+                    {
+                        "id": next_id,
+                        "nome": layer,
+                        "tipo": "Operacao",
+                        "layer": layer,
+                        "x": x,
+                        "y": y,
+                        "largura": w,
+                        "altura": h,
+                    }
+                )
+                next_id += 1
+    return ops
+
+
 def gerar_nesting_preview(
     pasta_lote: str,
     largura_chapa: float = 2750,
     altura_chapa: float = 1850,
+    ferramentas: Optional[List[Dict]] = None,
+    config_layers: Optional[List[Dict]] = None,
+    config_maquina: Optional[Dict] = None,
 ) -> List[Dict]:
     """Gera apenas a disposição das chapas sem criar arquivos."""
 
@@ -652,21 +735,64 @@ def gerar_nesting_preview(
             if not abin:
                 continue
             operacoes: List[Dict] = []
-            for j, rect in enumerate(abin, start=1):
+            x_min = 1e9
+            y_min = 1e9
+            x_max = 0.0
+            y_max = 0.0
+            op_id = 1
+            for rect in abin:
                 p = rect.rid.copy()
                 p_x = float(rect.x)
                 p_y = float(rect.y)
+                w = float(rect.width)
+                h = float(rect.height)
                 operacoes.append(
                     {
-                        "id": j,
-                        "nome": p.get("PartName", f"Peca {j}"),
+                        "id": op_id,
+                        "nome": p.get("PartName", f"Peca {op_id}"),
                         "tipo": "Peca",
                         "x": p_x,
                         "y": p_y,
-                        "largura": float(rect.width),
-                        "altura": float(rect.height),
+                        "largura": w,
+                        "altura": h,
                     }
                 )
+                op_id += 1
+                if p.get("Filename") and config_layers:
+                    dxf_ops = _ops_from_dxf(
+                        pasta / p["Filename"], config_layers, p_x, p_y
+                    )
+                    for d in dxf_ops:
+                        d["id"] = op_id
+                        operacoes.append(d)
+                        op_id += 1
+                x_min = min(x_min, p_x)
+                y_min = min(y_min, p_y)
+                x_max = max(x_max, p_x + w)
+                y_max = max(y_max, p_y + h)
+
+            def add_sobra(px: float, py: float, w: float, h: float):
+                nonlocal op_id
+                if w <= 0 or h <= 0:
+                    return
+                operacoes.append(
+                    {
+                        "id": op_id,
+                        "nome": "Sobra",
+                        "tipo": "Sobra",
+                        "x": px,
+                        "y": py,
+                        "largura": w,
+                        "altura": h,
+                    }
+                )
+                op_id += 1
+
+            add_sobra(0, 0, x_min, altura)
+            add_sobra(x_max, 0, largura - x_max, altura)
+            add_sobra(0, 0, largura, y_min)
+            add_sobra(0, y_max, largura, altura - y_max)
+
             if operacoes:
                 chapas.append(
                     {
