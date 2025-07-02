@@ -271,9 +271,39 @@ function Negociacao() {
     main.appendChild(wrapper);
 
     template.campos.forEach(campo => {
+      if (campo.tipo === 'section') {
+        const sec = document.createElement('div');
+        sec.className = 'w-full font-bold pt-4';
+        sec.textContent = campo.label || '';
+        if (campo.textAlign) sec.style.textAlign = campo.textAlign;
+        if (campo.fontSize) sec.style.fontSize = campo.fontSize + 'px';
+        wrapper.appendChild(sec);
+        return;
+      }
+      if (campo.tipo === 'separator') {
+        const sep = document.createElement('div');
+        sep.className = 'w-full px-2';
+        if (campo.textAlign) sep.style.textAlign = campo.textAlign;
+        if (campo.fontSize) sep.style.fontSize = campo.fontSize + 'px';
+        sep.innerHTML = '<hr class="my-2" />';
+        wrapper.appendChild(sep);
+        return;
+      }
       const div = document.createElement('div');
       div.className = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
-      if (campo.tipo === 'table') {
+      if (campo.textAlign) div.style.textAlign = campo.textAlign;
+      if (campo.fontSize) div.style.fontSize = campo.fontSize + 'px';
+      if (campo.tipo === 'titulo') {
+        const h = document.createElement('h3');
+        h.className = 'font-semibold';
+        h.textContent = campo.label || '';
+        div.appendChild(h);
+      } else if (campo.tipo === 'texto') {
+        const t = document.createElement('div');
+        t.className = 'whitespace-pre-wrap';
+        t.textContent = campo.texto || '';
+        div.appendChild(t);
+      } else if (campo.tipo === 'table') {
         const table = document.createElement('table');
         table.className = 'w-full text-sm';
         const thead = document.createElement('thead');

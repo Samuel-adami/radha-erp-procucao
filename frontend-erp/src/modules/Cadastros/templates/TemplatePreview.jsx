@@ -33,7 +33,25 @@ function TemplatePreview() {
 
   const renderField = (campo, idx) => {
     const wClass = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
+    const style = {
+      textAlign: campo.textAlign || undefined,
+      fontSize: campo.fontSize ? `${campo.fontSize}px` : undefined,
+    };
     let content;
+    if (campo.tipo === 'section') {
+      return (
+        <div key={idx} className="w-full font-bold pt-4" style={style}>
+          {campo.label}
+        </div>
+      );
+    }
+    if (campo.tipo === 'separator') {
+      return (
+        <div key={idx} className="w-full px-2" style={style}>
+          <hr className="my-2" />
+        </div>
+      );
+    }
     if (campo.autoCampo === 'empresa.dados_completos') {
       content = (
         <div className="space-y-1">
@@ -44,6 +62,10 @@ function TemplatePreview() {
           <div>{empresa.telefone1 || ''}</div>
         </div>
       );
+    } else if (campo.tipo === 'titulo') {
+      content = <h3 className="font-semibold">{campo.label}</h3>;
+    } else if (campo.tipo === 'texto') {
+      content = <div className="whitespace-pre-wrap">{campo.texto}</div>;
     } else if (campo.tipo === 'table') {
       content = (
         <table className="w-full text-sm">
@@ -118,7 +140,7 @@ function TemplatePreview() {
       );
     }
     return (
-      <div key={idx} className={wClass}>{content}</div>
+      <div key={idx} className={wClass} style={style}>{content}</div>
     );
   };
 
