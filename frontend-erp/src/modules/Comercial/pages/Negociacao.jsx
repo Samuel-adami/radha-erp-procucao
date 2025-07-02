@@ -173,7 +173,7 @@ function Negociacao() {
     navigate(`/comercial/${id}`);
   };
 
-  const baixarOrcamento = async () => {
+  const visualizarOrcamento = async () => {
     let tplId = templateId;
     if (!tplId) {
       if (templates.length === 0) {
@@ -305,6 +305,7 @@ function Negociacao() {
       } else if (campo.tipo === 'table') {
         const table = document.createElement('table');
         table.className = 'w-full text-sm';
+        table.style.borderCollapse = 'collapse';
         const thead = document.createElement('thead');
         const trh = document.createElement('tr');
         const thb = document.createElement('th');
@@ -343,6 +344,7 @@ function Negociacao() {
 
         const tableProj = document.createElement('table');
         tableProj.className = 'w-full text-sm mt-1';
+        tableProj.style.borderCollapse = 'collapse';
         const thdP = document.createElement('thead');
         const trP = document.createElement('tr');
         trP.className = 'bg-gray-100';
@@ -373,6 +375,7 @@ function Negociacao() {
 
         const table = document.createElement('table');
         table.className = 'w-full text-sm mt-2';
+        table.style.borderCollapse = 'collapse';
         const thead2 = document.createElement('thead');
         const tr2 = document.createElement('tr');
         tr2.className = 'bg-gray-100';
@@ -430,6 +433,7 @@ function Negociacao() {
 
         const tableAmb = document.createElement('table');
         tableAmb.className = 'w-full text-sm mt-2';
+        tableAmb.style.borderCollapse = 'collapse';
         const theadAmb = document.createElement('thead');
         const trAmb = document.createElement('tr');
         trAmb.className = 'bg-gray-100';
@@ -460,6 +464,7 @@ function Negociacao() {
 
         const tablePar = document.createElement('table');
         tablePar.className = 'w-full text-sm mt-2';
+        tablePar.style.borderCollapse = 'collapse';
         const theadPar = document.createElement('thead');
         const trPar = document.createElement('tr');
         trPar.className = 'bg-gray-100';
@@ -570,7 +575,8 @@ function Negociacao() {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save('orcamento.pdf');
+      const url = pdf.output('bloburl');
+      window.open(url, '_blank');
       document.body.removeChild(cont);
     });
   };
@@ -732,7 +738,7 @@ function Negociacao() {
         <Button variant="secondary" onClick={() => navigate(`/comercial/${id}`)}>
           Cancelar
         </Button>
-        <Button variant="secondary" onClick={baixarOrcamento}>Baixar Orçamento</Button>
+        <Button variant="secondary" onClick={visualizarOrcamento}>Visualizar Orçamento</Button>
       </div>
     </div>
   );
