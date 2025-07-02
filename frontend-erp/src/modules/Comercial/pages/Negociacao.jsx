@@ -282,15 +282,14 @@ function Negociacao() {
       }
       if (campo.tipo === 'separator') {
         const sep = document.createElement('div');
-        sep.className = 'w-full px-2';
+        sep.className = 'w-full px-2 my-2';
         if (campo.textAlign) sep.style.textAlign = campo.textAlign;
         if (campo.fontSize) sep.style.fontSize = campo.fontSize + 'px';
-        sep.innerHTML = '<hr class="my-2" />';
         wrapper.appendChild(sep);
         return;
       }
       const div = document.createElement('div');
-      div.className = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
+      div.className = campo.largura === 'half' ? 'w-1/2 px-2 flex items-center' : 'w-full px-2 flex items-center';
       if (campo.textAlign) div.style.textAlign = campo.textAlign;
       if (campo.fontSize) div.style.fontSize = campo.fontSize + 'px';
       if (campo.tipo === 'titulo') {
@@ -309,11 +308,11 @@ function Negociacao() {
         const thead = document.createElement('thead');
         const trh = document.createElement('tr');
         const thb = document.createElement('th');
-        thb.className = 'border px-1';
+        thb.className = 'border px-1 text-center align-middle';
         trh.appendChild(thb);
         for (let i = 0; i < (campo.colunas || 0); i++) {
           const th = document.createElement('th');
-          th.className = 'border px-1';
+          th.className = 'border px-1 text-center align-middle';
           th.textContent = campo.headersColunas?.[i] || '';
           trh.appendChild(th);
         }
@@ -323,12 +322,12 @@ function Negociacao() {
         for (let r = 0; r < (campo.linhas || 0); r++) {
           const tr = document.createElement('tr');
           const th = document.createElement('th');
-          th.className = 'border px-1';
+          th.className = 'border px-1 text-center align-middle';
           th.textContent = campo.headersLinhas?.[r] || '';
           tr.appendChild(th);
           for (let cIdx = 0; cIdx < (campo.colunas || 0); cIdx++) {
             const td = document.createElement('td');
-            td.className = 'border px-1';
+            td.className = 'border px-1 text-center align-middle';
             const val = getValor(campo.celulas?.[r]?.[cIdx]?.autoCampo);
             td.textContent = val;
             tr.appendChild(td);

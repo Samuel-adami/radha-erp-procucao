@@ -32,7 +32,7 @@ function TemplatePreview() {
   };
 
   const renderField = (campo, idx) => {
-    const wClass = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full';
+    const wClass = campo.largura === 'half' ? 'w-1/2 px-2' : 'w-full px-2';
     const posClass = campo.largura === 'half' && campo.halfAlign === 'right'
       ? 'ml-auto'
       : campo.largura === 'half' && campo.halfAlign === 'center'
@@ -51,11 +51,7 @@ function TemplatePreview() {
       );
     }
     if (campo.tipo === 'separator') {
-      return (
-        <div key={idx} className="w-full px-2" style={style}>
-          <hr className="my-2" />
-        </div>
-      );
+      return <div key={idx} className="w-full px-2 my-2" style={style}></div>;
     }
     if (campo.autoCampo === 'empresa.dados_completos') {
       content = (
@@ -131,18 +127,18 @@ function TemplatePreview() {
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border px-1"></th>
+              <th className="border px-1 text-center align-middle"></th>
               {Array.from({ length: campo.colunas || 0 }).map((_, i) => (
-                <th key={i} className="border px-1">{campo.headersColunas?.[i] || ''}</th>
+                <th key={i} className="border px-1 text-center align-middle">{campo.headersColunas?.[i] || ''}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: campo.linhas || 0 }).map((_, r) => (
               <tr key={r}>
-                <th className="border px-1">{campo.headersLinhas?.[r] || ''}</th>
+                <th className="border px-1 text-center align-middle">{campo.headersLinhas?.[r] || ''}</th>
                 {Array.from({ length: campo.colunas || 0 }).map((_, cIdx) => (
-                  <td key={cIdx} className="border px-1">___</td>
+                  <td key={cIdx} className="border px-1 text-center align-middle">___</td>
                 ))}
               </tr>
             ))}
@@ -156,28 +152,28 @@ function TemplatePreview() {
           <table className="w-full">
             <thead>
               <tr>
-                <th className="border px-1">Projeto</th>
-                <th className="border px-1">Valor</th>
+                <th className="border px-1 text-center align-middle">Projeto</th>
+                <th className="border px-1 text-center align-middle">Valor</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border px-1">Projeto 1</td>
-                <td className="border px-1">R$ 0,00</td>
+                <td className="border px-1 text-center align-middle">Projeto 1</td>
+                <td className="border px-1 text-center align-middle">R$ 0,00</td>
               </tr>
             </tbody>
           </table>
           <table className="w-full">
             <thead>
               <tr>
-                <th className="border px-1">Número</th>
-                <th className="border px-1">Valor</th>
+                <th className="border px-1 text-center align-middle">Número</th>
+                <th className="border px-1 text-center align-middle">Valor</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border px-1">1</td>
-                <td className="border px-1">R$ 0,00</td>
+                <td className="border px-1 text-center align-middle">1</td>
+                <td className="border px-1 text-center align-middle">R$ 0,00</td>
               </tr>
             </tbody>
           </table>
@@ -200,7 +196,11 @@ function TemplatePreview() {
       );
     }
     return (
-      <div key={idx} className={`${wClass} ${posClass}`.trim()} style={style}>
+      <div
+        key={idx}
+        className={`${wClass} ${posClass} flex items-center`.trim()}
+        style={style}
+      >
         {content}
       </div>
     );
