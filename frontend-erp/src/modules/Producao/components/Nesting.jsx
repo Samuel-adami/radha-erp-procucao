@@ -104,29 +104,16 @@ const Nesting = () => {
       });
       if (data?.erro) {
         alert(data.erro);
-      } else if (data?.pasta_resultado) {
-        setResultado(data.pasta_resultado);
-        if (data.id) {
-          setNestings((prev) => [...prev, { id: data.id, lote: pastaLote, pasta_resultado: data.pasta_resultado }]);
-        }
-        if (Array.isArray(data.layers)) {
-          const win = window.open("", "_blank", "width=600,height=400");
-          if (win) {
-            win.document.write(
-              `<h3>Layers encontrados</h3><ul>${data.layers
-                .map((l) => `<li>${l}</li>`) 
-                .join("")}</ul>`
-            );
-          }
-          const faltantes = data.layers.filter(
-            (n) => !layers.some((l) => l.nome === n)
-          );
-          if (faltantes.length) {
-            const filaInicial = faltantes.map(criaLayer);
-            setFila(filaInicial);
-            setLayerAtual(filaInicial[0]);
-            setAguardarExecucao(true);
-            }
+      } else if (Array.isArray(data?.layers)) {
+        const faltantes = data.layers.filter(
+          (n) => !layers.some((l) => l.nome === n)
+        );
+        if (faltantes.length) {
+          const filaInicial = faltantes.map(criaLayer);
+          setFila(filaInicial);
+          setLayerAtual(filaInicial[0]);
+          setAguardarExecucao(true);
+          return;
         }
       }
     } catch (err) {
