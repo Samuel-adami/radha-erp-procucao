@@ -16,6 +16,7 @@ import CadastroMotivos from "./components/CadastroMotivos";
 import RelatorioOcorrencias from "./components/RelatorioOcorrencias";
 import EditarLoteOcorrencia from "./components/EditarLoteOcorrencia";
 import PacoteOcorrencia from "./components/PacoteOcorrencia";
+import VisualizacaoNesting from "./components/nesting-view/VisualizacaoNesting";
 import "./Producao.css";
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
@@ -699,4 +700,4 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, ConfigMaquina, CadastroChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, VisualizacaoNesting, ConfigMaquina, CadastroChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };
