@@ -240,9 +240,9 @@ function Negociacao() {
     document.body.appendChild(cont);
 
     const content = document.createElement('div');
-    content.className = 'border bg-white p-4 flex flex-col';
+    content.className = 'border bg-white p-4 flex flex-col justify-between';
     content.style.width = '210mm';
-    content.style.minHeight = '297mm';
+    content.style.height = '297mm';
     cont.appendChild(content);
 
     const header = document.createElement('div');

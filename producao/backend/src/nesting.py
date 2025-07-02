@@ -608,10 +608,12 @@ def _gerar_gcodes(
         # sobras corretamente precisamos considerar apenas a área útil da
         # chapa (sem o refilo), por isso subtraímos o refilo das coordenadas
         # absolutas das peças.
+nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
         x_min = min((p['x'] - ref_esq - espaco / 2 for p in pecas), default=0)
         y_min = min((p['y'] - ref_inf - espaco / 2 for p in pecas), default=0)
         x_max = max((p['x'] - ref_esq + p['Length'] + espaco / 2 for p in pecas), default=0)
         y_max = max((p['y'] - ref_inf + p['Width'] + espaco / 2 for p in pecas), default=0)
+
 
         sobras_chapa: List[Dict] = []
         sobras_polys: List[Polygon] = []
@@ -659,6 +661,7 @@ def _gerar_gcodes(
 
         # As sobras devem considerar apenas a área útil da chapa, logo é
         # necessário aplicar o deslocamento dos refilos nas coordenadas.
+nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
         cut_l = max(0.0, x_min)
         cut_b = max(0.0, y_min)
         cut_r = min(area_larg, x_max)
@@ -669,12 +672,15 @@ def _gerar_gcodes(
         add_sobra(ref_esq, ref_inf, area_larg, cut_b)
         add_sobra(ref_esq, ref_inf + cut_t, area_larg, area_alt - cut_t)
 
+
         # Sobras internas (vazios entre peças)
         p_polys = [
             box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width'])
             for p in pecas
         ]
+nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
         internas = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt, espaco)
+
         if sobras_polys:
             internas = [g.difference(unary_union(sobras_polys)) for g in internas]
         for g in internas:
@@ -838,11 +844,13 @@ def _calcular_sobras_polys(
     area_alt: float,
     espaco: float = 0.0,
 ) -> List[Polygon]:
+nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
     """Retorna polígonos de sobra da chapa considerando as peças posicionadas.
 
     ``espaco`` corresponde ao afastamento entre as peças. Ele é subtraído da
     área útil, pois representa o material removido pela fresa no contorno externo.
     """
+
 
     chapa = box(ref_esq, ref_inf, ref_esq + area_larg, ref_inf + area_alt)
     if espaco > 0:
@@ -1012,13 +1020,17 @@ def gerar_nesting_preview(
             add_sobra(ref_esq, ref_inf, area_larg, cut_b)
             add_sobra(ref_esq, ref_inf + cut_t, area_larg, area_alt - cut_t)
 
+nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
+
             # Sobras internas
             p_polys = [
                 box(op['x'], op['y'], op['x'] + op['largura'], op['y'] + op['altura'])
                 for op in operacoes
                 if op['tipo'] == 'Peca'
             ]
+nmne2w-codex/revisar-geração-de-sobras-após-tarefa--confirmar-geração-de
             internas = _calcular_sobras_polys(p_polys, ref_esq, ref_inf, area_larg, area_alt, espaco)
+
             if sobras_polys:
                 internas = [g.difference(unary_union(sobras_polys)) for g in internas]
             for g in internas:
