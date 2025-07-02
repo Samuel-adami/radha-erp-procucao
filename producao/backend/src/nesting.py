@@ -1,6 +1,8 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
+import itertools
+import re
 from datetime import datetime
 
 from shapely.geometry import box
@@ -279,14 +281,21 @@ def _gcode_peca(
 
 # (continua na próxima mensagem — Funções de geração de NC, sobras, etiquetas, etc)
 
-def _gerar_cyc(chapas: List[List[Dict]], saida: Path):
-    # (Gera arquivos .cyc para visualização, igual ao anterior)
+def _gerar_cyc(
+    chapas: List[List[Dict]],
+    saida: Path,
+    sobras: Optional[List[List[Dict]]] = None,
+) -> None:
+    """Gera arquivos ``.cyc`` posicionando etiquetas de peças e sobras."""
     for i, pecas in enumerate(chapas, start=1):
+        todas = list(pecas)
+        if sobras and i - 1 < len(sobras):
+            todas.extend(sobras[i - 1])
         material = pecas[0].get("Material", "chapa") if pecas else "chapa"
         thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
         prefix = f"{i:03d}-MDF {thickness}mm {material}"
         root = ET.Element('CycleFile')
-        for p in pecas:
+        for p in todas:
             cycle = ET.SubElement(root, 'Cycle', Name='Cycle_Label')
             ET.SubElement(cycle, 'Field', Name='LabelName', Value=f"{p['Program1']}.bmp")
             ET.SubElement(cycle, 'Field', Name='X', Value=str(p['x'] + p['Length']/2))
@@ -331,6 +340,7 @@ def _gerar_imagens_chapas(
     largura_chapa: float,
     altura_chapa: float,
     config_maquina: Optional[Dict] = None,
+    sobras: Optional[List[List[Dict]]] = None,
 ) -> None:
     escala = 800 / max(largura_chapa, altura_chapa)
     largura_img = int(largura_chapa * escala)
@@ -338,7 +348,10 @@ def _gerar_imagens_chapas(
     for i, pecas in enumerate(chapas, start=1):
         img = Image.new("RGB", (largura_img, altura_img), "white")
         draw = ImageDraw.Draw(img)
-        for p in pecas:
+        todas = list(pecas)
+        if sobras and i - 1 < len(sobras):
+            todas.extend(sobras[i - 1])
+        for p in todas:
             x1 = int(p["x"] * escala)
             y1 = int(p["y"] * escala)
             x2 = int((p["x"] + p["Length"]) * escala)
@@ -397,7 +410,7 @@ def _gerar_etiquetas(
             x = float(item.get("x", 0)) * escala
             y = float(item.get("y", 0)) * escala
             draw.text((x, y), str(valor), fill="black")
-        nome = Path(p.get("Filename", p.get("PartName", "etiqueta"))).stem
+        nome = p.get("Program1") or Path(p.get("Filename", p.get("PartName", "etiqueta"))).stem
         path = saida / f"{nome}.{ext}"
         try:
             img.save(path)
@@ -420,6 +433,18 @@ def _gerar_gcodes(
         return texto
 
     data_criacao = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+
+    # Gerador de IDs sequenciais para sobras
+    max_id = 0
+    for placa in chapas:
+        for p in placa:
+            try:
+                val = int(re.sub(r"\D", "", str(p.get("Program1", ""))) or 0)
+            except ValueError:
+                continue
+            if val > max_id:
+                max_id = val
+    proximo_id = itertools.count(max_id + 1)
 
     def coletar_ferramentas(pecas: List[Dict]) -> List[str]:
         usadas: List[str] = []
@@ -591,13 +616,14 @@ def _gerar_gcodes(
             for g in geoms:
                 minx, miny, maxx, maxy = g.bounds
                 sobra = {
-                    'PartName': 'Sobra',
+                    'PartName': 'SB',
                     'Length': maxx - minx,
                     'Width': maxy - miny,
                     'Thickness': thickness,
                     'Material': material,
                     'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
                     'Filename': '',
+                    'Program1': f"{next(proximo_id):08d}",
                     'x': minx,
                     'y': miny,
                 }
@@ -974,7 +1000,7 @@ def gerar_nesting(
         config_maquina,
         Path(pasta_lote),
     )
-    _gerar_cyc(chapas, pasta_saida)
+    _gerar_cyc(chapas, pasta_saida, sobras)
     _gerar_xml_chapas(chapas, pasta_saida, largura_chapa, altura_chapa)
     _gerar_imagens_chapas(
         chapas,
@@ -982,6 +1008,7 @@ def gerar_nesting(
         largura_chapa,
         altura_chapa,
         config_maquina,
+        sobras,
     )
     _gerar_etiquetas(
         chapas,
