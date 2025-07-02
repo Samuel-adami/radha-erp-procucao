@@ -10,8 +10,6 @@ const VisualizacaoNesting: React.FC = () => {
   const [chapas, setChapas] = useState<Chapa[]>([]);
   const [descricao, setDescricao] = useState('');
   const [indice, setIndice] = useState(0);
-  const [codigo, setCodigo] = useState('');
-  const [busca, setBusca] = useState('');
   const [selecionada, setSelecionada] = useState<Operacao | null>(null);
   const [destaque, setDestaque] = useState<number | null>(null);
   const [confirmado, setConfirmado] = useState(false);
@@ -63,16 +61,7 @@ const VisualizacaoNesting: React.FC = () => {
     }
   }, [materiais]);
 
-  const filtradas = chapas.filter((c) => {
-    const buscaLower = busca.toLowerCase();
-    return (
-      (!descricao || c.descricao === descricao) &&
-      c.codigo.toLowerCase().includes(codigo.toLowerCase()) &&
-      (!busca ||
-        c.descricao.toLowerCase().includes(buscaLower) ||
-        c.codigo.toLowerCase().includes(buscaLower))
-    );
-  });
+  const filtradas = chapas.filter((c) => (!descricao || c.descricao === descricao));
 
   const chapaAtual = filtradas[indice] || null;
 
@@ -111,10 +100,6 @@ const VisualizacaoNesting: React.FC = () => {
         descricao={descricao}
         setDescricao={setDescricao}
         opcoesDescricao={materiais}
-        codigo={codigo}
-        setCodigo={setCodigo}
-        busca={busca}
-        setBusca={setBusca}
       />
       <div className="flex flex-wrap gap-4 items-center">
         <Button

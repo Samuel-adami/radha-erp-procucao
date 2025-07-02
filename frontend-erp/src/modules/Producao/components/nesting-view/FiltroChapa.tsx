@@ -4,13 +4,9 @@ interface Props {
   descricao: string;
   setDescricao: (v: string) => void;
   opcoesDescricao: string[];
-  codigo: string;
-  setCodigo: (v: string) => void;
-  busca: string;
-  setBusca: (v: string) => void;
 }
 
-const FiltroChapa: React.FC<Props> = ({ descricao, setDescricao, opcoesDescricao, codigo, setCodigo, busca, setBusca }) => {
+const FiltroChapa: React.FC<Props> = ({ descricao, setDescricao, opcoesDescricao }) => {
   return (
     <div className="flex flex-wrap gap-2 mb-4">
       <select
@@ -24,20 +20,6 @@ const FiltroChapa: React.FC<Props> = ({ descricao, setDescricao, opcoesDescricao
           </option>
         ))}
       </select>
-      <input
-        type="text"
-        placeholder="Código"
-        value={codigo}
-        onChange={(e) => setCodigo(e.target.value)}
-        className="input"
-      />
-      <input
-        type="text"
-        placeholder="Busca rápida"
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        className="input flex-1"
-      />
     </div>
   );
 };
