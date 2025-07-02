@@ -278,6 +278,8 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 
     if (operacao === "Puxador Cava" || operacao === "Puxador Cava Curvo") {
       const isCurvo = operacao === "Puxador Cava Curvo";
+      const prefixRet = isCurvo ? "PuxadorCavaCurvo1" : "PuxadorCava1";
+      const prefixLin = isCurvo ? "PuxadorCavaCurvo2" : "PuxadorCava2";
       const originalComprimento = parseFloat(dadosPeca.comprimento);
       const originalLargura = parseFloat(dadosPeca.largura);
       let novoComprimento = originalComprimento;
@@ -303,17 +305,17 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 
       const novasOps = [];
       if (pos === "C1") {
-        novasOps.push({ tipo: "Retângulo", x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C2" ? originalLargura - 1 : 0;
-        novasOps.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        novasOps.push({ tipo: "Linha", prefixo: prefixLin, x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) {
           const subPos = espelhar ? "T1" : "T4";
           novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
         }
       } else if (pos === "C2") {
-        novasOps.push({ tipo: "Retângulo", x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
-        novasOps.push({ tipo: "Linha", x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
+        novasOps.push({ tipo: "Linha", prefixo: prefixLin, x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) {
           const subPos = espelhar ? "inferior" : "superior";
           novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
@@ -321,8 +323,8 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
       } else {
         let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
         const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
-        novasOps.push({ tipo: "Retângulo", x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
-        novasOps.push({ tipo: "Linha", x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Linha", prefixo: prefixLin, x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) {
           const subPos = espelhar ? "inferior" : "superior";
           novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
@@ -389,13 +391,15 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
       setDadosPeca(prev => ({ ...prev, comprimento: novoComprimento, largura: novaLargura }));
       setTemPuxador(true);
 
-    } else if (operacao === "Corte 45 graus") {
+    } else if (operacao === "Corte 45 graus" || operacao === "Puxador Cava 30º") {
+        const prof = operacao === "Corte 45 graus" ? 18.2 : 12;
+        const prefixo = operacao === "Corte 45 graus" ? "Corte45" : "PuxadorCava30";
         if (pos.startsWith("L")) {
           const x = pos === "L3" ? dadosPeca.comprimento - 1 : 0;
-          operacoesAtuais.push({ tipo: "Linha", x, y: 0, largura: dadosPeca.largura, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
+          operacoesAtuais.push({ tipo: "Linha", prefixo, x, y: 0, largura: dadosPeca.largura, comprimento: 1, profundidade: prof, estrategia: "Linha" });
         } else {
           const y = pos === "C2" ? dadosPeca.largura - 1 : 0;
-          operacoesAtuais.push({ tipo: "Linha", x: 0, y, largura: 1, comprimento: dadosPeca.comprimento, profundidade: 18.2, estrategia: "Linha" });
+          operacoesAtuais.push({ tipo: "Linha", prefixo, x: 0, y, largura: 1, comprimento: dadosPeca.comprimento, profundidade: prof, estrategia: "Linha" });
         }
     } else {
       operacoesAtuais.push({ ...form, tipo: operacao });
@@ -531,7 +535,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
   const cores = ["blue", "green", "orange", "purple"];
 
   const campos = () => {
-    if (["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus"].includes(operacao)) {
+    if (["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus", "Puxador Cava 30º"].includes(operacao)) {
       return (
         <>
           <label className="block mt-2">Extremidade:
@@ -635,11 +639,12 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
             <option>Puxador Cava</option>
             <option>Puxador Cava Curvo</option>
             <option>Corte 45 graus</option>
+            <option>Puxador Cava 30º</option>
           </select></label>
 
         {campos()}
 
-        { !["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus"].includes(operacao) && (operacao === "Furo" ? <p className="mt-2">Estratégia: Por Dentro</p> : (
+        { !["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus", "Puxador Cava 30º"].includes(operacao) && (operacao === "Furo" ? <p className="mt-2">Estratégia: Por Dentro</p> : (
             <label className="block mt-2">Estratégia:
               <select className="input" value={form.estrategia} onChange={e => setForm({ ...form, estrategia: e.target.value })}>
                 <option>Por Dentro</option>

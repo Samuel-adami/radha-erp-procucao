@@ -14,7 +14,8 @@ def aplicar_usinagem_retangular(caminho_entrada, caminho_saida, cmd, info_peca):
         h = float(cmd['largura'])
         profundidade = float(cmd['profundidade'])
         estrategia = cmd['estrategia']
-        layer_nome = f"USINAR_{profundidade}_{estrategia}"
+        prefixo = cmd.get('prefixo', 'USINAR')
+        layer_nome = f"{prefixo}_{profundidade}_{estrategia}"
 
         pontos = [
             (x, y),
@@ -32,7 +33,8 @@ def aplicar_usinagem_retangular(caminho_entrada, caminho_saida, cmd, info_peca):
         diametro = float(cmd['diametro'])
         profundidade = float(cmd['profundidade'])
         estrategia = cmd['estrategia']
-        layer_nome = f"USINAR_{profundidade}_{estrategia}"
+        prefixo = cmd.get('prefixo', 'USINAR')
+        layer_nome = f"{prefixo}_{profundidade}_{estrategia}"
         raio = diametro / 2
         msp.add_circle((x, y), raio, dxfattribs={"layer": layer_nome})
 
