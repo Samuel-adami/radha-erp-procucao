@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchComAuth } from '../../../utils/fetchComAuth';
+import { fetchComAuth } from '../../../../utils/fetchComAuth';
 import { Button } from '../ui/button';
 import FiltroChapa from './FiltroChapa';
 import ChapaViewer, { Chapa, Operacao } from './ChapaViewer';
