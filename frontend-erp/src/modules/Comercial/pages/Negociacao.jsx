@@ -304,8 +304,7 @@ function Negociacao() {
         div.appendChild(t);
       } else if (campo.tipo === 'table') {
         const table = document.createElement('table');
-        table.className = 'w-full text-sm';
-        table.style.borderCollapse = 'collapse';
+        table.className = 'pdf-table';
         const thead = document.createElement('thead');
         const trh = document.createElement('tr');
         const thb = document.createElement('th');
@@ -343,8 +342,7 @@ function Negociacao() {
         div.appendChild(desc);
 
         const tableProj = document.createElement('table');
-        tableProj.className = 'w-full text-sm mt-1';
-        tableProj.style.borderCollapse = 'collapse';
+        tableProj.className = 'pdf-table mt-1';
         const thdP = document.createElement('thead');
         const trP = document.createElement('tr');
         trP.className = 'bg-gray-100';
@@ -374,8 +372,7 @@ function Negociacao() {
         div.appendChild(tableProj);
 
         const table = document.createElement('table');
-        table.className = 'w-full text-sm mt-2';
-        table.style.borderCollapse = 'collapse';
+        table.className = 'pdf-table';
         const thead2 = document.createElement('thead');
         const tr2 = document.createElement('tr');
         tr2.className = 'bg-gray-100';
@@ -432,8 +429,7 @@ function Negociacao() {
         }
 
         const tableAmb = document.createElement('table');
-        tableAmb.className = 'w-full text-sm mt-2';
-        tableAmb.style.borderCollapse = 'collapse';
+        tableAmb.className = 'pdf-table';
         const theadAmb = document.createElement('thead');
         const trAmb = document.createElement('tr');
         trAmb.className = 'bg-gray-100';
@@ -463,8 +459,7 @@ function Negociacao() {
         div.appendChild(tableAmb);
 
         const tablePar = document.createElement('table');
-        tablePar.className = 'w-full text-sm mt-2';
-        tablePar.style.borderCollapse = 'collapse';
+        tablePar.className = 'pdf-table';
         const theadPar = document.createElement('thead');
         const trPar = document.createElement('tr');
         trPar.className = 'bg-gray-100';

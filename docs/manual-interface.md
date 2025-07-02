@@ -11,6 +11,7 @@ Este documento descreve onde localizar os arquivos que controlam a aparência e 
 - **Configuração do Tailwind**: `frontend-erp/tailwind.config.js` define as classes utilitárias usadas em todo o frontend.
 - **Variáveis de cor e tema**: em `frontend-erp/src/modules/Producao/Producao.css` encontram‑se as variáveis CSS (`--background`, `--primary`, `--chart-1` etc.) aplicadas globalmente. Ajuste esses valores para alterar o esquema de cores.
 - **CSS por módulo**: cada módulo possui seu arquivo, por exemplo `Cadastros.css`, `Comercial.css` e `Producao.css`. Neles há classes utilitárias como `.input` e outras regras específicas.
+  - O arquivo `Comercial.css` inclui o estilo `.pdf-table`, aplicado na geração de documentos em PDF para dar uma aparência profissional às tabelas.
 - **Componentes de UI**: botões reutilizáveis e utilidades estão em `frontend-erp/src/modules/Producao/components/ui/`. O principal é `button.jsx`, que define variantes de estilo (padrão, secundário, link, etc.).
 
 ## Botões e componentes

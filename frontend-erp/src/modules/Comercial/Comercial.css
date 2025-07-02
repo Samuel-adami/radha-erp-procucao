@@ -5,3 +5,16 @@
 .input {
   @apply border p-2 rounded w-full;
 }
+
+/* Tabelas usadas na geração de PDFs */
+.pdf-table {
+  @apply w-full text-sm mt-2 border-collapse;
+}
+
+.pdf-table th {
+  @apply border px-2 py-1 text-center align-middle bg-gray-100 font-medium;
+}
+
+.pdf-table td {
+  @apply border px-2 py-1 text-center align-middle;
+}
