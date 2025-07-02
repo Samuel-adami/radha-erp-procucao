@@ -175,7 +175,15 @@ const Nesting = () => {
       return;
     }
 
-    executarBackend();
+    localStorage.setItem(
+      'ultimaExecucaoNesting',
+      JSON.stringify({
+        pastaLote,
+        larguraChapa,
+        alturaChapa,
+      })
+    );
+    navigate('visualizacao');
   };
 
   const removerNesting = async (n) => {

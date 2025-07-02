@@ -3,7 +3,7 @@ import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 import { useUsuario } from '../../UserContext';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, ConfigMaquina, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia } from './AppProducao';
 import CadastroChapas from './components/CadastroChapas';
 
 function ProducaoLayout() {
@@ -99,6 +99,7 @@ function Producao() {
         <Route path="apontamento" element={<Apontamento />} />
         <Route path="apontamento-volume" element={<ApontamentoVolume />} />
         <Route path="nesting" element={<Nesting />} />
+        <Route path="nesting/visualizacao" element={<VisualizacaoNesting />} />
         <Route path="nesting/config-maquina" element={<ConfigMaquina />} />
         <Route path="chapas" element={<CadastroChapas />} />
         <Route path="ocorrencias" element={<LotesOcorrencia />} />
