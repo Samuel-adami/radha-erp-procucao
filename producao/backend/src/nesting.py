@@ -594,57 +594,60 @@ def _gerar_gcodes(
             )
             linhas.extend(codigo.split('\n'))
 
-        # Geração de sobras considerando todos os espaços livres
-        placa_poly = box(0, 0, largura_chapa, altura_chapa)
-        pecas_polys = [
-            box(p['x'], p['y'], p['x'] + p['Length'], p['y'] + p['Width'])
-            for p in pecas
-        ]
-        livre = (
-            placa_poly.difference(unary_union(pecas_polys))
-            if pecas_polys
-            else None
-        )
+        # Geração de sobras nas bordas da chapa
+        x_min = min((p['x'] for p in pecas), default=0)
+        y_min = min((p['y'] for p in pecas), default=0)
+        x_max = max((p['x'] + p['Length'] for p in pecas), default=0)
+        y_max = max((p['y'] + p['Width'] for p in pecas), default=0)
 
         sobras_chapa: List[Dict] = []
+        sobras_polys: List[Polygon] = []
 
-        def add_sobra_poly(g: Polygon):
-            nonlocal last_tool
-            minx, miny, maxx, maxy = g.bounds
-            if maxx - minx <= 0 or maxy - miny <= 0:
+        def add_sobra(px: float, py: float, w: float, h: float):
+            nonlocal last_tool, sobras_polys
+            if w <= 0 or h <= 0:
                 return
-            sobra = {
-                'PartName': 'SB',
-                'Length': maxx - minx,
-                'Width': maxy - miny,
-                'Thickness': thickness,
-                'Material': material,
-                'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
-                'Filename': '',
-                'Program1': f"{next(proximo_id):08d}",
-                'x': minx,
-                'y': miny,
-            }
-            codigo, last_tool, _ = _gcode_peca(
-                sobra,
-                sobra['x'],
-                sobra['y'],
-                ferramentas,
-                None,
-                None,
-                config_maquina,
-                tpl_troca,
-                tipo='Sobra',
-                etapa='contorno',
-                ferramenta_atual=last_tool,
-            )
-            sobras_chapa.append(sobra)
-            linhas.extend(codigo.split('\n'))
-
-        if livre and not livre.is_empty:
-            geoms = [livre] if isinstance(livre, Polygon) else list(livre.geoms)
+            nova = box(px, py, px + w, py + h)
+            for p_exist in sobras_polys:
+                nova = nova.difference(p_exist)
+                if nova.is_empty:
+                    return
+            geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
             for g in geoms:
-                add_sobra_poly(g)
+                minx, miny, maxx, maxy = g.bounds
+                sobra = {
+                    'PartName': 'SB',
+                    'Length': maxx - minx,
+                    'Width': maxy - miny,
+                    'Thickness': thickness,
+                    'Material': material,
+                    'Observacao': f'Sobra da chapa original {largura_chapa}x{altura_chapa}',
+                    'Filename': '',
+                    'Program1': f"{next(proximo_id):08d}",
+                    'x': minx,
+                    'y': miny,
+                }
+                codigo, last_tool, _ = _gcode_peca(
+                    sobra,
+                    sobra['x'],
+                    sobra['y'],
+                    ferramentas,
+                    None,
+                    None,
+                    config_maquina,
+                    tpl_troca,
+                    tipo='Sobra',
+                    etapa='contorno',
+                    ferramenta_atual=last_tool,
+                )
+                sobras_chapa.append(sobra)
+                sobras_polys.append(g)
+                linhas.extend(codigo.split('\n'))
+
+        add_sobra(0, 0, x_min, altura_chapa)
+        add_sobra(x_max, 0, largura_chapa - x_max, altura_chapa)
+        add_sobra(0, 0, largura_chapa, y_min)
+        add_sobra(0, y_max, largura_chapa, altura_chapa - y_max)
 
         sobras_por_chapa.append(sobras_chapa)
 
@@ -825,6 +828,11 @@ def gerar_nesting_preview(
             if not abin:
                 continue
             operacoes: List[Dict] = []
+            sobras_polys: List[Polygon] = []
+            x_min = 1e9
+            y_min = 1e9
+            x_max = 0.0
+            y_max = 0.0
             op_id = 1
             for rect in abin:
                 p = rect.rid.copy()
@@ -866,41 +874,41 @@ def gerar_nesting_preview(
                         d["id"] = op_id
                         operacoes.append(d)
                         op_id += 1
+                x_min = min(x_min, p_x)
+                y_min = min(y_min, p_y)
+                x_max = max(x_max, p_x + w)
+                y_max = max(y_max, p_y + h)
 
-            placa_poly = box(0, 0, largura, altura)
-            pecas_poly = [
-                box(o["x"], o["y"], o["x"] + o["largura"], o["y"] + o["altura"])
-                for o in operacoes
-                if o["tipo"] == "Peca"
-            ]
-            livre = (
-                placa_poly.difference(unary_union(pecas_poly))
-                if pecas_poly
-                else None
-            )
-
-            def add_sobra_poly(g: Polygon):
-                nonlocal op_id
-                minx, miny, maxx, maxy = g.bounds
-                if maxx - minx <= 0 or maxy - miny <= 0:
+            def add_sobra(px: float, py: float, w: float, h: float):
+                nonlocal op_id, sobras_polys
+                if w <= 0 or h <= 0:
                     return
-                operacoes.append(
-                    {
-                        "id": op_id,
-                        "nome": "Sobra",
-                        "tipo": "Sobra",
-                        "x": minx,
-                        "y": miny,
-                        "largura": maxx - minx,
-                        "altura": maxy - miny,
-                    }
-                )
-                op_id += 1
-
-            if livre and not livre.is_empty:
-                geoms = [livre] if isinstance(livre, Polygon) else list(livre.geoms)
+                nova = box(px, py, px + w, py + h)
+                for p_exist in sobras_polys:
+                    nova = nova.difference(p_exist)
+                    if nova.is_empty:
+                        return
+                geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
                 for g in geoms:
-                    add_sobra_poly(g)
+                    minx, miny, maxx, maxy = g.bounds
+                    operacoes.append(
+                        {
+                            "id": op_id,
+                            "nome": "Sobra",
+                            "tipo": "Sobra",
+                            "x": minx,
+                            "y": miny,
+                            "largura": maxx - minx,
+                            "altura": maxy - miny,
+                        }
+                    )
+                    sobras_polys.append(g)
+                    op_id += 1
+
+            add_sobra(0, 0, x_min, altura)
+            add_sobra(x_max, 0, largura - x_max, altura)
+            add_sobra(0, 0, largura, y_min)
+            add_sobra(0, y_max, largura, altura - y_max)
 
             if operacoes:
                 chapas.append(
