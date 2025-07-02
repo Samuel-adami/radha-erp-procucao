@@ -30,3 +30,4 @@ def list_orcamentos_cliente(*, user: Optional[str] = None, api_key: Optional[str
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     return response.json()
+
