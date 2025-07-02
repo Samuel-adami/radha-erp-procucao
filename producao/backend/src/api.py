@@ -16,7 +16,7 @@ from operacoes import (
     parse_xml_producao,
     parse_dxt_producao,
 )
-from nesting import gerar_nesting
+from nesting import gerar_nesting, gerar_nesting_preview
 import ezdxf
 from typing import Union
 
@@ -259,6 +259,64 @@ async def executar_nesting(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok", "pasta_resultado": pasta_resultado, "layers": layers, "id": nid}
+
+
+@app.post("/nesting-preview")
+async def nesting_preview(request: Request):
+    """Retorna a disposição das chapas para visualização."""
+    try:
+        dados = await request.json()
+    except Exception:
+        dados = {}
+    pasta_lote = dados.get("pasta_lote")
+    largura_chapa = float(dados.get("largura_chapa", 2750))
+    altura_chapa = float(dados.get("altura_chapa", 1850))
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+    try:
+        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
+    except ValueError:
+        return {"erro": "Caminho inválido"}
+    try:
+        chapas = gerar_nesting_preview(
+            str(pasta_lote_resolved), largura_chapa, altura_chapa
+        )
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"chapas": chapas}
+
+
+@app.post("/executar-nesting-final")
+async def executar_nesting_final(request: Request):
+    """Executa o nesting definitivo usando os parâmetros informados."""
+    try:
+        dados = await request.json()
+    except Exception:
+        dados = {}
+    pasta_lote = dados.get("pasta_lote")
+    largura_chapa = float(dados.get("largura_chapa", 2750))
+    altura_chapa = float(dados.get("altura_chapa", 1850))
+    ferramentas = dados.get("ferramentas", [])
+    config_maquina = dados.get("config_maquina")
+    config_layers = dados.get("config_layers")
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+    try:
+        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
+    except ValueError:
+        return {"erro": "Caminho inválido"}
+    try:
+        pasta_resultado = gerar_nesting(
+            str(pasta_lote_resolved),
+            largura_chapa,
+            altura_chapa,
+            ferramentas,
+            config_layers,
+            config_maquina,
+        )
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok", "pasta_resultado": pasta_resultado}
 
 
 @app.post("/coletar-layers")
