@@ -74,7 +74,9 @@ function FieldModal({ field, onChange, onSave, onClose }) {
           onChange={e => onChange({ ...field, largura: e.target.value })}
         >
           <option value="full">Linha inteira</option>
-          <option value="half">Meia página</option>
+          {field.autoCampo !== 'negociacao.tabela' && (
+            <option value="half">Meia página</option>
+          )}
         </select>
         {field.largura === 'half' && (
           <select

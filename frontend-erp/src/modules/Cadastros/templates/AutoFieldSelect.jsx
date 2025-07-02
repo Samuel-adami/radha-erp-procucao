@@ -47,6 +47,7 @@ const AUTO_OPTIONS = [
   { value: 'negociacao.condicao', label: 'Negociação - Condição Pagamento' },
   { value: 'negociacao.total', label: 'Negociação - Total' },
   { value: 'negociacao.descricao_pagamento', label: 'Negociação - Descrição Pagamento' },
+  { value: 'negociacao.tabela', label: 'Tabela Negociação' },
 ];
 
 function AutoFieldSelect({ value, onChange }) {
