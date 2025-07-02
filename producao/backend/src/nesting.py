@@ -40,9 +40,14 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
                     xs.extend([float(ent.dxf.start.x), float(ent.dxf.end.x)])
                     ys.extend([float(ent.dxf.start.y), float(ent.dxf.end.y)])
                 elif ent.dxftype() in ("LWPOLYLINE", "POLYLINE"):
-                    for x, y in ent.get_points("xy"):
-                        xs.append(float(x))
-                        ys.append(float(y))
+                    if ent.dxftype() == "POLYLINE":
+                        for v in ent.vertices:
+                            xs.append(float(v.dxf.location.x))
+                            ys.append(float(v.dxf.location.y))
+                    else:
+                        for x, y in ent.get_points("xy"):
+                            xs.append(float(x))
+                            ys.append(float(y))
                 elif ent.dxftype() == "CIRCLE":
                     cx = float(ent.dxf.center.x)
                     cy = float(ent.dxf.center.y)
@@ -655,6 +660,8 @@ def _ops_from_dxf(
             points = []
             if ent.dxftype() == "LINE":
                 points = [ent.dxf.start, ent.dxf.end]
+            elif ent.dxftype() == "POLYLINE":
+                points = [(float(v.dxf.location.x), float(v.dxf.location.y)) for v in ent.vertices]
             else:
                 points = list(ent.get_points("xy"))
             xs = [float(p[0]) for p in points]
