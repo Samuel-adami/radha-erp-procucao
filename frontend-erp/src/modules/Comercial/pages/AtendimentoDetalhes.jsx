@@ -152,14 +152,20 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     const importarGabster = amb => async () => {
       const codigo = window.prompt('Código do projeto Gabster');
       if (!codigo) return;
-      const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
-        method: 'POST',
-        body: JSON.stringify({ cd_projeto: codigo }),
-      });
-      setDados(prev => ({
-        ...prev,
-        projetos: { ...prev.projetos, [amb]: { codigo, ...info } },
-      }));
+      try {
+        const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
+          method: 'POST',
+          body: JSON.stringify({ cd_projeto: codigo }),
+        });
+        setDados(prev => ({
+          ...prev,
+          projetos: { ...prev.projetos, [amb]: { codigo, ...info } },
+        }));
+        alert('Importação realizada com sucesso');
+      } catch (err) {
+        console.error('Erro ao importar do Gabster', err);
+        alert('Erro ao importar do Gabster: ' + err.message);
+      }
     };
 
     const handleFilePromob = amb => async e => {
@@ -167,19 +173,25 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
       if (!file) return;
       const form = new FormData();
       form.append('file', file);
-      const info = await fetchComAuth('/comercial/leitor-orcamento-promob', {
-        method: 'POST',
-        body: form,
-      });
-      const projetosResp = info.projetos || {};
-      const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
-      setDados(prev => ({
-        ...prev,
-        projetos: {
-          ...prev.projetos,
-          [amb]: { arquivo: file.name, ...dadosAmb },
-        },
-      }));
+      try {
+        const info = await fetchComAuth('/comercial/leitor-orcamento-promob', {
+          method: 'POST',
+          body: form,
+        });
+        const projetosResp = info.projetos || {};
+        const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
+        setDados(prev => ({
+          ...prev,
+          projetos: {
+            ...prev.projetos,
+            [amb]: { arquivo: file.name, ...dadosAmb },
+          },
+        }));
+        alert('Importação realizada com sucesso');
+      } catch (err) {
+        console.error('Erro ao importar do Promob', err);
+        alert('Erro ao importar do Promob: ' + err.message);
+      }
     };
 
     return (
