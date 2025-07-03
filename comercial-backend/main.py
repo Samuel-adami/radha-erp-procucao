@@ -6,6 +6,7 @@ from gabster_api import get_projeto
 from datetime import datetime
 import re
 import json
+import requests
 
 TASKS = [
     "Contato Inicial",
@@ -55,7 +56,14 @@ async def leitor_orcamento_gabster(request: Request):
         return JSONResponse({"detail": "cd_projeto ausente"}, status_code=400)
     try:
         projeto = get_projeto(cd_projeto, user=usuario, api_key=chave)
-    except Exception as exc:  # requests errors
+    except requests.exceptions.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            raise HTTPException(
+                status_code=404,
+                detail="Projeto não encontrado na Gabster. Verifique o código informado.",
+            )
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:  # generic errors
         raise HTTPException(status_code=400, detail=str(exc))
     return projeto
 
