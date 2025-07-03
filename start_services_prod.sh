@@ -3,13 +3,14 @@
 LOGDIR="/home/samuel/radha-erp-producao/logs"
 VENVDIR="/home/samuel/radha-erp-producao/venv"
 
-echo "Encerrando processos antigos nas portas 8040, 8050, 8060, 8070 e 3015..."
+echo "Matando processos antigos nas portas 8040, 8050, 8060, 8070 e 3015..."
 for port in 8040 8050 8060 8070 3015; do
-    pid=$(lsof -t -i:$port)
-    if [ -n "$pid" ]; then
-        echo "Matando processo na porta $port (PID: $pid)"
-        kill -9 $pid
-    fi
+    for pid in $(lsof -t -i:$port); do
+        if [ -n "$pid" ]; then
+            echo "Matando processo $pid na porta $port"
+            kill -9 $pid
+        fi
+    done
 done
 sleep 2
 
