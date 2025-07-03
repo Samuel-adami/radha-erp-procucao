@@ -1,19 +1,27 @@
 #!/bin/bash
-DIR=$(dirname "$0")
-[ -f "$DIR/.env" ] && export $(grep -v '^#' "$DIR/.env" | xargs)
 
-export GATEWAY_PORT=${GATEWAY_PORT:-8040}
-export MARKETING_PORT=${MARKETING_PORT:-8050}
-export PRODUCAO_PORT=${PRODUCAO_PORT:-8060}
-export COMERCIAL_PORT=${COMERCIAL_PORT:-8070}
-export FRONTEND_PORT=${FRONTEND_PORT:-3015}
-export SECRET_KEY=${SECRET_KEY:-radha-super-secreto}
+# Backend Gateway
+cd /home/samuel/radha-erp-producao/backend-gateway
+source /home/samuel/radha-erp-producao/venv/bin/activate
+nohup uvicorn main:app --host 0.0.0.0 --port 8040 > ../../logs/gateway.log 2>&1 &
 
-cd "$DIR/marketing-digital-ia/backend" && source venv/bin/activate && nohup uvicorn main:app --host 0.0.0.0 --port $MARKETING_PORT > ../../logs/marketing.log 2>&1 &
+# Backend Producao
+cd /home/samuel/radha-erp-producao/producao/backend
+source /home/samuel/radha-erp-producao/venv/bin/activate
+nohup uvicorn main:app --host 0.0.0.0 --port 8060 > ../../../logs/producao.log 2>&1 &
 
-cd "$DIR/producao/backend/src" && source venv/bin/activate && nohup uvicorn api:app --host 0.0.0.0 --port $PRODUCAO_PORT > ../../../logs/producao.log 2>&1 &
+# Backend Comercial
+cd /home/samuel/radha-erp-producao/comercial-backend
+source /home/samuel/radha-erp-producao/venv/bin/activate
+nohup uvicorn main:app --host 0.0.0.0 --port 8070 > ../logs/comercial.log 2>&1 &
 
-cd "$DIR/backend-gateway" && source venv/bin/activate && nohup uvicorn main:app --host 0.0.0.0 --port $GATEWAY_PORT > ../logs/gateway.log 2>&1 &
+# Backend Marketing-IA
+cd /home/samuel/radha-erp-producao/marketing-digital-ia/backend
+source /home/samuel/radha-erp-producao/venv/bin/activate
+nohup uvicorn main:app --host 0.0.0.0 --port 8050 > ../../../logs/marketing-ia.log 2>&1 &
 
-cd "$DIR/comercial-backend" && source venv/bin/activate && nohup uvicorn main:app --host 0.0.0.0 --port $COMERCIAL_PORT > ../logs/comercial.log 2>&1 &
-cd "$DIR/frontend-erp" && nohup PORT=$FRONTEND_PORT npm run build && nohup npx serve -s dist -l $FRONTEND_PORT > ../logs/frontend.log 2>&1 &
+# Frontend ERP
+cd /home/samuel/radha-erp-producao/frontend-erp
+nohup npm run dev -- --port 3015 > ../logs/frontend.log 2>&1 &
+
+echo "Todos os serviços foram iniciados."
