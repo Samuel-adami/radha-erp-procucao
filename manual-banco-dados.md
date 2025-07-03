@@ -65,13 +65,78 @@ Este módulo é somente frontend e não possui banco próprio. Todas as chamadas
 
 ---
 
-## Migração para PostgreSQL na VPS
-1. **Instalação do servidor**: instale PostgreSQL na VPS e crie bancos separados (ou schemas) para `gateway`, `marketing`, `producao` e `comercial`.
-2. **Criação das tabelas**: use o `sqlite3` para exportar o schema atual (ex.: `sqlite3 gateway.db .schema > gateway.sql`) e adapte os tipos conforme necessário. Em seguida, execute os scripts no PostgreSQL usando `psql`.
-3. **Dependências dos serviços**: instale `psycopg2` (ou `asyncpg`) em cada backend e substitua o módulo `sqlite3` pelas funções de conexão ao PostgreSQL.
-4. **Variáveis de ambiente**: defina URLs de conexão como `DATABASE_URL=postgresql://user:senha@localhost:5432/gateway` (ajustando para cada serviço). Remova ou ignore `RADHA_DATA_DIR`.
-5. **Ajustes de código**: modifique `get_db_connection()` em cada `database.py` para abrir uma conexão PostgreSQL. Mantenha a lógica de criação de tabelas (`CREATE TABLE IF NOT EXISTS`) ou utilize migrações específicas.
-6. **Importação dos dados**: utilize `sqlite3 <db> .dump` para gerar scripts SQL e importe-os via `psql`. Revise tipos (`TEXT` → `TEXT`, `REAL` → `DOUBLE PRECISION`, `INTEGER` → `INTEGER`).
-7. **Teste nos módulos**: após a migração, execute `start_services.sh` (ou serviços individuais) e verifique se as APIs continuam respondendo corretamente usando o novo banco.
+# Reestruturação do Radha ERP para produção web: PostgreSQL, Object Storage e Deploy 24/7
 
-Com essas etapas, o Radha ERP passará a persistir os dados em PostgreSQL, mantendo a mesma estrutura de tabelas descrita acima.
+## Objetivo
+
+Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambiente de produção robusto com:
+
+- Banco de dados **PostgreSQL**
+- Armazenamento de arquivos em bucket S3/MinIO (object storage)
+- Deploy contínuo para rodar como serviço web 24/7 no domínio próprio `radhadigital.com.br`
+
+---
+
+## 1. Migração do Banco de Dados para PostgreSQL
+
+- Migrar todas as tabelas de cada módulo (`gateway`, `producao`, `comercial`, `marketing-digital-ia`) do SQLite para PostgreSQL.
+- Adaptar as funções de conexão (substituir `sqlite3` por `psycopg2` ou `asyncpg`) em cada backend.
+- Ajustar o método `get_db_connection()` para usar a variável de ambiente `DATABASE_URL` (exemplo: `postgresql://user:senha@localhost:5432/producao`).
+- Executar scripts de migração, convertendo os arquivos `.db` SQLite existentes para os bancos correspondentes no PostgreSQL.
+- Remover dependência da variável `RADHA_DATA_DIR` para bancos.
+
+---
+
+## 2. Armazenamento de Arquivos em S3/MinIO
+
+- Provisionar um bucket (S3, MinIO ou compatível) para armazenar arquivos gerados nos módulos de produção (`lotes`, `nestings`, `lotes_ocorrencias`).
+- Adicionar ao `.env` ou como variáveis de ambiente:
+  - `OBJECT_STORAGE_ENDPOINT`
+  - `OBJECT_STORAGE_ACCESS_KEY`
+  - `OBJECT_STORAGE_SECRET_KEY`
+  - `OBJECT_STORAGE_BUCKET`
+- Instalar e usar um SDK Python (`boto3` para S3, `minio` para MinIO) nos backends relevantes.
+- Alterar as tabelas (`lotes`, `nestings`, `lotes_ocorrencias`) para que as colunas que guardam caminho local de arquivo (`pasta`, `pasta_resultado`) passem a armazenar apenas a **chave do objeto** ou **URL** no storage.
+- Implementar upload dos arquivos gerados (DXF, DXT, ZIP) diretamente para o bucket no momento da geração, salvando a referência no banco.
+- Atualizar endpoints de download para buscar os arquivos do storage e streamar via `StreamingResponse` para o usuário.
+- Implementar deleção de arquivos no storage ao excluir registros.
+- Remover o uso de pastas locais para arquivos de saída.
+
+---
+
+## 3. Preparação para Produção Web (Deploy 24/7)
+
+- Garantir que todos os backends podem rodar desacoplados de terminais, usando um serviço systemd ou outro process manager (gunicorn/uvicorn com supervisão).
+- Manter o script `start_services.sh` atualizado, mas documentar a configuração de produção via `radha-erp.service` (unit do systemd), apontando para o domínio `radhadigital.com.br`.
+- Certificar-se de que variáveis de ambiente estejam seguras (idealmente via arquivos `.env` ou gerenciador de segredos).
+- Documentar instruções de deploy e manutenção no `admin-guide.md`, incluindo:
+  - Setup do PostgreSQL
+  - Setup do bucket S3/MinIO
+  - Configuração do serviço systemd
+  - Endpoints do frontend apontando para o backend no domínio
+  - (Opcional: habilitar HTTPS no domínio via proxy reverso ou configuração cloud)
+
+---
+
+## 4. Validação e Testes
+
+- Validar toda a operação dos módulos: criação e download de lotes, nestings, ocorrências, cadastros, geração de documentos.
+- Testar upload, download e deleção de arquivos via storage.
+- Validar a conexão e integridade do PostgreSQL para todos os módulos.
+- Testar o deploy em ambiente de staging e em produção.
+- Atualizar a documentação técnica conforme as mudanças.
+
+---
+
+## Notas e Particularidades
+
+- Usar sempre nomes de arquivos, rotas e padrões do monorepo Radha ERP.
+- Não alterar endpoints do frontend, mantendo a compatibilidade com o React (os downloads só mudam internamente).
+- Garantir uso de streaming para arquivos grandes.
+- Recomenda-se rodar o storage (MinIO) em container local ou usar bucket cloud com autenticação.
+- Atenção à segurança: não expor secrets no repositório.
+
+---
+
+**Esta reestruturação deixa o Radha ERP pronto para produção web robusta e escalável, eliminando dependências locais e facilitando a gestão de dados e arquivos via cloud.**
+
