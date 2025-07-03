@@ -23,7 +23,7 @@ source "$VENVDIR/bin/activate"
 nohup uvicorn main:app --host 0.0.0.0 --port 8040 > "$LOGDIR/gateway.log" 2>&1 &
 
 # Backend Producao
-cd /home/samuel/radha-erp-producao/producao/backend
+cd /home/samuel/radha-erp-producao/producao/backend/src
 source "$VENVDIR/bin/activate"
 nohup uvicorn api:app --host 0.0.0.0 --port 8060 > "$LOGDIR/producao.log" 2>&1 &
 
