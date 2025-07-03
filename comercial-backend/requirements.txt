@@ -4,4 +4,6 @@ pdfplumber==0.7.6
 requests
 python-multipart
 python-dotenv
+sqlalchemy
+psycopg2-binary
 

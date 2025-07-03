@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
+from storage import upload_file, download_stream
 import xml.etree.ElementTree as ET
 import os
 import re
@@ -409,9 +410,11 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     base_name = tmp.name[:-4]
     shutil.make_archive(base_name, "zip", pasta)
     zip_path = base_name + ".zip"
+    object_name = f"lotes/Lote_{lote}.zip"
+    upload_file(zip_path, object_name)
     background_tasks.add_task(os.remove, zip_path)
     return StreamingResponse(
-        open(zip_path, "rb"),
+        download_stream(object_name, zip_path),
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename=Lote_{lote}.zip"},
     )
@@ -442,10 +445,12 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     base_name = tmp.name[:-4]
     shutil.make_archive(base_name, "zip", pasta)
     zip_path = base_name + ".zip"
-    background_tasks.add_task(os.remove, zip_path)
     filename = f"{pasta.name}.zip"
+    object_name = f"nestings/{filename}"
+    upload_file(zip_path, object_name)
+    background_tasks.add_task(os.remove, zip_path)
     return StreamingResponse(
-        open(zip_path, "rb"),
+        download_stream(object_name, zip_path),
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )

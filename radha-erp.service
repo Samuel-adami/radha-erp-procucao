@@ -5,7 +5,8 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/radha/radha-erp
-ExecStart=/opt/radha/radha-erp/start_services.sh
+EnvironmentFile=/opt/radha/radha-erp/.env
+ExecStart=/opt/radha/radha-erp/start_services_prod.sh
 Restart=always
 
 [Install]

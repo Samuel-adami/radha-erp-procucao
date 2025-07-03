@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3005, // Define a porta do servidor de desenvolvimento para 3005
+    port: 3015, // Define a porta do servidor de desenvolvimento para 3015
     host: '0.0.0.0' // Adiciona esta linha para bind em todas as interfaces
   }
 })

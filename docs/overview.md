@@ -14,7 +14,7 @@ Cada módulo possui seu próprio `requirements.txt` ou `package.json` para depen
 ## Ferramentas Utilizadas
 - **Python 3.11+** com [FastAPI](https://fastapi.tiangolo.com) para as APIs.
 - **Node.js** com [React](https://reactjs.org) e [Vite](https://vitejs.dev) para os frontends.
-- **SQLite** como banco de dados padrão (arquivos `*.db` em `RADHA_DATA_DIR`).
+- **PostgreSQL** como banco de dados padrão (configure `DATABASE_URL`).
 - **OpenAI API** no módulo de Marketing Digital para geração de conteúdos.
 
 ## Programas Integrados
@@ -53,11 +53,11 @@ Em produção o script `start_services.sh` é referenciado por `radha-erp.servic
 
 ### Variáveis de Ambiente Principais
 - `SECRET_KEY` – chave usada para assinar tokens de autenticação em todos os serviços.
-- `RADHA_DATA_DIR` – caminho onde os bancos de dados SQLite serão criados (`*.db`).
+- `DATABASE_URL` – string de conexão do banco PostgreSQL.
 - `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` – usuário e senha criados no primeiro acesso ao sistema.
 
 ## Fluxo Geral
-O **frontend-erp** se comunica apenas com o **backend-gateway** (porta 8010). Esse gateway repassa as requisições para os backends de marketing, produção e comercial de acordo com o prefixo da rota. Cada backend utiliza SQLite para persistir dados localmente. A infraestrutura está preparada para uso com contêineres ou serviços em nuvem, bastando definir as variáveis de ambiente e portas desejadas.
+O **frontend-erp** se comunica apenas com o **backend-gateway** (porta 8040). Esse gateway repassa as requisições para os backends de marketing, produção e comercial de acordo com o prefixo da rota. Todos os serviços utilizam PostgreSQL e object storage em produção.
 
 ## Próximos Passos
 - Leia o [Guia de Uso](user-guide.md) para entender as telas disponíveis.
