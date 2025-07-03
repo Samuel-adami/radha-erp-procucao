@@ -49,7 +49,7 @@ export async function fetchComAuth(url, options = {}) {
 
     if (contentType && contentType.includes("application/json")) {
       const errorData = await response.json();
-      errorMessage = JSON.stringify(errorData, null, 2);
+      errorMessage = errorData.detail || JSON.stringify(errorData, null, 2);
     } else {
       errorMessage = await response.text();
     }
