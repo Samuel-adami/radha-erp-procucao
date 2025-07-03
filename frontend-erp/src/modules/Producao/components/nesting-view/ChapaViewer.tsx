@@ -26,6 +26,7 @@ interface Props {
   chapa: Chapa;
   onSelect: (op: Operacao) => void;
   destaqueId?: number | null;
+  width?: number;
 }
 
 const cores: Record<string, string> = {
@@ -33,8 +34,13 @@ const cores: Record<string, string> = {
   Sobra: '#a3e635',
 };
 
-const ChapaViewer: React.FC<Props> = ({ chapa, onSelect, destaqueId }) => {
-  const svgWidth = 500;
+const ChapaViewer: React.FC<Props> = ({
+  chapa,
+  onSelect,
+  destaqueId,
+  width = 500,
+}) => {
+  const svgWidth = width;
   const escala = svgWidth / chapa.largura;
   const alturaSvg = chapa.altura * escala;
   const isHorizontal = chapa.largura >= chapa.altura;
