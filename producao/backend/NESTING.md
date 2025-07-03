@@ -16,15 +16,20 @@ A comunicação acontece via requisições HTTP (fetch) do frontend para a API.
    - Parâmetros salvos incluem extensão dos rótulos, posições de homing, layout de etiquetas e outras opções.
 
 2. **Execução do nesting** (`Nesting.jsx`)
-   - Quando o usuário clica em *Executar Nesting*, é enviada uma requisição `POST` para `/executar-nesting` com:
-     - Pasta do lote (contendo arquivos `.dxt`/`dxf`).
+   - Primeiro são consultados os layers existentes via `/coletar-layers`.
+   - Em seguida é enviado um `POST` para `/executar-nesting` contendo:
+     - Pasta do lote (arquivos `.dxt`/`dxf`).
      - Dimensões da chapa.
      - Ferramentas e definições de layers.
-     - Configuração da máquina recuperada do `localStorage`.
+     - Configuração da máquina salva no `localStorage`.
+   - A resposta traz a disposição preliminar das chapas e eventuais layers faltantes.
+   - A tela `VisualizacaoNesting.tsx` carrega essa prévia novamente usando o endpoint `/nesting-preview`.
+   - Após a confirmação do operador é feito `POST` em `/executar-nesting-final`, que gera os arquivos definitivos.
 
-3. **Endpoint `/executar-nesting`** (`api.py`)
-   - Recebe os dados e chama `gerar_nesting` passando todos os parâmetros recebidos.
-   - Registra a execução no banco (`tabela nestings`) e retorna a pasta de resultado.
+3. **Principais endpoints** (`api.py`)
+   - `/executar-nesting` – chama `gerar_nesting_preview` e retorna a prévia com a lista de layers encontrados.
+   - `/nesting-preview` – repete a geração da prévia para visualização.
+   - `/executar-nesting-final` – executa `gerar_nesting`, grava o resultado em `Lote_X/nesting/` e registra na tabela `nestings`.
 
 4. **Função `gerar_nesting`** (`nesting.py`)
    - Lê o arquivo `.dxt` do lote para obter as peças.
@@ -64,8 +69,9 @@ A função `_gerar_cyc`:
 
 ## Fluxo resumido
 1. O operador ajusta os parâmetros em *Configuração da Máquina* e salva as informações.
-2. Na tela de *Nesting*, é selecionado o lote e enviada a execução.
-3. O backend processa o lote com `gerar_nesting`, gera todos os arquivos e registra a execução.
-4. O frontend recebe o caminho da pasta de saída e exibe/ou abre a lista de layers encontrados.
+2. Na tela de *Nesting*, o lote é escolhido e o sistema consulta `/coletar-layers`.
+3. Os dados são enviados para `/executar-nesting`, que gera a prévia do arranjo de chapas.
+4. A tela de visualização exibe essa prévia obtida de `/nesting-preview`.
+5. Confirmando a otimização, o frontend chama `/executar-nesting-final` para gerar os arquivos e registrar a execução.
 
 Com este fluxo, é possível entender de onde cada informação é buscada e como os arquivos `.nc` e `.cyc` são produzidos a partir dos dados da tela de configuração da máquina.
