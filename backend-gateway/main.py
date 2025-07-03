@@ -13,9 +13,9 @@ app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=Fal
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3005",
-        "http://127.0.0.1:3005",
-        "http://212.85.13.74:3005", # <--- SEU_IP_DO_VPS REAL
+        "http://localhost:3015",
+        "http://127.0.0.1:3015",
+        "http://212.85.13.74:3015", # <--- SEU_IP_DO_VPS REAL
         "https://seu-dominio-erp.com.br"
     ],
     allow_credentials=True,
@@ -25,9 +25,9 @@ app.add_middleware(
 
 # Cliente HTTP para fazer requisições para os módulos de backend
 # Ajuste as URLs conforme onde seus módulos de backend rodarão
-MARKETING_IA_BACKEND_URL = "http://localhost:8015"
-PRODUCAO_BACKEND_URL = "http://localhost:8020"
-COMERCIAL_BACKEND_URL = "http://localhost:8030"
+MARKETING_IA_BACKEND_URL = "http://localhost:8050"
+PRODUCAO_BACKEND_URL = "http://localhost:8060"
+COMERCIAL_BACKEND_URL = "http://localhost:8070"
 
 
 def create_response(response: httpx.Response):

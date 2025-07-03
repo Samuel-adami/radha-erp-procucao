@@ -10,3 +10,5 @@ python-jose
 faiss-cpu
 sentence-transformers
 passlib[bcrypt]
+sqlalchemy
+psycopg2-binary

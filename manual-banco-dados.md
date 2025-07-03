@@ -140,3 +140,7 @@ Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambi
 
 **Esta reestruturação deixa o Radha ERP pronto para produção web robusta e escalável, eliminando dependências locais e facilitando a gestão de dados e arquivos via cloud.**
 
+## Implementação Realizada
+
+Os módulos agora utilizam `DATABASE_URL` para conectar ao PostgreSQL e fazem upload de arquivos gerados para o bucket definido em `OBJECT_STORAGE_BUCKET`. Os scripts `start_services_wsl.sh` e `start_services_prod.sh` centralizam a configuração das portas (8040–8070) e garantem execução contínua via `systemd`.
+

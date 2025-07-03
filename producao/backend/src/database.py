@@ -1,91 +1,44 @@
-import sqlite3
 import os
-from pathlib import Path
+from sqlalchemy import create_engine, text
 
-# Allow custom data directory via RADHA_DATA_DIR
-DATA_DIR = Path(os.environ.get("RADHA_DATA_DIR", Path(__file__).resolve().parent))
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = DATA_DIR / "producao.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    data_dir = os.environ.get("RADHA_DATA_DIR", os.path.dirname(__file__))
+    os.makedirs(data_dir, exist_ok=True)
+    DATABASE_URL = f"sqlite:///{os.path.join(data_dir, 'producao.db')}"
+
+engine = create_engine(DATABASE_URL)
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return engine.connect()
 
 
 def init_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS config_maquina (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
-    )
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS config_ferramentas (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
-    )
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS config_cortes (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
-    )
-    cur.execute(
-        "CREATE TABLE IF NOT EXISTS config_layers (id INTEGER PRIMARY KEY CHECK (id = 1), dados TEXT)"
-    )
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS chapas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            possui_veio INTEGER,
-            propriedade TEXT,
-            espessura REAL,
-            comprimento REAL,
-            largura REAL
-        )"""
-    )
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS lotes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pasta TEXT UNIQUE,
-            criado_em TEXT
-        )"""
-    )
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS nestings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            lote TEXT,
-            pasta_resultado TEXT,
-            criado_em TEXT
-        )"""
-    )
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS lotes_ocorrencias (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            lote TEXT,
-            pacote TEXT,
-            oc_numero INTEGER UNIQUE,
-            pasta TEXT,
-            criado_em TEXT
-        )"""
-    )
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS motivos_ocorrencia (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo TEXT UNIQUE,
-            descricao TEXT,
-            tipo TEXT,
-            setor TEXT
-        )"""
-    )
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS ocorrencias_pecas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            oc_id INTEGER,
-            peca_id INTEGER,
-            descricao_peca TEXT,
-            motivo_id TEXT,
-            FOREIGN KEY(oc_id) REFERENCES lotes_ocorrencias(id),
-            FOREIGN KEY(motivo_id) REFERENCES motivos_ocorrencia(codigo)
-        )"""
-    )
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        conn.execute(text(
+            """CREATE TABLE IF NOT EXISTS chapas (
+                id SERIAL PRIMARY KEY,
+                possui_veio INTEGER,
+                propriedade TEXT,
+                espessura REAL,
+                comprimento REAL,
+                largura REAL
+            )"""
+        ))
+        conn.execute(text(
+            """CREATE TABLE IF NOT EXISTS lotes (
+                id SERIAL PRIMARY KEY,
+                pasta TEXT,
+                criado_em TEXT
+            )"""
+        ))
+        conn.execute(text(
+            """CREATE TABLE IF NOT EXISTS nestings (
+                id SERIAL PRIMARY KEY,
+                lote TEXT,
+                pasta_resultado TEXT,
+                criado_em TEXT
+            )"""
+        ))
 
-
-init_db()

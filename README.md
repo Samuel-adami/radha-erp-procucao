@@ -19,13 +19,14 @@ sudo apt install python3 python3-venv nodejs npm
 - `rodar_ambientes.txt` – exemplos de comandos para executar cada módulo separadamente.
 
 ## Iniciando o Sistema
-1. Ajuste as variáveis de ambiente desejadas (`RADHA_ADMIN_USER`, `RADHA_ADMIN_PASS`, `SECRET_KEY`, `RADHA_DATA_DIR`). Para importar orçamentos Gabster via API defina também `GABSTER_API_USER` e `GABSTER_API_KEY`.
+1. Ajuste as variáveis de ambiente desejadas (`RADHA_ADMIN_USER`, `RADHA_ADMIN_PASS`, `SECRET_KEY`, `DATABASE_URL`). Para importar orçamentos Gabster via API defina também `GABSTER_API_USER` e `GABSTER_API_KEY`.
 2. Execute `./start_services.sh` para rodar todos os serviços.
-3. Edite `frontend-erp/.env` definindo `VITE_GATEWAY_URL=http://212.85.13.74:8010`.
-4. Acesse `http://212.85.13.74:3005` no navegador e faça login com o usuário configurado (padrão `admin`/`admin`).
+3. Copie `.env.wsl.example` ou `.env.prod.example` para `.env` e edite as portas se necessário.
+4. Edite `frontend-erp/.env.example` definindo `VITE_GATEWAY_URL=http://212.85.13.74:8040`.
+5. Acesse `http://212.85.13.74:3015` no navegador e faça login com o usuário configurado (padrão `admin`/`admin`).
 
 O serviço `radha-erp.service` é um exemplo de unidade systemd para produção.
 
 ## Suporte
-Caso o navegador exiba apenas uma tela de carregamento, verifique se as APIs estão em execução e se as portas 8010, 8015, 8020 e 8030 não estão ocupadas. Consulte os arquivos de log de cada serviço para mais detalhes.
+Caso o navegador exiba apenas uma tela de carregamento, verifique se as APIs estão em execução e se as portas 8040, 8050, 8060 e 8070 não estão ocupadas. Consulte os arquivos de log de cada serviço para mais detalhes.
 

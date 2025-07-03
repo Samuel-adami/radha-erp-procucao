@@ -18,14 +18,14 @@ Em produção, configure o serviço systemd `radha-erp.service` apontando para o
 
 ### Variáveis de Ambiente
 - `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` definem o usuário inicial criado no primeiro acesso.
-- `RADHA_DATA_DIR` permite customizar o local onde os arquivos `*.db` serão gravados.
+- `DATABASE_URL` define a conexão com o PostgreSQL utilizado em produção.
 - `SECRET_KEY` deve ser igual em todos os serviços para validação de tokens.
 
 ## Atualização do Código
 Use `update_github.sh` para adicionar commits e enviar alterações para o GitHub.
 
 ## Verificação e Logs
-Verifique se as portas 8010 (gateway), 8015 (marketing), 8020 (produção) e 8030 (comercial) estão livres. Os logs de cada backend podem ser analisados individualmente caso ocorram erros de inicialização.
+Verifique se as portas 8040 (gateway), 8050 (marketing), 8060 (produção) e 8070 (comercial) estão livres. Os logs de cada backend podem ser analisados individualmente caso ocorram erros de inicialização.
 
 ### Templates do Comercial
 Os modelos de documentos ficam armazenados no banco `comercial.db`. Para que usuários consigam baixar orçamentos, cadastre templates do tipo **Orçamento** acessando o menu *Cadastros > Templates* no frontend.

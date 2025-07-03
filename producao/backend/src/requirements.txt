@@ -4,3 +4,5 @@ ezdxf
 rectpack
 Pillow
 shapely
+sqlalchemy
+psycopg2-binary

@@ -1,50 +1,40 @@
-import sqlite3
 import os
-from pathlib import Path
+from sqlalchemy import create_engine, text
 
-# Allow custom data directory via RADHA_DATA_DIR
-DATA_DIR = Path(os.environ.get("RADHA_DATA_DIR", Path(__file__).resolve().parent))
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = DATA_DIR / "gateway.db"
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    data_dir = os.environ.get("RADHA_DATA_DIR", os.path.dirname(__file__))
+    os.makedirs(data_dir, exist_ok=True)
+    DATABASE_URL = f"sqlite:///{os.path.join(data_dir, 'gateway.db')}"
+
+engine = create_engine(DATABASE_URL)
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return engine.connect()
 
 
 def init_db():
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute(
-        """CREATE TABLE IF NOT EXISTS empresa (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo TEXT,
-            razao_social TEXT,
-            nome_fantasia TEXT,
-            cnpj TEXT,
-            inscricao_estadual TEXT,
-            cep TEXT,
-            rua TEXT,
-            numero TEXT,
-            complemento TEXT,
-            bairro TEXT,
-            cidade TEXT,
-            estado TEXT,
-            telefone1 TEXT,
-            telefone2 TEXT,
-            slogan TEXT,
-            logo BLOB
-        )"""
-    )
-    cols = [row[1] for row in cur.execute("PRAGMA table_info(empresa)")]
-    if "slogan" not in cols:
-        cur.execute("ALTER TABLE empresa ADD COLUMN slogan TEXT")
-    if "complemento" not in cols:
-        cur.execute("ALTER TABLE empresa ADD COLUMN complemento TEXT")
-    conn.commit()
-    conn.close()
+    with engine.begin() as conn:
+        conn.execute(text(
+            """CREATE TABLE IF NOT EXISTS empresa (
+                id SERIAL PRIMARY KEY,
+                codigo TEXT,
+                razao_social TEXT,
+                nome_fantasia TEXT,
+                cnpj TEXT,
+                inscricao_estadual TEXT,
+                cep TEXT,
+                rua TEXT,
+                numero TEXT,
+                complemento TEXT,
+                bairro TEXT,
+                cidade TEXT,
+                estado TEXT,
+                telefone1 TEXT,
+                telefone2 TEXT,
+                slogan TEXT,
+                logo BYTEA
+            )"""
+        ))
 
-
-init_db()
