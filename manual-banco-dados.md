@@ -1,12 +1,11 @@
 # Manual do Banco de Dados do Radha ERP
 
-Este documento resume as tabelas atuais de cada módulo (utilizando SQLite) e orienta sobre a migração para PostgreSQL em um servidor VPS.
+Este documento resume as tabelas atuais de cada módulo (agora utilizando **PostgreSQL** via SQLAlchemy) e orienta sobre a configuração das variáveis de ambiente para execução em produção ou desenvolvimento.
 
 ## 1. backend-gateway
-### Estrutura Atual (SQLite)
-- **Arquivo**: `gateway.db`
+### Estrutura Atual (PostgreSQL)
 - **Tabela `empresa`**
-  - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+  - `id` SERIAL PRIMARY KEY
   - `codigo` TEXT
   - `razao_social` TEXT
   - `nome_fantasia` TEXT
@@ -15,19 +14,19 @@ Este documento resume as tabelas atuais de cada módulo (utilizando SQLite) e or
   - `cep` TEXT
   - `rua` TEXT
   - `numero` TEXT
+  - `complemento` TEXT
   - `bairro` TEXT
   - `cidade` TEXT
   - `estado` TEXT
   - `telefone1` TEXT
   - `telefone2` TEXT
   - `slogan` TEXT
-  - `logo` BLOB
+  - `logo` BYTEA
 
 ## 2. marketing-digital-ia
-### Estrutura Atual (SQLite)
-- **Arquivo**: `marketing_ia.db`
+### Estrutura Atual (PostgreSQL)
 - **Tabela `users`**
-  - `id` INTEGER PRIMARY KEY AUTOINCREMENT
+  - `id` SERIAL PRIMARY KEY
   - `username` TEXT UNIQUE
   - `password` TEXT
   - `email` TEXT
@@ -37,28 +36,39 @@ Este documento resume as tabelas atuais de cada módulo (utilizando SQLite) e or
 - **Outros dados**: índices FAISS em `embeddings/faiss_index` mantêm embeddings de documentos para a assistente Sara.
 
 ## 3. producao
-### Estrutura Atual (SQLite)
-- **Arquivo**: `producao.db`
+### Estrutura Atual (PostgreSQL)
 - **Tabelas**
-  - `config_maquina` (id, dados)
-  - `config_ferramentas` (id, dados)
-  - `config_cortes` (id, dados)
-  - `config_layers` (id, dados)
-  - `chapas` (id, possui_veio, propriedade, espessura, comprimento, largura)
-  - `lotes` (id, pasta, criado_em)
-  - `nestings` (id, lote, pasta_resultado, criado_em)
-  - `lotes_ocorrencias` (id, lote, pacote, oc_numero, pasta, criado_em)
-  - `motivos_ocorrencia` (id, codigo, descricao, tipo, setor)
-  - `ocorrencias_pecas` (id, oc_id, peca_id, descricao_peca, motivo_id)
+  - `chapas` (id SERIAL PRIMARY KEY, possui_veio INTEGER, propriedade TEXT, espessura REAL, comprimento REAL, largura REAL)
+  - `lotes` (id SERIAL PRIMARY KEY, pasta TEXT, criado_em TEXT)
+  - `nestings` (id SERIAL PRIMARY KEY, lote TEXT, pasta_resultado TEXT, criado_em TEXT)
 
 ## 4. comercial-backend
-### Estrutura Atual (SQLite)
-- **Arquivo**: `comercial.db`
-- **Tabelas**
-  - `atendimentos` (id, cliente, codigo, projetos, previsao_fechamento, temperatura, tem_especificador, especificador_nome, rt_percent, entrega_diferente, historico, arquivos_json, procedencia, vendedor, telefone, email, rua, numero, complemento, bairro, cidade, estado, cep, data_cadastro)
-  - `atendimento_tarefas` (id, atendimento_id, nome, concluida, dados, data_execucao)
-  - `condicoes_pagamento` (id, nome, numero_parcelas, juros_parcela, dias_vencimento, ativa, parcelas_json)
-  - `templates` (id, tipo, titulo, campos_json)
+### Estrutura Atual (PostgreSQL)
+- **Tabela `atendimentos`**
+  - `id` SERIAL PRIMARY KEY
+  - `cliente` TEXT
+  - `codigo` TEXT
+  - `projetos` TEXT
+  - `previsao_fechamento` TEXT
+  - `temperatura` TEXT
+  - `tem_especificador` INTEGER
+  - `especificador_nome` TEXT
+  - `rt_percent` REAL
+  - `entrega_diferente` INTEGER
+  - `historico` TEXT
+  - `arquivos_json` TEXT
+  - `procedencia` TEXT
+  - `vendedor` TEXT
+  - `telefone` TEXT
+  - `email` TEXT
+  - `rua` TEXT
+  - `numero` TEXT
+  - `complemento` TEXT
+  - `bairro` TEXT
+  - `cidade` TEXT
+  - `estado` TEXT
+  - `cep` TEXT
+  - `data_cadastro` TEXT
 
 ## 5. frontend-erp
 Este módulo é somente frontend e não possui banco próprio. Todas as chamadas são feitas ao Gateway e, por consequência, aos backends acima.
@@ -116,6 +126,8 @@ Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambi
   - Endpoints do frontend apontando para o backend no domínio
   - (Opcional: habilitar HTTPS no domínio via proxy reverso ou configuração cloud)
 
+Modelos de variáveis de ambiente estão disponíveis em `.env.wsl.example` (desenvolvimento WSL) e `.env.prod.example` (produção).
+
 ---
 
 ## 4. Validação e Testes
@@ -142,5 +154,5 @@ Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambi
 
 ## Implementação Realizada
 
-Os módulos agora utilizam `DATABASE_URL` para conectar ao PostgreSQL e fazem upload de arquivos gerados para o bucket definido em `OBJECT_STORAGE_BUCKET`. Os scripts `start_services_wsl.sh` e `start_services_prod.sh` centralizam a configuração das portas (8040–8070) e garantem execução contínua via `systemd`.
+Os módulos agora utilizam `DATABASE_URL` para conectar ao PostgreSQL e fazem upload de arquivos gerados para o bucket definido em `OBJECT_STORAGE_BUCKET`. Os scripts `start_services_wsl.sh` e `start_services_prod.sh` centralizam a configuração das portas (8040–8070) e garantem execução contínua via `systemd`. Exemplos de variáveis de ambiente estão disponíveis em `.env.wsl.example` e `.env.prod.example`.
 
