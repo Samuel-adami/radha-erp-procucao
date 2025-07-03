@@ -8,6 +8,7 @@ import OperacaoDetailModal from './OperacaoDetailModal';
 
 const VisualizacaoNesting: React.FC = () => {
   const [chapas, setChapas] = useState<Chapa[]>([]);
+  const [larguraViewer, setLarguraViewer] = useState(600);
   const [descricao, setDescricao] = useState('');
   const [indice, setIndice] = useState(0);
   const [selecionada, setSelecionada] = useState<Operacao | null>(null);
@@ -54,6 +55,16 @@ const VisualizacaoNesting: React.FC = () => {
       }
     }
     carregar();
+  }, []);
+
+  useEffect(() => {
+    const atualizar = () => {
+      const w = Math.min(window.innerWidth - 420, 900);
+      setLarguraViewer(w > 300 ? w : 300);
+    };
+    atualizar();
+    window.addEventListener('resize', atualizar);
+    return () => window.removeEventListener('resize', atualizar);
   }, []);
 
   const materiais = Array.from(new Set(chapas.map((c) => c.descricao)));
@@ -122,23 +133,26 @@ const VisualizacaoNesting: React.FC = () => {
           ◀
         </Button>
         {chapaAtual && (
-          <div key={chapaAtual.id} className="flex gap-4 items-start">
+          <div key={chapaAtual.id} className="flex gap-4 items-start w-full">
             <ChapaViewer
               chapa={chapaAtual}
+              width={larguraViewer}
               onSelect={(op) => {
                 setSelecionada(op);
                 setDestaque(op.id);
               }}
               destaqueId={destaque}
             />
-            <OperacaoList
-              operacoes={chapaAtual.operacoes}
-              onSelect={(op) => {
-                setSelecionada(op);
-                setDestaque(op.id);
-              }}
-              destaqueId={destaque}
-            />
+            <div className="w-72">
+              <OperacaoList
+                operacoes={chapaAtual.operacoes}
+                onSelect={(op) => {
+                  setSelecionada(op);
+                  setDestaque(op.id);
+                }}
+                destaqueId={destaque}
+              />
+            </div>
           </div>
         )}
         <Button
