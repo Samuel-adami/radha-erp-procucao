@@ -4,10 +4,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, Response
 import httpx
 from typing import List
-from database import get_db_connection
+from database import get_db_connection, init_db
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
+
+# Initialize gateway database tables on startup
+init_db()
 
 # Configuração de CORS - ATENÇÃO: SUBSTITUA SEU_IP_DO_VPS PELO IP REAL DO SEU VPS
 app.add_middleware(

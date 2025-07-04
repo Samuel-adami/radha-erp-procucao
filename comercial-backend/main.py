@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-from database import get_db_connection
+from database import get_db_connection, init_db
 from orcamento_promob import parse_promob_xml
 from gabster_api import get_projeto
 from datetime import datetime
@@ -31,6 +31,9 @@ def get_next_codigo(conn):
     return f"AT-{seq:04d}"
 
 app = FastAPI(redirect_slashes=False)
+
+# Initialize commercial database tables on startup
+init_db()
 
 
 @app.get("/")
