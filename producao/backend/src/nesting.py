@@ -1046,6 +1046,9 @@ def gerar_nesting_preview(
                             "y": miny,
                             "largura": maxx - minx,
                             "altura": maxy - miny,
+                            "coords": [
+                                [float(cx), float(cy)] for cx, cy in g.exterior.coords
+                            ],
                         }
                     )
                     sobras_polys.append(g)
@@ -1088,6 +1091,9 @@ def gerar_nesting_preview(
                             "y": miny,
                             "largura": maxx - minx,
                             "altura": maxy - miny,
+                            "coords": [
+                                [float(cx), float(cy)] for cx, cy in geom.exterior.coords
+                            ],
                         }
                     )
                     sobras_polys.append(geom)
