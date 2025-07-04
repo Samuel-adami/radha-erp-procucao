@@ -20,7 +20,7 @@ allow any agent to start the services locally and replicate the interface for te
    npm install
    ```
 4. **Environment variables**: copy `frontend-erp/.env.example` to `.env` and set
-   `VITE_GATEWAY_URL=http://localhost:8010`. Optionally set `VITE_DEFAULT_USERNAME` and
+   `VITE_GATEWAY_URL=http://localhost:8040`. Optionally set `VITE_DEFAULT_USERNAME` and
    `VITE_DEFAULT_PASSWORD` for automatic login. Before running the services export:
    ```bash
    export SECRET_KEY=radha-super-secreto
@@ -33,11 +33,11 @@ allow any agent to start the services locally and replicate the interface for te
 ## Running the Application
 Execute `./start_services.sh` in the repository root. The script launches all backends and the
 React frontend in development mode:
-- Gateway: http://localhost:8010
-- Marketing Digital IA: http://localhost:8015
-- Produção: http://localhost:8020
-- Comercial: http://localhost:8030
-- Frontend React: http://localhost:3005
+ - Gateway: http://localhost:8040
+ - Marketing Digital IA: http://localhost:8050
+ - Produção: http://localhost:8060
+ - Comercial: http://localhost:8070
+ - Frontend React: http://localhost:3015
 
 Access `http://localhost:3005` in your browser and log in using the credentials from
 `RADHA_ADMIN_USER`/`RADHA_ADMIN_PASS`.
