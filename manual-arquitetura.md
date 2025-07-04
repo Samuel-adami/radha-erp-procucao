@@ -15,7 +15,7 @@ API centralizadora escrita em FastAPI que recebe todas as chamadas do `frontend-
 - **Integrações**
   - Encaminha requisições via `httpx` para os backends configurados nas variáveis `MARKETING_IA_BACKEND_URL`, `PRODUCAO_BACKEND_URL` e `COMERCIAL_BACKEND_URL`
 - **Banco de dados**
-  - SQLite `gateway.db` inicializado em `database.py`
+  - Banco PostgreSQL configurado pela variável `DATABASE_URL` (carregada do `.env`)
 - **Lógica principal**
   - Atua como proxy unificando CORS e validações, concentrando a autenticação e o cadastro de empresas
 
@@ -41,7 +41,7 @@ Ferramentas de marketing utilizando IA generativa para criar campanhas, publica�
   - Utiliza a API da OpenAI em `openai_service.py`
   - Busca contexto em embeddings FAISS para melhorar respostas
 - **Banco de dados**
-  - SQLite `marketing_ia.db` contendo usuários, criado em `database.py`
+  - Banco PostgreSQL (`DATABASE_URL` no `.env`) contendo a tabela `users`
 - **Lógica principal**
   - Autenticação via JWT
   - Geração de textos e imagens de marketing com prompts customizados
@@ -70,7 +70,7 @@ Gerenciar processos de produção, convertendo arquivos de pedidos em DXF e real
   - Biblioteca `ezdxf` para manipular arquivos DXF
   - Algoritmo de nesting implementado em `nesting.py`
 - **Banco de dados**
-  - SQLite `producao.db` com tabelas de lotes, nestings, chapas e ocorrências
+  - Banco PostgreSQL (`DATABASE_URL` no `.env`) com tabelas de lotes, nestings, chapas e ocorrências
 - **Lógica principal**
   - Converte XML ou DXT em peças, gera DXFs e registra eventos de produção
 
@@ -103,7 +103,7 @@ Registrar atendimentos comerciais, controlar tarefas do processo de venda e cond
   - Consulta de orçamentos disponíveis (`gabster_api.list_orcamentos_cliente`)
 
 - **Banco de dados**
-  - SQLite `comercial.db` definido em `database.py`
+  - Banco PostgreSQL configurado pela variável `DATABASE_URL` no `.env`
 - **Lógica principal**
   - Controle sequencial das etapas de atendimento e armazenamento de arquivos
 
