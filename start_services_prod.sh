@@ -39,6 +39,6 @@ nohup uvicorn main:app --host 0.0.0.0 --port 8050 > "$LOGDIR/marketing-ia.log" 2
 
 # Frontend ERP
 cd /home/samuel/radha-erp-producao/frontend-erp
-nohup npm run dev -- --port 3015 > "$LOGDIR/frontend.log" 2>&1 &
+nohup serve -s dist -l 3015 > "$LOGDIR/frontend.log" 2>&1 &
 
 echo "Todos os serviços foram iniciados."
