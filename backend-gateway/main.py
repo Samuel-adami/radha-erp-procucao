@@ -118,7 +118,12 @@ async def login(request: Request):
     async with httpx.AsyncClient() as client:
         url = f"{MARKETING_IA_BACKEND_URL}/auth/login"
         try:
-            response = await client.post(url, content=await request.body())
+            headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
+            response = await client.post(
+                url,
+                content=await request.body(),
+                headers=headers,
+            )
             response.raise_for_status()
             return create_response(response)
         except httpx.HTTPStatusError as e:
