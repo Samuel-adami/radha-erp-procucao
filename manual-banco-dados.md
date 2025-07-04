@@ -91,7 +91,7 @@ Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambi
 
 - Migrar todas as tabelas de cada módulo (`gateway`, `producao`, `comercial`, `marketing-digital-ia`) do SQLite para PostgreSQL.
 - Adaptar as funções de conexão (substituir `sqlite3` por `psycopg2` ou `asyncpg`) em cada backend.
-- Ajustar o método `get_db_connection()` para usar a variável de ambiente `DATABASE_URL` (exemplo: `postgresql://user:senha@localhost:5432/producao`).
+- Ajustar o método `get_db_connection()` para usar a variável de ambiente `DATABASE_URL` (exemplo: `postgresql://radha_admin:Sma@xsisx@localhost:5432/producao`). Cada módulo deve definir seu esquema em `DATABASE_SCHEMA` para isolar as tabelas.
 - Executar scripts de migração, convertendo os arquivos `.db` SQLite existentes para os bancos correspondentes no PostgreSQL.
 - Remover dependência da variável `RADHA_DATA_DIR` para bancos.
 
@@ -99,12 +99,13 @@ Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambi
 
 ## 2. Armazenamento de Arquivos em S3/MinIO
 
-- Provisionar um bucket (S3, MinIO ou compatível) para armazenar arquivos gerados nos módulos de produção (`lotes`, `nestings`, `lotes_ocorrencias`).
+- Provisionar um único bucket (S3, MinIO ou compatível) para armazenar os arquivos de todos os módulos. Cada backend utilizará um prefixo próprio dentro desse bucket.
 - Adicionar ao `.env` ou como variáveis de ambiente:
-  - `OBJECT_STORAGE_ENDPOINT`
+  - `OBJECT_STORAGE_ENDPOINT` (ex.: `https://nyc3.digitaloceanspaces.com`)
   - `OBJECT_STORAGE_ACCESS_KEY`
   - `OBJECT_STORAGE_SECRET_KEY`
-  - `OBJECT_STORAGE_BUCKET`
+  - `OBJECT_STORAGE_BUCKET` (ex.: `radha-prod-backend`)
+  - `OBJECT_STORAGE_PREFIX` (nome da pasta/prefixo de cada módulo)
 - Instalar e usar um SDK Python (`boto3` para S3, `minio` para MinIO) nos backends relevantes.
 - Alterar as tabelas (`lotes`, `nestings`, `lotes_ocorrencias`) para que as colunas que guardam caminho local de arquivo (`pasta`, `pasta_resultado`) passem a armazenar apenas a **chave do objeto** ou **URL** no storage.
 - Implementar upload dos arquivos gerados (DXF, DXT, ZIP) diretamente para o bucket no momento da geração, salvando a referência no banco.
