@@ -4,34 +4,34 @@
 # =============================================================
 
 # --- TERMINAL 1: Backend de Marketing Digital IA (Porta 8050) ---
-cd /opt/radha/radha-erp/marketing-digital-ia/backend/
+cd marketing-digital-ia/backend/
 conda activate radha-prod
 export SECRET_KEY=radha-super-secreto
 uvicorn main:app --host 0.0.0.0 --port 8050 --reload
 
 # --- TERMINAL 2: Backend de Produção (Porta 8060) ---
-cd /opt/radha/radha-erp/producao/backend/src/
+cd producao/backend/src/
 conda activate radha-prod
 export SECRET_KEY=radha-super-secreto
 uvicorn api:app --host 0.0.0.0 --port 8060 --reload
 
 # --- TERMINAL 3: Backend Gateway (Porta 8040) ---
-cd /opt/radha/radha-erp/backend-gateway/
+cd backend-gateway/
 conda activate radha-prod
 export SECRET_KEY=radha-super-secreto
 uvicorn main:app --host 0.0.0.0 --port 8040 --reload
 
 # --- TERMINAL 4: Backend Comercial (Porta 8070) ---
-cd /opt/radha/radha-erp/comercial-backend/
+cd comercial-backend/
 conda activate radha-prod
 export SECRET_KEY=radha-super-secreto
 uvicorn main:app --host 0.0.0.0 --port 8070 --reload
 
 # --- TERMINAL 5: Frontend Principal (Porta 3015) ---
-cd /opt/radha/radha-erp/frontend-erp/
+cd frontend-erp/
 # Se algum ambiente virtual Python estiver ativo (mostrar "(venv)"), desative:
 # deactivate
-npm run dev -- --port 3015
+npm run dev -- --port 3016
 
 # === PARAR UM SERVIÇO ===
 # Utilize o comando abaixo substituindo <PID> pelo número mostrado
