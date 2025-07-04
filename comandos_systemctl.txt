@@ -42,6 +42,9 @@ Rode: ./radha-status.sh
 Todos os logs dos serviços podem ser visualizados via journalctl, ex:
 
 sudo journalctl -u radha-producao-backend -n 40 --no-pager
+sudo journalctl -u radha-comercial-backend -n 40 --no-pager
+sudo journalctl -u radha-marketing-backend -n 40 --no-pager
+sudo journalctl -u radha-gateway-backend -n 40 --no-pager
 sudo journalctl -u radha-frontend -f
 
 
