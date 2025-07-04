@@ -8,6 +8,7 @@ from types import SimpleNamespace
 if not hasattr(_bcrypt, "__about__"):
     _bcrypt.__about__ = SimpleNamespace(__version__=_bcrypt.__version__)
 from passlib.hash import bcrypt
+from sqlalchemy import text
 from database import get_db_connection
 
 SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")
@@ -16,7 +17,7 @@ EXPIRATION_MINUTES = 60
 
 
 def _row_to_user(row) -> dict:
-    user = dict(row)
+    user = dict(row._mapping)
     user["permissoes"] = json.loads(user.get("permissoes", "[]"))
     return user
 
@@ -32,15 +33,15 @@ def autenticar(username: str, password: str) -> Optional[dict]:
 
     conn = get_db_connection()
     row = conn.execute(
-        "SELECT * FROM users WHERE username=?",
-        (username,),
+        text("SELECT * FROM users WHERE username=:username"),
+        {"username": username},
     ).fetchone()
 
     if not row:
         conn.close()
         return None
 
-    stored_pwd = row["password"]
+    stored_pwd = row._mapping["password"]
 
     # Se a senha armazenada não parece estar no formato bcrypt, tenta verificar
     # como texto simples e, em caso positivo, atualiza para o hash seguro.
@@ -50,8 +51,8 @@ def autenticar(username: str, password: str) -> Optional[dict]:
         valid = password == stored_pwd
         if valid:
             conn.execute(
-                "UPDATE users SET password=? WHERE id=?",
-                (bcrypt.hash(password), row["id"]),
+                text("UPDATE users SET password=:pwd WHERE id=:id"),
+                {"pwd": bcrypt.hash(password), "id": row._mapping["id"]},
             )
             conn.commit()
 
@@ -96,7 +97,10 @@ def decodificar_token(token: str) -> Optional[dict]:
 def listar_usuarios() -> List[dict]:
     conn = get_db_connection()
     rows = conn.execute(
-        "SELECT id, username, password, email, nome, cargo, permissoes FROM users ORDER BY id"
+        text(
+            "SELECT id, username, password, email, nome, cargo, permissoes "
+            "FROM users ORDER BY id"
+        )
     ).fetchall()
     conn.close()
     return [_row_to_user(r) for r in rows]
@@ -105,15 +109,18 @@ def listar_usuarios() -> List[dict]:
 def criar_usuario(data: dict) -> int:
     conn = get_db_connection()
     cur = conn.execute(
-        "INSERT INTO users (username, password, email, nome, cargo, permissoes) VALUES (?, ?, ?, ?, ?, ?)",
-        (
-            data.get("username"),
-            bcrypt.hash(data.get("password")),
-            data.get("email"),
-            data.get("nome"),
-            data.get("cargo"),
-            json.dumps(data.get("permissoes", [])),
+        text(
+            "INSERT INTO users (username, password, email, nome, cargo, permissoes) "
+            "VALUES (:username, :password, :email, :nome, :cargo, :permissoes)"
         ),
+        {
+            "username": data.get("username"),
+            "password": bcrypt.hash(data.get("password")),
+            "email": data.get("email"),
+            "nome": data.get("nome"),
+            "cargo": data.get("cargo"),
+            "permissoes": json.dumps(data.get("permissoes", [])),
+        },
     )
     conn.commit()
     new_id = cur.lastrowid
@@ -124,16 +131,19 @@ def criar_usuario(data: dict) -> int:
 def atualizar_usuario(user_id: int, data: dict) -> bool:
     conn = get_db_connection()
     cur = conn.execute(
-        "UPDATE users SET username=?, password=?, email=?, nome=?, cargo=?, permissoes=? WHERE id=?",
-        (
-            data.get("username"),
-            bcrypt.hash(data.get("password")) if data.get("password") else None,
-            data.get("email"),
-            data.get("nome"),
-            data.get("cargo"),
-            json.dumps(data.get("permissoes", [])),
-            user_id,
+        text(
+            "UPDATE users SET username=:username, password=:password, email=:email, "
+            "nome=:nome, cargo=:cargo, permissoes=:permissoes WHERE id=:id"
         ),
+        {
+            "username": data.get("username"),
+            "password": bcrypt.hash(data.get("password")) if data.get("password") else None,
+            "email": data.get("email"),
+            "nome": data.get("nome"),
+            "cargo": data.get("cargo"),
+            "permissoes": json.dumps(data.get("permissoes", [])),
+            "id": user_id,
+        },
     )
     conn.commit()
     updated = cur.rowcount
@@ -143,7 +153,10 @@ def atualizar_usuario(user_id: int, data: dict) -> bool:
 
 def excluir_usuario(user_id: int) -> bool:
     conn = get_db_connection()
-    cur = conn.execute("DELETE FROM users WHERE id=?", (user_id,))
+    cur = conn.execute(
+        text("DELETE FROM users WHERE id=:id"),
+        {"id": user_id},
+    )
     conn.commit()
     deleted = cur.rowcount
     conn.close()
