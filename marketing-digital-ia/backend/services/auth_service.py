@@ -22,14 +22,44 @@ def _row_to_user(row) -> dict:
 
 
 def autenticar(username: str, password: str) -> Optional[dict]:
+    """Autentica um usuário pelo nome e senha.
+
+    Este método também migra senhas antigas não criptografadas para o formato
+    bcrypt. Ao detectar que o campo ``password`` não está no formato esperado,
+    ele compara a senha em texto simples e, em caso de sucesso, salva a versão
+    criptografada no banco de dados.
+    """
+
     conn = get_db_connection()
     row = conn.execute(
         "SELECT * FROM users WHERE username=?",
         (username,),
     ).fetchone()
+
+    if not row:
+        conn.close()
+        return None
+
+    stored_pwd = row["password"]
+
+    # Se a senha armazenada não parece estar no formato bcrypt, tenta verificar
+    # como texto simples e, em caso positivo, atualiza para o hash seguro.
+    try:
+        valid = bcrypt.verify(password, stored_pwd)
+    except ValueError:
+        valid = password == stored_pwd
+        if valid:
+            conn.execute(
+                "UPDATE users SET password=? WHERE id=?",
+                (bcrypt.hash(password), row["id"]),
+            )
+            conn.commit()
+
     conn.close()
-    if row and bcrypt.verify(password, row["password"]):
+
+    if valid:
         return _row_to_user(row)
+
     return None
 
 
