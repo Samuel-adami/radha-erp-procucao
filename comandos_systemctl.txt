@@ -62,3 +62,24 @@ git pull
 sudo systemctl restart radha-producao-backend
 sudo systemctl restart radha-frontend
 # ... e os demais
+
+## Verificar o status do NGINX
+
+sudo systemctl status nginx
+
+## Reiniciar o NGINX          <=== Reinicia o serviço. Use sempre após mudanças em arquivos de configuração.
+
+sudo systemctl restart nginx 
+
+## Recarregar (reload) o NGINX   <=== Recarrega as configurações sem derrubar as conexões ativas (melhor para alterações leves em config)
+
+sudo systemctl reload nginx
+
+## Verificar se a configuração está correta antes de reiniciar
+
+sudo nginx -t
+
+
+## Se precisar ver logs recentes do nginx:
+
+sudo journalctl -u nginx -n 40 --no-pager
