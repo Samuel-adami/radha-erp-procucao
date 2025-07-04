@@ -55,6 +55,7 @@ Em produção o script `start_services.sh` é referenciado por `radha-erp.servic
 - `SECRET_KEY` – chave usada para assinar tokens de autenticação em todos os serviços.
 - `DATABASE_URL` – string de conexão do banco PostgreSQL.
 - `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` – usuário e senha criados no primeiro acesso ao sistema.
+Todas essas variáveis podem ser definidas no arquivo `.env` na raiz do projeto, carregado automaticamente pelos backends com `python-dotenv`.
 
 ## Fluxo Geral
 O **frontend-erp** se comunica apenas com o **backend-gateway** (porta 8040). Esse gateway repassa as requisições para os backends de marketing, produção e comercial de acordo com o prefixo da rota. Todos os serviços utilizam PostgreSQL e object storage em produção.
