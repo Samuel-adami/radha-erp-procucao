@@ -21,7 +21,16 @@ allow any agent to start the services locally and replicate the interface for te
    ```
 4. **Environment variables**: copy `frontend-erp/.env.example` to `.env` and set
    `VITE_GATEWAY_URL=http://localhost:8040`. Optionally set `VITE_DEFAULT_USERNAME` and
-   `VITE_DEFAULT_PASSWORD` for automatic login. Before running the services export:
+   `VITE_DEFAULT_PASSWORD` for automatic login. Each backend also provides a
+   `.env.example` file with `DATABASE_URL`, `SECRET_KEY` and other variables. Copy
+   them to `.env` in their respective folders:
+
+   - `backend-gateway/.env.example`
+   - `marketing-digital-ia/backend/.env.example`
+   - `producao/backend/src/.env.example`
+   - `comercial-backend/.env.example`
+
+   Before running the services export:
    ```bash
    export SECRET_KEY=radha-super-secreto
    export RADHA_DATA_DIR=$PWD/data
