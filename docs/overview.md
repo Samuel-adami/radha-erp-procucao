@@ -52,9 +52,12 @@ Para desenvolvimento local existem duas abordagens:
 Em produção o script `start_services.sh` é referenciado por `radha-erp.service`, permitindo que o `systemd` mantenha os processos ativos.
 
 ### Variáveis de Ambiente Principais
-- `SECRET_KEY` – chave usada para assinar tokens de autenticação em todos os serviços.
-- `DATABASE_URL` – string de conexão do banco PostgreSQL.
-- `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` – usuário e senha criados no primeiro acesso ao sistema.
+ - `SECRET_KEY` – chave usada para assinar tokens de autenticação em todos os serviços.
+ - `DATABASE_URL` – string de conexão do PostgreSQL compartilhado.
+ - `DATABASE_SCHEMA` – schema específico de cada módulo (gateway, producao etc.).
+ - `OBJECT_STORAGE_BUCKET` – bucket único para uploads.
+ - `OBJECT_STORAGE_PREFIX` – pasta/prefixo de cada módulo dentro do bucket.
+ - `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` – usuário e senha criados no primeiro acesso ao sistema.
 Todas essas variáveis podem ser definidas no arquivo `.env` na raiz do projeto, carregado automaticamente pelos backends com `python-dotenv`.
 
 ## Fluxo Geral

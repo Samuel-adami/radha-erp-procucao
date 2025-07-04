@@ -20,6 +20,9 @@ Em produção, configure o serviço systemd `radha-erp.service` apontando para o
 - `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` definem o usuário inicial criado no primeiro acesso.
 - `DATABASE_URL` define a conexão com o PostgreSQL utilizado em produção.
 - `SECRET_KEY` deve ser igual em todos os serviços para validação de tokens.
+- `DATABASE_SCHEMA` indica o schema utilizado por cada módulo.
+- `OBJECT_STORAGE_BUCKET` aponta para o bucket único de arquivos.
+- `OBJECT_STORAGE_PREFIX` define a pasta/prefixo do módulo dentro desse bucket.
 
 ## Atualização do Código
 Use `update_github.sh` para adicionar commits e enviar alterações para o GitHub.

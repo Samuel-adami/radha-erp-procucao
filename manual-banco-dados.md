@@ -105,7 +105,9 @@ Migrar o Radha ERP do modelo atual (banco SQLite + arquivos locais) para um ambi
   - `OBJECT_STORAGE_ACCESS_KEY`
   - `OBJECT_STORAGE_SECRET_KEY`
   - `OBJECT_STORAGE_BUCKET` (ex.: `radha-prod-backend`)
-  - `OBJECT_STORAGE_PREFIX` (nome da pasta/prefixo de cada módulo)
+
+  - `OBJECT_STORAGE_PREFIX` (ex.: `producao/`, `gateway/`, `comercial/`)
+
 - Instalar e usar um SDK Python (`boto3` para S3, `minio` para MinIO) nos backends relevantes.
 - Alterar as tabelas (`lotes`, `nestings`, `lotes_ocorrencias`) para que as colunas que guardam caminho local de arquivo (`pasta`, `pasta_resultado`) passem a armazenar apenas a **chave do objeto** ou **URL** no storage.
 - Implementar upload dos arquivos gerados (DXF, DXT, ZIP) diretamente para o bucket no momento da geração, salvando a referência no banco.
