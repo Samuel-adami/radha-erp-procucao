@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from storage import upload_file, download_stream
+from storage import upload_file, download_stream, delete_file
 import xml.etree.ElementTree as ET
 import os
 import re
@@ -486,6 +486,7 @@ async def remover_nesting(request: Request):
         except ValueError:
             return {"erro": "Caminho inválido"}
         shutil.rmtree(pasta_resultado_resolved, ignore_errors=True)
+        delete_file(f"nestings/{pasta_resultado_resolved.name}.zip")
     return {"status": "ok"}
 
 
@@ -499,6 +500,7 @@ async def excluir_lote(request: Request):
     pasta = SAIDA_DIR / f"Lote_{numero_lote}"
     if pasta.is_dir():
         shutil.rmtree(pasta, ignore_errors=True)
+    delete_file(f"lotes/Lote_{numero_lote}.zip")
     try:
         with get_db_connection() as conn:
             conn.execute("DELETE FROM lotes WHERE pasta = ?", (str(pasta),))
@@ -860,6 +862,7 @@ async def excluir_lote_ocorrencia(oc_id: int):
                     return {"erro": "Caminho inválido"}
                 if pasta.is_dir():
                     shutil.rmtree(pasta, ignore_errors=True)
+                delete_file(f"ocorrencias/{pasta.name}.zip")
                 conn.execute(
                     "DELETE FROM lotes_ocorrencias WHERE id=?", (oc_id,)
                 )

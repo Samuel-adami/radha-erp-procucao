@@ -31,3 +31,11 @@ def download_stream(object_name: str, fallback_path: str):
         bio.seek(0)
         return bio
     return open(fallback_path, "rb")
+
+
+def delete_file(object_name: str) -> None:
+    if client:
+        try:
+            client.delete_object(Bucket=BUCKET, Key=object_name)
+        except Exception:
+            pass
