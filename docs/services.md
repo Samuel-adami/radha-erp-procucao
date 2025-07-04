@@ -1,66 +1,7 @@
-# Documentação de Deploy: Radha ERP em Produção (VPS Ubuntu)
-
-## Sumário
-
-- [1. Estrutura do Projeto](#1-estrutura-do-projeto)
-- [2. Comandos Essenciais de Instalação](#2-comandos-essenciais-de-instalação)
-- [3. Variáveis de Ambiente Importantes](#3-variáveis-de-ambiente-importantes)
-- [4. Build do Frontend](#4-build-do-frontend)
-- [5. Systemd: Serviços para Backends e Frontend](#5-systemd-serviços-para-backends-e-frontend)
-- [6. Comandos Úteis para Gerenciamento dos Serviços](#6-comandos-úteis-para-gerenciamento-dos-serviços)
-- [7. Scripts Prontos para Status de Todos os Serviços](#7-scripts-prontos-para-status-de-todos-os-serviços)
-- [8. Logs de Produção](#8-logs-de-produção)
-- [9. Observações Finais](#9-observações-finais)
-
----
-
-## 1. Estrutura do Projeto
-
-/home/samuel/radha-erp-producao/
-├── comercial/
-│ └── backend/
-├── producao/
-│ └── backend/
-├── marketing-digital-ia/
-│ └── backend/
-├── gateway/
-│ └── backend/
-├── frontend-erp/
-│ ├── dist/
-│ └── (código-fonte)
-├── venv/ # Ambiente virtual Python
-├── logs/
-└── .env # Arquivo de variáveis de ambiente
-
-
----
-
-## 2. Comandos Essenciais de Instalação
-
-# Atualize o sistema
-sudo apt update && sudo apt upgrade -y
-
-# Instale dependências básicas
-sudo apt install git python3.11 python3.11-venv python3.11-dev nodejs npm nginx -y
-
-# Clone o repositório (se ainda não fez)
-git clone git@github.com:Samuel-adami/radha-erp-producao.git
-
-# Crie e ative o ambiente virtual
-cd ~/radha-erp-producao
-python3.11 -m venv venv
-source venv/bin/activate
-
-# Instale dependências dos backends (repita para cada backend)
-pip install -r producao/backend/requirements.txt
-pip install -r comercial/backend/requirements.txt
-pip install -r marketing-digital-ia/backend/requirements.txt
-pip install -r gateway/backend/requirements.txt
-
-# Instale serve para o frontend (global ou local)
+## 1. Instale serve para o frontend (global ou local)
 sudo npm install -g serve
 
-# Build de produção do frontend
+## 2. Build de produção do frontend
 cd frontend-erp
 npm install
 npm run build
@@ -97,7 +38,7 @@ serve -s dist -l 3015
 ## 5. Systemd: Serviços para Backends e Frontend
 Exemplo para cada serviço (ajuste o caminho se necessário):
 
-#Produção
+# Produção
 /etc/systemd/system/radha-producao-backend.service
 
 [Unit]
@@ -106,7 +47,7 @@ After=network.target
 
 [Service]
 User=samuel
-WorkingDirectory=/home/samuel/radha-erp-producao/producao/backend
+WorkingDirectory=/home/samuel/radha-erp-producao/producao/backend/src
 ExecStart=/home/samuel/radha-erp-producao/venv/bin/uvicorn api:app --host 0.0.0.0 --port 8060
 Restart=always
 Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -114,19 +55,18 @@ Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/l
 [Install]
 WantedBy=multi-user.target
 
+---
+
 # Comercial
 /etc/systemd/system/radha-comercial-backend.service
 
-ini
-Copiar
-Editar
 [Unit]
 Description=Radha ERP - Backend Comercial
 After=network.target
 
 [Service]
 User=samuel
-WorkingDirectory=/home/samuel/radha-erp-producao/comercial/backend
+WorkingDirectory=/home/samuel/radha-erp-producao/comercial-backend
 ExecStart=/home/samuel/radha-erp-producao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8070
 Restart=always
 Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -134,12 +74,11 @@ Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/l
 [Install]
 WantedBy=multi-user.target
 
+---
+
 # Marketing IA
 /etc/systemd/system/radha-marketing-backend.service
 
-ini
-Copiar
-Editar
 [Unit]
 Description=Radha ERP - Backend Marketing Digital IA
 After=network.target
@@ -154,19 +93,18 @@ Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/l
 [Install]
 WantedBy=multi-user.target
 
+---
+
 # Gateway
 /etc/systemd/system/radha-gateway-backend.service
 
-ini
-Copiar
-Editar
 [Unit]
 Description=Radha ERP - Backend Gateway
 After=network.target
 
 [Service]
 User=samuel
-WorkingDirectory=/home/samuel/radha-erp-producao/gateway/backend
+WorkingDirectory=/home/samuel/radha-erp-producao/backend-gateway
 ExecStart=/home/samuel/radha-erp-producao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8040
 Restart=always
 Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -174,12 +112,11 @@ Environment=PATH=/home/samuel/radha-erp-producao/venv/bin:/usr/local/sbin:/usr/l
 [Install]
 WantedBy=multi-user.target
 
+---
+
 # Frontend
 /etc/systemd/system/radha-frontend.service
 
-ini
-Copiar
-Editar
 [Unit]
 Description=Radha ERP Frontend
 After=network.target
@@ -187,12 +124,14 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-producao/frontend-erp
-ExecStart=/usr/local/bin/serve -s dist -l 3015
+ExecStart=/usr/bin/npx serve -s dist -l 3015
 Restart=always
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target
+
+---
 
 # Ative e inicie todos os serviços:
 
@@ -248,9 +187,6 @@ Rode: ./radha-status.sh
 ## 8. Logs de Produção
 Todos os logs dos serviços podem ser visualizados via journalctl, ex:
 
-bash
-Copiar
-Editar
 sudo journalctl -u radha-producao-backend -n 40 --no-pager
 sudo journalctl -u radha-frontend -f
 Ou consulte a pasta /home/samuel/radha-erp-producao/logs/ se estiver redirecionando manualmente algum log.
