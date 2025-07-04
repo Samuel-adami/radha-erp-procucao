@@ -30,6 +30,9 @@ sudo systemctl start radha-producao-backend
 
 # Ver logs em tempo real
 sudo journalctl -u radha-producao-backend -f
+sudo journalctl -u radha-comercial-backend -f
+sudo journalctl -u radha-marketing-backend -f
+sudo journalctl -u radha-gateway-backend -f
 sudo journalctl -u radha-frontend -f
 
 ## Scripts Prontos para Status de Todos os Serviços
