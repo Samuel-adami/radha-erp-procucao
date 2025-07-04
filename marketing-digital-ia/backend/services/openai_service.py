@@ -3,7 +3,12 @@ import asyncio
 import logging
 import time
 from dotenv import load_dotenv
-from openai import AsyncOpenAI, OpenAIError
+try:
+    from openai import AsyncOpenAI, OpenAIError
+except Exception:  # pragma: no cover - fallback when package is missing
+    AsyncOpenAI = None
+    class OpenAIError(Exception):
+        pass
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import base64
@@ -17,7 +22,7 @@ API_KEY = os.getenv("OPENAI_API_KEY")
 API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
 # 🔧 Cliente OpenAI assíncrono (pode ser None se API_KEY não estiver configurada)
-client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE) if API_KEY else None
+client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE) if API_KEY and AsyncOpenAI else None
 
 # 🧠 Hashtags temáticas
 HASHTAGS_TEMATICAS = {
