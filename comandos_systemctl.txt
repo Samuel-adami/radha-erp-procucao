@@ -1,0 +1,58 @@
+## Ative e inicie todos os serviços:
+
+sudo systemctl daemon-reload
+sudo systemctl enable radha-producao-backend
+sudo systemctl enable radha-comercial-backend
+sudo systemctl enable radha-marketing-backend
+sudo systemctl enable radha-gateway-backend
+sudo systemctl enable radha-frontend
+
+sudo systemctl start radha-producao-backend
+sudo systemctl start radha-comercial-backend
+sudo systemctl start radha-marketing-backend
+sudo systemctl start radha-gateway-backend
+sudo systemctl start radha-frontend
+
+## Comandos Úteis para Gerenciamento dos Serviços
+
+# Verificar status individual
+sudo systemctl status radha-producao-backend
+sudo systemctl status radha-comercial-backend
+sudo systemctl status radha-marketing-backend
+sudo systemctl status radha-gateway-backend
+sudo systemctl status radha-frontend
+
+# Parar, iniciar, reiniciar
+sudo systemctl restart radha-producao-backend
+sudo systemctl stop radha-producao-backend
+sudo systemctl start radha-producao-backend
+# Repita para os outros serviços
+
+# Ver logs em tempo real
+sudo journalctl -u radha-producao-backend -f
+sudo journalctl -u radha-frontend -f
+
+## Scripts Prontos para Status de Todos os Serviços
+
+Dê permissão: chmod +x radha-status.sh
+
+Rode: ./radha-status.sh
+
+## Logs de Produção
+Todos os logs dos serviços podem ser visualizados via journalctl, ex:
+
+sudo journalctl -u radha-producao-backend -n 40 --no-pager
+sudo journalctl -u radha-frontend -f
+
+
+## Observações Finais
+Sempre verifique o status dos serviços após atualizações ou reboot.
+
+Em caso de erro, verifique os logs do serviço com journalctl.
+
+# Para atualizar o sistema, use sempre git pull e, se necessário, reinicie os serviços:
+
+git pull
+sudo systemctl restart radha-producao-backend
+sudo systemctl restart radha-frontend
+# ... e os demais
