@@ -32,3 +32,20 @@ def init_db():
             )"""
         ))
 
+        # Create initial admin user if the table is empty. This mirrors the
+        # documentation which states that the first login is defined via the
+        # RADHA_ADMIN_* environment variables.
+        result = conn.execute(text("SELECT COUNT(*) AS count FROM users"))
+        total = result.scalar_one()
+        if total == 0:
+            admin_user = os.getenv("RADHA_ADMIN_USER", "admin")
+            admin_pass = os.getenv("RADHA_ADMIN_PASS", "admin")
+            conn.execute(
+                text(
+                    "INSERT INTO users (username, password, email, nome, cargo, permissoes) "
+                    "VALUES (:u, :p, '', 'Administrador', 'admin', '[]')"
+                ),
+                {"u": admin_user, "p": bcrypt.hash(admin_pass)},
+            )
+
+
