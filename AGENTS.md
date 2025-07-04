@@ -29,6 +29,12 @@ allow any agent to start the services locally and replicate the interface for te
    export RADHA_ADMIN_PASS=admin
    ```
    `OPENAI_API_KEY` may be defined to enable AI features in Marketing Digital.
+   Configure gateway URLs if needed:
+   ```bash
+   export MARKETING_IA_BACKEND_URL=http://localhost:8050
+   export PRODUCAO_BACKEND_URL=http://localhost:8060
+   export COMERCIAL_BACKEND_URL=http://localhost:8070
+   ```
 
 ## Running the Application
 Execute `./start_services.sh` in the repository root. The script launches all backends and the
