@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, Response
 import httpx
 from typing import List
+import os
 from database import get_db_connection, init_db
 
 # CORRIGIDO: Adicionado redirect_slashes=False
@@ -27,10 +28,10 @@ app.add_middleware(
 )
 
 # Cliente HTTP para fazer requisições para os módulos de backend
-# Ajuste as URLs conforme onde seus módulos de backend rodarão
-MARKETING_IA_BACKEND_URL = "http://localhost:8050"
-PRODUCAO_BACKEND_URL = "http://localhost:8060"
-COMERCIAL_BACKEND_URL = "http://localhost:8070"
+# URLs podem ser configuradas via variáveis de ambiente
+MARKETING_IA_BACKEND_URL = os.getenv("MARKETING_IA_BACKEND_URL", "http://localhost:8050")
+PRODUCAO_BACKEND_URL = os.getenv("PRODUCAO_BACKEND_URL", "http://localhost:8060")
+COMERCIAL_BACKEND_URL = os.getenv("COMERCIAL_BACKEND_URL", "http://localhost:8070")
 
 
 def create_response(response: httpx.Response):

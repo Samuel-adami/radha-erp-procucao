@@ -28,7 +28,7 @@ Use `update_github.sh` para adicionar commits e enviar alterações para o GitHu
 Verifique se as portas 8040 (gateway), 8050 (marketing), 8060 (produção) e 8070 (comercial) estão livres. Os logs de cada backend podem ser analisados individualmente caso ocorram erros de inicialização.
 
 ### Templates do Comercial
-Os modelos de documentos ficam armazenados no banco `comercial.db`. Para que usuários consigam baixar orçamentos, cadastre templates do tipo **Orçamento** acessando o menu *Cadastros > Templates* no frontend.
+Os modelos de documentos ficam armazenados no banco configurado em `DATABASE_URL`. Para que usuários consigam baixar orçamentos, cadastre templates do tipo **Orçamento** acessando o menu *Cadastros > Templates* no frontend.
 ### Condições de Pagamento
-As condições de pagamento também são gravadas em `comercial.db`. Utilize *Cadastros > Condições de Pagamento* para definir parcelamentos e juros padrão.
+As condições de pagamento também são gravadas no PostgreSQL. Utilize *Cadastros > Condições de Pagamento* para definir parcelamentos e juros padrão.
 

@@ -1,6 +1,9 @@
 import os
 from sqlalchemy import create_engine, text
 from passlib.hash import bcrypt
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:

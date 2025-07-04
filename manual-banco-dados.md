@@ -1,6 +1,6 @@
 # Manual do Banco de Dados do Radha ERP
 
-Este documento resume as tabelas atuais de cada módulo (agora utilizando **PostgreSQL** via SQLAlchemy) e orienta sobre a configuração das variáveis de ambiente para execução em produção ou desenvolvimento.
+Este documento resume as tabelas atuais de cada módulo (agora utilizando **PostgreSQL** via SQLAlchemy) e orienta sobre a configuração das variáveis de ambiente para execução em produção ou desenvolvimento. Todas as aplicações carregam o arquivo `.env` na raiz com `python-dotenv` (`load_dotenv`).
 
 ## 1. backend-gateway
 ### Estrutura Atual (PostgreSQL)
