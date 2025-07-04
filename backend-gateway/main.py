@@ -15,8 +15,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3015",
         "http://127.0.0.1:3015",
-        "http://212.85.13.74:3015", # <--- SEU_IP_DO_VPS REAL
-        "https://seu-dominio-erp.com.br"
+        "http://212.85.13.74:3015", 
+        "https://erp.radhadigital.com.br"
     ],
     allow_credentials=True,
     allow_methods=["*"],
