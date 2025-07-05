@@ -6,11 +6,12 @@ load_dotenv(find_dotenv())
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
-    data_dir = os.environ.get("RADHA_DATA_DIR", os.path.dirname(__file__))
-    os.makedirs(data_dir, exist_ok=True)
-    DATABASE_URL = f"sqlite:///{os.path.join(data_dir, 'gateway.db')}"
+    raise RuntimeError("DATABASE_URL not configured")
 
-engine = create_engine(DATABASE_URL)
+schema = os.environ.get("DATABASE_SCHEMA")
+connect_args = {"options": f"-c search_path={schema}"} if schema else {}
+
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
 
 def get_db_connection():
