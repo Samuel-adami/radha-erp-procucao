@@ -1,6 +1,7 @@
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from dotenv import load_dotenv, find_dotenv
+from models import Base, Atendimento, AtendimentoTarefa, CondicaoPagamento, Template
 
 load_dotenv(find_dotenv())
 
@@ -19,33 +20,6 @@ def get_db_connection():
 
 
 def init_db():
-    with engine.begin() as conn:
-        conn.execute(text(
-            """CREATE TABLE IF NOT EXISTS atendimentos (
-                id SERIAL PRIMARY KEY,
-                cliente TEXT,
-                codigo TEXT,
-                projetos TEXT,
-                previsao_fechamento TEXT,
-                temperatura TEXT,
-                tem_especificador INTEGER,
-                especificador_nome TEXT,
-                rt_percent REAL,
-                entrega_diferente INTEGER,
-                historico TEXT,
-                arquivos_json TEXT,
-                procedencia TEXT,
-                vendedor TEXT,
-                telefone TEXT,
-                email TEXT,
-                rua TEXT,
-                numero TEXT,
-                complemento TEXT,
-                bairro TEXT,
-                cidade TEXT,
-                estado TEXT,
-                cep TEXT,
-                data_cadastro TEXT
-            )"""
-        ))
+    """Create all tables defined in models.py."""
+    Base.metadata.create_all(engine)
 
