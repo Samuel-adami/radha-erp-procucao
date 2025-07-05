@@ -9,7 +9,7 @@ if not hasattr(_bcrypt, "__about__"):
     _bcrypt.__about__ = SimpleNamespace(__version__=_bcrypt.__version__)
 from passlib.hash import bcrypt
 from sqlalchemy import text
-from database import get_db_connection
+from database import get_db_connection, DEFAULT_ADMIN_PERMISSIONS
 
 SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")
 ALGORITHM = "HS256"
@@ -107,6 +107,11 @@ def listar_usuarios() -> List[dict]:
 
 
 def criar_usuario(data: dict) -> int:
+    # If cargo is 'admin' and no permissions were provided, apply the default
+    permissoes = data.get("permissoes")
+    if data.get("cargo") == "admin" and not permissoes:
+        permissoes = DEFAULT_ADMIN_PERMISSIONS
+
     conn = get_db_connection()
     cur = conn.execute(
         text(
@@ -119,7 +124,7 @@ def criar_usuario(data: dict) -> int:
             "email": data.get("email"),
             "nome": data.get("nome"),
             "cargo": data.get("cargo"),
-            "permissoes": json.dumps(data.get("permissoes", [])),
+            "permissoes": json.dumps(permissoes or []),
         },
     )
     conn.commit()
@@ -129,6 +134,11 @@ def criar_usuario(data: dict) -> int:
 
 
 def atualizar_usuario(user_id: int, data: dict) -> bool:
+    # Apply default permissions when elevating a user to admin with none set
+    permissoes = data.get("permissoes")
+    if data.get("cargo") == "admin" and not permissoes:
+        permissoes = DEFAULT_ADMIN_PERMISSIONS
+
     conn = get_db_connection()
     cur = conn.execute(
         text(
@@ -141,7 +151,7 @@ def atualizar_usuario(user_id: int, data: dict) -> bool:
             "email": data.get("email"),
             "nome": data.get("nome"),
             "cargo": data.get("cargo"),
-            "permissoes": json.dumps(data.get("permissoes", [])),
+            "permissoes": json.dumps(permissoes or []),
             "id": user_id,
         },
     )
