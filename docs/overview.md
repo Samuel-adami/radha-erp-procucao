@@ -57,7 +57,7 @@ Em produção o script `start_services.sh` é referenciado por `radha-erp.servic
  - `DATABASE_SCHEMA` – schema específico de cada módulo (gateway, producao etc.).
  - `OBJECT_STORAGE_BUCKET` – bucket único para uploads.
  - `OBJECT_STORAGE_PREFIX` – pasta/prefixo de cada módulo dentro do bucket.
- - `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` – usuário e senha criados no primeiro acesso ao sistema.
+- `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` – definem o login inicial criado no primeiro acesso. Esse usuário recebe permissões completas para configurar o ERP e cadastrar novos usuários.
 Todas essas variáveis podem ser definidas no arquivo `.env` na raiz do projeto, carregado automaticamente pelos backends com `python-dotenv`.
 
 ## Fluxo Geral

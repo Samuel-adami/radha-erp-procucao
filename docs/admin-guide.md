@@ -17,7 +17,7 @@ Os comandos de `rodar_ambientes.txt` mostram como iniciar manualmente cada servi
 Em produção, configure o serviço systemd `radha-erp.service` apontando para o diretório do repositório.
 
 ### Variáveis de Ambiente
-- `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` definem o usuário inicial criado no primeiro acesso.
+- `RADHA_ADMIN_USER` e `RADHA_ADMIN_PASS` definem o usuário inicial criado no primeiro acesso. Esse administrador possui todas as permissões para configurar o ERP e cadastrar novas contas.
 - `DATABASE_URL` define a conexão com o PostgreSQL utilizado em produção.
 - `SECRET_KEY` deve ser igual em todos os serviços para validação de tokens.
 - `DATABASE_SCHEMA` indica o schema utilizado por cada módulo.

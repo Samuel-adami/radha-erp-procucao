@@ -1,6 +1,7 @@
 import os
 from sqlalchemy import create_engine, text
 from passlib.hash import bcrypt
+import json
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -12,6 +13,35 @@ if not DATABASE_URL:
     DATABASE_URL = f"sqlite:///{os.path.join(data_dir, 'marketing_ia.db')}"
 
 engine = create_engine(DATABASE_URL)
+
+# All available permission strings, granting access to every module of the ERP
+# front-end. These are applied to the initial administrator created on first
+# run so the admin can configure the system and cadastrar novos usuários.
+DEFAULT_ADMIN_PERMISSIONS = [
+    "cadastros",
+    "cadastros/dados-empresa",
+    "cadastros/clientes",
+    "cadastros/fornecedores",
+    "cadastros/usuarios",
+    "cadastros/condicoes-pagamento",
+    "comercial",
+    "comercial/atendimentos",
+    "formularios",
+    "formularios/briefing-vendas",
+    "marketing-ia",
+    "marketing-ia/chat",
+    "marketing-ia/nova-campanha",
+    "marketing-ia/nova-publicacao",
+    "marketing-ia/publicos-alvo",
+    "producao",
+    "producao/apontamento",
+    "producao/apontamento-volume",
+    "producao/chapas",
+    "producao/lote",
+    "producao/nesting",
+    "producao/ocorrencias",
+    "producao/relatorios/ocorrencias",
+]
 
 
 def get_db_connection():
@@ -43,9 +73,13 @@ def init_db():
             conn.execute(
                 text(
                     "INSERT INTO users (username, password, email, nome, cargo, permissoes) "
-                    "VALUES (:u, :p, '', 'Administrador', 'admin', '[]')"
+                    "VALUES (:u, :p, '', 'Administrador', 'admin', :perms)"
                 ),
-                {"u": admin_user, "p": bcrypt.hash(admin_pass)},
+                {
+                    "u": admin_user,
+                    "p": bcrypt.hash(admin_pass),
+                    "perms": json.dumps(DEFAULT_ADMIN_PERMISSIONS),
+                },
             )
 
 
