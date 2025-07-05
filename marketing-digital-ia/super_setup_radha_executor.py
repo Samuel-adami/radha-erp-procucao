@@ -37,14 +37,19 @@ async def root():
     return {"message": "Radha Executor API funcionando!"}
 ''',
     'backend/database.py': '''
-import sqlite3
+import os
+from sqlalchemy import create_engine
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL not configured")
+
+engine = create_engine(DATABASE_URL)
 
 def get_db_connection():
-    conn = sqlite3.connect('radha_executor.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+    return engine.connect()
 ''',
-    'backend/requirements.txt': 'fastapi\nuvicorn\npydantic\nhttpx\n',
+    'backend/requirements.txt': 'fastapi\nuvicorn\npydantic\nhttpx\npsycopg2-binary\n',
     'backend/routes/chat.py': '''
 from fastapi import APIRouter
 from pydantic import BaseModel
