@@ -1,6 +1,7 @@
 import os
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from dotenv import load_dotenv, find_dotenv
+from models import Base, Chapa, Lote, Nesting
 
 load_dotenv(find_dotenv())
 
@@ -19,30 +20,6 @@ def get_db_connection():
 
 
 def init_db():
-    with engine.begin() as conn:
-        conn.execute(text(
-            """CREATE TABLE IF NOT EXISTS chapas (
-                id SERIAL PRIMARY KEY,
-                possui_veio INTEGER,
-                propriedade TEXT,
-                espessura REAL,
-                comprimento REAL,
-                largura REAL
-            )"""
-        ))
-        conn.execute(text(
-            """CREATE TABLE IF NOT EXISTS lotes (
-                id SERIAL PRIMARY KEY,
-                pasta TEXT,
-                criado_em TEXT
-            )"""
-        ))
-        conn.execute(text(
-            """CREATE TABLE IF NOT EXISTS nestings (
-                id SERIAL PRIMARY KEY,
-                lote TEXT,
-                pasta_resultado TEXT,
-                criado_em TEXT
-            )"""
-        ))
+    """Create all tables defined in models.py."""
+    Base.metadata.create_all(engine)
 
