@@ -1,7 +1,9 @@
 # Radha ERP Agent Instructions
 
-This repository contains multiple Python backends and a React frontend. The instructions below
-allow any agent to start the services locally and replicate the interface for testing.
+The Radha ERP stack is currently deployed in production at
+`https://erp.radhadigital.com.br`.  The repository contains multiple Python
+backends and a React frontend.  The notes below explain how to run the services
+locally for tests and how the production environment is structured.
 
 ## Environment Setup
 1. **Install dependencies**: Python 3.11+ and Node.js 18+ with npm.
@@ -45,9 +47,21 @@ allow any agent to start the services locally and replicate the interface for te
    export COMERCIAL_BACKEND_URL=http://localhost:8070
    ```
 
-## Running the Application
-Execute `./start_services.sh` in the repository root. The script launches all backends and the
-React frontend in development mode:
+## Database Configuration
+All backends connect to the same PostgreSQL instance defined by
+`DATABASE_URL`.  Each service uses its own `DATABASE_SCHEMA` so tables are
+isolated by module.  The production database is named `producao` and includes
+these schemas:
+
+- **gateway** – table `empresa` com dados cadastrais.
+- **marketing** – table `users` contendo usuários e permissões.
+- **producao** – tables `chapas`, `lotes` e `nestings` para o fluxo de
+  fabricação.
+- **comercial** – table `atendimentos` armazenando registros de vendas.
+
+## Running the Application (Local Development)
+For local testing you can execute `./start_services.sh` in the repository root.
+The script launches all backends and the React frontend in development mode:
  - Gateway: http://localhost:8040
  - Marketing Digital IA: http://localhost:8050
  - Produção: http://localhost:8060
@@ -62,8 +76,8 @@ Access `http://localhost:3005` in your browser and log in using the credentials 
 - Backends currently lack automated tests; ensure each service starts without errors when executing `uvicorn`.
 
 ## Stopping the Services
-Stop `start_services.sh` with `Ctrl+C`. If any process remains running, kill it manually
-using `pkill uvicorn` and `pkill node` or the process IDs shown when the services started.
+When running locally, stop `start_services.sh` with `Ctrl+C`. If any process
+remains running, kill it manually using `pkill uvicorn` and `pkill node`.
 
 ## Systemd Service Configuration
 On the production server each module runs as a systemd unit. The examples below assume the repository lives in `/home/samuel/radha-erp-procucao` and that the virtual environment is located at `venv`.
@@ -208,6 +222,23 @@ server {
     # Se tiver outras rotas de API, adicione aqui:
 }
 ```
+
+## Deploying Changes
+The production environment is controlled exclusively through `systemd` and
+Nginx.  After modifying any backend or the frontend you must restart the
+corresponding service and reload Nginx:
+
+```bash
+sudo systemctl restart radha-gateway-backend.service
+sudo systemctl restart radha-marketing-backend.service
+sudo systemctl restart radha-producao-backend.service
+sudo systemctl restart radha-comercial-backend.service
+sudo systemctl restart radha-frontend.service
+sudo systemctl reload nginx
+```
+
+Running the applications manually is discouraged in production.  Always update
+the services and let the systemd units keep them alive.
 
 ### /etc/nginx/sites-available/radha-gateway-https
 ```
