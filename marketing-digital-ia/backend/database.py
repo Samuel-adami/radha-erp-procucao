@@ -81,5 +81,25 @@ def init_db():
                     "perms": json.dumps(DEFAULT_ADMIN_PERMISSIONS),
                 },
             )
+        else:
+            # Existing administrator accounts may have been created before the
+            # DEFAULT_ADMIN_PERMISSIONS constant was defined. Ensure they have
+            # at least all permissions for the Cadastros module so the menu is
+            # visible.
+            result = conn.execute(
+                text("SELECT id, permissoes FROM users WHERE cargo='admin'")
+            ).fetchall()
+            for row in result:
+                perms = json.loads(row._mapping["permissoes"] or "[]")
+                updated = False
+                for perm in DEFAULT_ADMIN_PERMISSIONS:
+                    if perm.startswith("cadastros") and perm not in perms:
+                        perms.append(perm)
+                        updated = True
+                if updated:
+                    conn.execute(
+                        text("UPDATE users SET permissoes=:p WHERE id=:id"),
+                        {"p": json.dumps(perms), "id": row._mapping["id"]},
+                    )
 
 
