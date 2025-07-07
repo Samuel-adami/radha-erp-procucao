@@ -3,6 +3,11 @@
 LOGDIR="/home/samuel/radha-erp-producao/logs"
 VENVDIR="/home/samuel/radha-erp-producao/venv"
 
+# Default backend URLs for the gateway
+export MARKETING_IA_BACKEND_URL=${MARKETING_IA_BACKEND_URL:-http://127.0.0.1:8050}
+export PRODUCAO_BACKEND_URL=${PRODUCAO_BACKEND_URL:-http://127.0.0.1:8060}
+export COMERCIAL_BACKEND_URL=${COMERCIAL_BACKEND_URL:-http://127.0.0.1:8070}
+
 echo "Matando processos antigos nas portas 8040, 8050, 8060, 8070 e 3015..."
 for port in 8040 8050 8060 8070 3015; do
     for pid in $(lsof -t -i:$port); do
