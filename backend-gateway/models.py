@@ -23,3 +23,39 @@ class Empresa(Base):
     telefone2 = Column(String)
     slogan = Column(String)
     logo = Column(LargeBinary)
+
+
+class Cliente(Base):
+    """Cadastro de clientes."""
+
+    __tablename__ = "clientes"
+
+    id = Column(Integer, primary_key=True)
+    codigo = Column(String)
+    nome = Column(String)
+    documento = Column(String)
+    rg_ie = Column(String)
+    sexo = Column(String)
+    data_nascimento = Column(String)
+    telefone1 = Column(String)
+    telefone2 = Column(String)
+    pais = Column(String)
+    profissao = Column(String)
+    cep = Column(String)
+    cidade = Column(String)
+    estado = Column(String)
+    endereco = Column(String)
+    numero = Column(String)
+    complemento = Column(String)
+    bairro = Column(String)
+    email = Column(String)
+
+
+class Fornecedor(Base):
+    """Cadastro de fornecedores."""
+
+    __tablename__ = "fornecedores"
+
+    id = Column(Integer, primary_key=True)
+    nome = Column(String)
+    contato = Column(String)

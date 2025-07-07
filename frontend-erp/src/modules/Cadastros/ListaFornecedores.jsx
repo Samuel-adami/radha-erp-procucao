@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchComAuth } from '../../utils/fetchComAuth';
 
 const ListaFornecedores = () => {
   const [fornecedores, setFornecedores] = useState([]);
 
-  const carregar = () => {
-    const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]');
-    setFornecedores(lista);
+  const carregar = async () => {
+    try {
+      const data = await fetchComAuth('/fornecedores');
+      setFornecedores(data?.fornecedores || []);
+    } catch (err) {
+      console.error('Erro ao carregar fornecedores', err);
+    }
   };
 
   useEffect(() => {
     carregar();
   }, []);
 
-  const excluir = id => {
-    const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]').filter(f => f.id !== id);
-    localStorage.setItem('fornecedores', JSON.stringify(lista));
-    carregar();
+  const excluir = async id => {
+    try {
+      await fetchComAuth(`/fornecedores/${id}`, { method: 'DELETE' });
+      carregar();
+    } catch (err) {
+      console.error('Erro ao excluir', err);
+    }
   };
 
   return (

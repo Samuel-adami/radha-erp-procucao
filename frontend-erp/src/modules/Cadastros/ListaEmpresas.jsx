@@ -1,21 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchComAuth } from '../../utils/fetchComAuth';
 
 const ListaEmpresas = () => {
   const [empresa, setEmpresa] = useState(null);
 
-  const carregar = () => {
-    const obj = JSON.parse(localStorage.getItem('empresa') || 'null');
-    setEmpresa(obj);
+  const carregar = async () => {
+    try {
+      const data = await fetchComAuth('/empresa');
+      setEmpresa(data?.empresas ? data.empresas[0] : null);
+    } catch (err) {
+      console.error('Erro ao carregar empresa', err);
+    }
   };
 
   useEffect(() => {
     carregar();
   }, []);
 
-  const excluir = () => {
-    localStorage.removeItem('empresa');
-    carregar();
+  const excluir = async () => {
+    if (!empresa) return;
+    try {
+      await fetchComAuth(`/empresa/${empresa.id}`, { method: 'DELETE' });
+      setEmpresa(null);
+    } catch (err) {
+      console.error('Erro ao excluir empresa', err);
+    }
   };
 
   return (

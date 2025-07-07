@@ -27,8 +27,13 @@ function DadosEmpresa() {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    const existente = JSON.parse(localStorage.getItem('empresa') || 'null');
-    if (existente) setForm({ ...initialForm, ...existente, logoFile: null });
+    fetchComAuth('/empresa')
+      .then(d => {
+        if (d && d.empresas && d.empresas[0]) {
+          setForm({ ...initialForm, ...d.empresas[0], logoFile: null });
+        }
+      })
+      .catch(err => console.error('Erro ao carregar empresa', err));
   }, []);
 
   const handle = campo => e => {
@@ -88,14 +93,12 @@ function DadosEmpresa() {
     }
     try {
       await fetchComAuth('/empresa', { method: 'PUT', body: data });
+      alert('Dados salvos');
+      setDirty(false);
     } catch (err) {
-      console.warn('Falha ao salvar remotamente, usando localStorage', err);
+      console.error('Erro ao salvar empresa', err);
+      alert('Falha ao salvar');
     }
-    const toSave = { ...form };
-    delete toSave.logoFile;
-    localStorage.setItem('empresa', JSON.stringify(toSave));
-    alert('Dados salvos');
-    setDirty(false);
   };
 
   const handleSubmit = e => {

@@ -6,7 +6,7 @@ import httpx
 from typing import List
 import os
 from database import get_session, init_db
-from models import Empresa
+from models import Empresa, Cliente, Fornecedor
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
@@ -322,3 +322,145 @@ async def usuarios_proxy(path: str = "", request: Request = None):
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
             return JSONResponse({"detail": f"Erro de conexão com backend de usuários: {e}"}, status_code=503)
+
+
+# -------------------------
+# Cadastros - Clientes
+# -------------------------
+
+@app.post("/clientes")
+async def criar_cliente(request: Request):
+    data = await request.json()
+    session = get_session()
+    try:
+        cliente = Cliente(**data)
+        session.add(cliente)
+        session.commit()
+        session.refresh(cliente)
+        return {"id": cliente.id}
+    finally:
+        session.close()
+
+
+@app.get("/clientes")
+async def listar_clientes():
+    session = get_session()
+    try:
+        itens = [c.__dict__ for c in session.query(Cliente).order_by(Cliente.id).all()]
+        for it in itens:
+            it.pop("_sa_instance_state", None)
+        return {"clientes": itens}
+    finally:
+        session.close()
+
+
+@app.get("/clientes/{cliente_id}")
+async def obter_cliente(cliente_id: int):
+    session = get_session()
+    try:
+        c = session.query(Cliente).filter(Cliente.id == cliente_id).first()
+        if not c:
+            return JSONResponse({"detail": "Cliente não encontrado"}, status_code=404)
+        data = c.__dict__.copy()
+        data.pop("_sa_instance_state", None)
+        return {"cliente": data}
+    finally:
+        session.close()
+
+
+@app.put("/clientes/{cliente_id}")
+async def atualizar_cliente(cliente_id: int, request: Request):
+    data = await request.json()
+    session = get_session()
+    try:
+        cliente = session.query(Cliente).filter(Cliente.id == cliente_id).first()
+        if not cliente:
+            return JSONResponse({"detail": "Cliente não encontrado"}, status_code=404)
+        for k, v in data.items():
+            setattr(cliente, k, v)
+        session.commit()
+        return {"ok": True}
+    finally:
+        session.close()
+
+
+@app.delete("/clientes/{cliente_id}")
+async def excluir_cliente(cliente_id: int):
+    session = get_session()
+    try:
+        session.query(Cliente).filter(Cliente.id == cliente_id).delete()
+        session.commit()
+        return {"ok": True}
+    finally:
+        session.close()
+
+
+# -------------------------
+# Cadastros - Fornecedores
+# -------------------------
+
+@app.post("/fornecedores")
+async def criar_fornecedor(request: Request):
+    data = await request.json()
+    session = get_session()
+    try:
+        fornecedor = Fornecedor(**data)
+        session.add(fornecedor)
+        session.commit()
+        session.refresh(fornecedor)
+        return {"id": fornecedor.id}
+    finally:
+        session.close()
+
+
+@app.get("/fornecedores")
+async def listar_fornecedores():
+    session = get_session()
+    try:
+        itens = [f.__dict__ for f in session.query(Fornecedor).order_by(Fornecedor.id).all()]
+        for it in itens:
+            it.pop("_sa_instance_state", None)
+        return {"fornecedores": itens}
+    finally:
+        session.close()
+
+
+@app.get("/fornecedores/{fornecedor_id}")
+async def obter_fornecedor(fornecedor_id: int):
+    session = get_session()
+    try:
+        f = session.query(Fornecedor).filter(Fornecedor.id == fornecedor_id).first()
+        if not f:
+            return JSONResponse({"detail": "Fornecedor não encontrado"}, status_code=404)
+        data = f.__dict__.copy()
+        data.pop("_sa_instance_state", None)
+        return {"fornecedor": data}
+    finally:
+        session.close()
+
+
+@app.put("/fornecedores/{fornecedor_id}")
+async def atualizar_fornecedor(fornecedor_id: int, request: Request):
+    data = await request.json()
+    session = get_session()
+    try:
+        fornecedor = session.query(Fornecedor).filter(Fornecedor.id == fornecedor_id).first()
+        if not fornecedor:
+            return JSONResponse({"detail": "Fornecedor não encontrado"}, status_code=404)
+        for k, v in data.items():
+            setattr(fornecedor, k, v)
+        session.commit()
+        return {"ok": True}
+    finally:
+        session.close()
+
+
+@app.delete("/fornecedores/{fornecedor_id}")
+async def excluir_fornecedor(fornecedor_id: int):
+    session = get_session()
+    try:
+        session.query(Fornecedor).filter(Fornecedor.id == fornecedor_id).delete()
+        session.commit()
+        return {"ok": True}
+    finally:
+        session.close()
