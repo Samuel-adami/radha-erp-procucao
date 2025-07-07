@@ -30,9 +30,12 @@ app.add_middleware(
 
 # Cliente HTTP para fazer requisições para os módulos de backend
 # URLs podem ser configuradas via variáveis de ambiente
-MARKETING_IA_BACKEND_URL = os.getenv("MARKETING_IA_BACKEND_URL", "http://localhost:8050")
-PRODUCAO_BACKEND_URL = os.getenv("PRODUCAO_BACKEND_URL", "http://localhost:8060")
-COMERCIAL_BACKEND_URL = os.getenv("COMERCIAL_BACKEND_URL", "http://localhost:8070")
+# Use IPv4 loopback by default to avoid potential issues resolving "localhost"
+MARKETING_IA_BACKEND_URL = os.getenv(
+    "MARKETING_IA_BACKEND_URL", "http://127.0.0.1:8050"
+)
+PRODUCAO_BACKEND_URL = os.getenv("PRODUCAO_BACKEND_URL", "http://127.0.0.1:8060")
+COMERCIAL_BACKEND_URL = os.getenv("COMERCIAL_BACKEND_URL", "http://127.0.0.1:8070")
 
 
 def create_response(response: httpx.Response):
