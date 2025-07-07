@@ -34,9 +34,12 @@ class Cliente(Base):
     codigo = Column(String)
     nome = Column(String)
     documento = Column(String)
-    rg_ie = Column(String)
+
+    # Campos enviados pelo frontend em camelCase
+    rgIe = Column("rg_ie", String)
     sexo = Column(String)
-    data_nascimento = Column(String)
+    dataNascimento = Column("data_nascimento", String)
+
     telefone1 = Column(String)
     telefone2 = Column(String)
     pais = Column(String)
@@ -49,6 +52,11 @@ class Cliente(Base):
     complemento = Column(String)
     bairro = Column(String)
     email = Column(String)
+
+    # Novos campos de origem e status do imóvel
+    procedencia = Column(String)
+    estadoImovel = Column("estado_imovel", String)
+    previsaoFechamento = Column("previsao_fechamento", String)
 
 
 class Fornecedor(Base):
