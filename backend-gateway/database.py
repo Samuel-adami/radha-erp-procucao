@@ -1,5 +1,6 @@
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
 from models import Base, Empresa
 from dotenv import load_dotenv, find_dotenv
 
@@ -13,10 +14,12 @@ schema = os.environ.get("DATABASE_SCHEMA")
 connect_args = {"options": f"-c search_path={schema}"} if schema else {}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
+SessionLocal = sessionmaker(bind=engine)
 
 
-def get_db_connection():
-    return engine.connect()
+def get_session() -> Session:
+    """Return a new SQLAlchemy session."""
+    return SessionLocal()
 
 
 def init_db():

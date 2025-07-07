@@ -5,7 +5,8 @@ from starlette.responses import JSONResponse, Response
 import httpx
 from typing import List
 import os
-from database import get_db_connection, init_db
+from database import get_session, init_db
+from models import Empresa
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
@@ -161,39 +162,84 @@ async def criar_empresa(request: Request):
         form.get("slogan"),
         logo_bytes,
     )
-    with get_db_connection() as conn:
-        cur = conn.execute(
-            """INSERT INTO empresa (
-                codigo, razao_social, nome_fantasia, cnpj,
-                inscricao_estadual, cep, rua, numero,
-                complemento, bairro, cidade, estado, telefone1,
-                telefone2, slogan, logo
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            fields,
+    session = get_session()
+    try:
+        empresa = Empresa(
+            codigo=form.get("codigo"),
+            razao_social=form.get("razaoSocial"),
+            nome_fantasia=form.get("nomeFantasia"),
+            cnpj=form.get("cnpj"),
+            inscricao_estadual=form.get("inscricaoEstadual"),
+            cep=form.get("cep"),
+            rua=form.get("rua"),
+            numero=form.get("numero"),
+            complemento=form.get("complemento"),
+            bairro=form.get("bairro"),
+            cidade=form.get("cidade"),
+            estado=form.get("estado"),
+            telefone1=form.get("telefone1"),
+            telefone2=form.get("telefone2"),
+            slogan=form.get("slogan"),
+            logo=logo_bytes,
         )
-        conn.commit()
-        new_id = cur.lastrowid
-    return {"id": new_id}
+        session.add(empresa)
+        session.commit()
+        session.refresh(empresa)
+        return {"id": empresa.id}
+    finally:
+        session.close()
 
 
 @app.get("/empresa")
 async def listar_empresas():
     """Lista todas as empresas cadastradas."""
-    with get_db_connection() as conn:
-        rows = conn.execute(
-            "SELECT id, codigo, razao_social, nome_fantasia, cnpj, slogan FROM empresa ORDER BY id"
-        ).fetchall()
-        empresas = [dict(row) for row in rows]
-    return {"empresas": empresas}
+    session = get_session()
+    try:
+        rows = session.query(Empresa).order_by(Empresa.id).all()
+        empresas = [
+            {
+                "id": e.id,
+                "codigo": e.codigo,
+                "razao_social": e.razao_social,
+                "nome_fantasia": e.nome_fantasia,
+                "cnpj": e.cnpj,
+                "slogan": e.slogan,
+            }
+            for e in rows
+        ]
+        return {"empresas": empresas}
+    finally:
+        session.close()
 
 
 @app.get("/empresa/{empresa_id}")
 async def obter_empresa(empresa_id: int):
-    with get_db_connection() as conn:
-        row = conn.execute("SELECT * FROM empresa WHERE id=?", (empresa_id,)).fetchone()
-        if not row:
+    session = get_session()
+    try:
+        empresa = session.query(Empresa).filter(Empresa.id == empresa_id).first()
+        if not empresa:
             return JSONResponse({"detail": "Empresa não encontrada"}, status_code=404)
-        return {"empresa": dict(row)}
+        return {"empresa": {
+            "id": empresa.id,
+            "codigo": empresa.codigo,
+            "razao_social": empresa.razao_social,
+            "nome_fantasia": empresa.nome_fantasia,
+            "cnpj": empresa.cnpj,
+            "inscricao_estadual": empresa.inscricao_estadual,
+            "cep": empresa.cep,
+            "rua": empresa.rua,
+            "numero": empresa.numero,
+            "complemento": empresa.complemento,
+            "bairro": empresa.bairro,
+            "cidade": empresa.cidade,
+            "estado": empresa.estado,
+            "telefone1": empresa.telefone1,
+            "telefone2": empresa.telefone2,
+            "slogan": empresa.slogan,
+            "logo": empresa.logo,
+        }}
+    finally:
+        session.close()
 
 
 @app.put("/empresa/{empresa_id}")
@@ -201,37 +247,34 @@ async def atualizar_empresa(empresa_id: int, request: Request):
     form = await request.form()
     logo_file = form.get("logo")
     logo_bytes = await logo_file.read() if logo_file else None
-    fields = (
-        form.get("codigo"),
-        form.get("razaoSocial"),
-        form.get("nomeFantasia"),
-        form.get("cnpj"),
-        form.get("inscricaoEstadual"),
-        form.get("cep"),
-        form.get("rua"),
-        form.get("numero"),
-        form.get("complemento"),
-        form.get("bairro"),
-        form.get("cidade"),
-        form.get("estado"),
-        form.get("telefone1"),
-        form.get("telefone2"),
-        form.get("slogan"),
-        logo_bytes,
-        empresa_id,
-    )
-    with get_db_connection() as conn:
-        conn.execute(
-            """UPDATE empresa SET
-                codigo=?, razao_social=?, nome_fantasia=?, cnpj=?,
-                inscricao_estadual=?, cep=?, rua=?, numero=?,
-                complemento=?, bairro=?, cidade=?, estado=?, telefone1=?,
-                telefone2=?, slogan=?, logo=?
-            WHERE id=?""",
-            fields,
-        )
-        conn.commit()
-    return {"ok": True}
+
+    session = get_session()
+    try:
+        empresa = session.query(Empresa).filter(Empresa.id == empresa_id).first()
+        if not empresa:
+            return JSONResponse({"detail": "Empresa não encontrada"}, status_code=404)
+
+        empresa.codigo = form.get("codigo")
+        empresa.razao_social = form.get("razaoSocial")
+        empresa.nome_fantasia = form.get("nomeFantasia")
+        empresa.cnpj = form.get("cnpj")
+        empresa.inscricao_estadual = form.get("inscricaoEstadual")
+        empresa.cep = form.get("cep")
+        empresa.rua = form.get("rua")
+        empresa.numero = form.get("numero")
+        empresa.complemento = form.get("complemento")
+        empresa.bairro = form.get("bairro")
+        empresa.cidade = form.get("cidade")
+        empresa.estado = form.get("estado")
+        empresa.telefone1 = form.get("telefone1")
+        empresa.telefone2 = form.get("telefone2")
+        empresa.slogan = form.get("slogan")
+        empresa.logo = logo_bytes
+
+        session.commit()
+        return {"ok": True}
+    finally:
+        session.close()
 
 @app.get("/auth/validate")
 async def validate_token(request: Request):
