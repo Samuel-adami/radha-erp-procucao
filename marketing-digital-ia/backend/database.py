@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine
 from dotenv import load_dotenv, find_dotenv
-from models import Base, User
+from db_models import Base, User
 
 load_dotenv(find_dotenv())
 
@@ -49,7 +49,7 @@ def get_db_connection():
 
 
 def init_db():
-    """Create all tables defined in models.py."""
+    """Create all tables defined in db_models.py."""
     Base.metadata.create_all(engine)
 
 
