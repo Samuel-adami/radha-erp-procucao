@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+from collections import OrderedDict
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import itertools
@@ -14,6 +15,36 @@ import ezdxf
 import math
 from ezdxf.math import ConstructionArc
 from PIL import Image, ImageDraw
+
+def _parse_angle(value: Optional[str]) -> int:
+    """Return rotation angle in degrees extracted from a string."""
+    if not value:
+        return 0
+    digits = re.findall(r"-?\d+", str(value))
+    if not digits:
+        return 0
+    try:
+        angle = int(digits[0]) % 360
+    except ValueError:
+        angle = 0
+    return angle
+
+
+def _apply_image_orientation(img: Image.Image, cfg: Dict) -> Image.Image:
+    """Rotate/flip image according to machine configuration."""
+    if cfg.get("inverterXChapa"):
+        img = img.transpose(Image.FLIP_LEFT_RIGHT)
+    if cfg.get("inverterYChapa"):
+        img = img.transpose(Image.FLIP_TOP_BOTTOM)
+    ang = _parse_angle(cfg.get("anguloRotacaoChapa"))
+    if ang == 90:
+        img = img.rotate(-90, expand=True)
+    elif ang == 180:
+        img = img.rotate(180, expand=True)
+    elif ang == 270:
+        img = img.rotate(-270, expand=True)
+    return img
+
 from database import get_db_connection
 
 
@@ -23,6 +54,12 @@ def _sanitize_extension(ext: Optional[str], default: str = "bmp") -> str:
     if not ext or f".{ext}" not in Image.registered_extensions():
         return default
     return ext
+
+
+def _add_field(cycle: ET.Element, name: str, value: str) -> ET.Element:
+    """Create a ``Field`` element ensuring ``Value`` precedes ``Name``."""
+    attrib = OrderedDict([("Value", value), ("Name", name)])
+    return ET.SubElement(cycle, "Field", attrib=attrib)
 
 
 def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
@@ -297,10 +334,10 @@ def _gerar_cyc(
         root = ET.Element('CycleFile')
         for p in todas:
             cycle = ET.SubElement(root, 'Cycle', Name='Cycle_Label')
-            ET.SubElement(cycle, 'Field', Name='LabelName', Value=f"{p['Program1']}.bmp")
-            ET.SubElement(cycle, 'Field', Name='X', Value=str(p['x'] + p['Length']/2))
-            ET.SubElement(cycle, 'Field', Name='Y', Value=str(p['y'] + p['Width']/2))
-            ET.SubElement(cycle, 'Field', Name='R', Value='0')
+            _add_field(cycle, 'LabelName', f"{p['Program1']}.bmp")
+            _add_field(cycle, 'X', str(p['x'] + p['Length']/2))
+            _add_field(cycle, 'Y', str(p['y'] + p['Width']/2))
+            _add_field(cycle, 'R', '0')
         tree = ET.ElementTree(root)
         try:
             ET.indent(tree, space="  ")
@@ -313,26 +350,36 @@ def _gerar_xml_chapas(
     saida: Path,
     largura_chapa: float,
     altura_chapa: float,
+    nome_lote: str,
 ) -> None:
+    """Gera o XML com a lista de chapas seguindo o formato da máquina."""
+
     root = ET.Element("CycleFile")
+
+    orientacao = "Vertical" if largura_chapa >= altura_chapa else "Horizontal"
+    color_val = f"{orientacao}({altura_chapa/1000:.2f}X{largura_chapa/1000:.2f})"
+    lote_fmt = nome_lote.replace("_", " ")
+
     for i, pecas in enumerate(chapas, start=1):
         material = pecas[0].get("Material", "chapa") if pecas else "chapa"
         thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
-        prefix = f"{i:03d}-MDF {thickness}mm {material} ({largura_chapa:.0f}mm X {altura_chapa:.0f}mm)"
+        prefix = f"{lote_fmt} Nesting_{material}{thickness}mm_{i}"
+
         cycle = ET.SubElement(root, "Cycle", Name="Cycle_List")
-        ET.SubElement(cycle, "Field", Name="PlateID", Value=f"{prefix}.nc")
-        ET.SubElement(cycle, "Field", Name="LabelName", Value=f"{prefix}.cyc")
-        ET.SubElement(cycle, "Field", Name="Height", Value=f"{altura_chapa:.3f}")
-        ET.SubElement(cycle, "Field", Name="Width", Value=f"{largura_chapa:.3f}")
-        ET.SubElement(cycle, "Field", Name="Thickness", Value=f"{thickness:02d}")
-        ET.SubElement(cycle, "Field", Name="LargeImage", Value=f"{i}.bmp")
-        ET.SubElement(cycle, "Field", Name="SmallImage", Value=f"{i}.bmp")
+        _add_field(cycle, "PlateID", f"{prefix}.nc")
+        _add_field(cycle, "LabelName", f"{prefix}.cyc")
+        _add_field(cycle, "LargeImage", f"{prefix}_LargeImage.bmp")
+        _add_field(cycle, "SmallImage", f"{prefix}_SmallImage.bmp")
+        _add_field(cycle, "Color", color_val)
+        _add_field(cycle, "Thickness", str(thickness))
+
     tree = ET.ElementTree(root)
     try:
         ET.indent(tree, space="  ")
     except AttributeError:
         pass
-    tree.write(saida / "chapas.xml", encoding="utf-8", xml_declaration=True)
+
+    tree.write(saida / f"{lote_fmt}.xml", encoding="utf-8", xml_declaration=True)
 
 def _gerar_imagens_chapas(
     chapas: List[List[Dict]],
@@ -345,8 +392,10 @@ def _gerar_imagens_chapas(
     escala = 800 / max(largura_chapa, altura_chapa)
     largura_img = int(largura_chapa * escala)
     altura_img = int(altura_chapa * escala)
+    tamanho_grande = (592, 890)
+    tamanho_pequeno = (122, 183)
     for i, pecas in enumerate(chapas, start=1):
-        img = Image.new("RGB", (largura_img, altura_img), "white")
+        img = Image.new("RGBA", (largura_img, altura_img), "white")
         draw = ImageDraw.Draw(img)
         todas = list(pecas)
         if sobras and i - 1 < len(sobras):
@@ -376,25 +425,14 @@ def _gerar_imagens_chapas(
                 y2 = altura_img - y2
                 draw.rectangle([x1, y2, x2, y1], outline="black", width=2)
         if config_maquina:
-            if config_maquina.get("inverterXChapa"):
-                img = img.transpose(Image.FLIP_LEFT_RIGHT)
-            if config_maquina.get("inverterYChapa"):
-                img = img.transpose(Image.FLIP_TOP_BOTTOM)
-            angulo = str(config_maquina.get("anguloRotacaoChapa", "0"))
-            if angulo.startswith("90"):
-                img = img.rotate(-90, expand=True)
-            elif angulo.startswith("180"):
-                img = img.rotate(180, expand=True)
-            elif angulo.startswith("270"):
-                img = img.rotate(-270, expand=True)
-        ext = _sanitize_extension(
-            config_maquina.get("formatoImagemChapa") if config_maquina else None
-        )
-        path = saida / f"{i}.{ext}"
-        try:
-            img.save(path)
-        except ValueError:
-            img.save(saida / f"{i}.bmp")
+            img = _apply_image_orientation(img, config_maquina)
+        material = pecas[0].get("Material", "chapa") if pecas else "chapa"
+        thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
+        prefix = f"{i:03d}-MDF {thickness}mm {material}"
+        img_large = img.resize(tamanho_grande)
+        img_small = img.resize(tamanho_pequeno)
+        img_large.save(saida / f"{prefix}_LargeImage.bmp")
+        img_small.save(saida / f"{prefix}_SmallImage.bmp")
 
 
 def _gerar_etiquetas(
@@ -426,6 +464,8 @@ def _gerar_etiquetas(
             x = float(item.get("x", 0)) * escala
             y = float(item.get("y", 0)) * escala
             draw.text((x, y), str(valor), fill="black")
+        if config_maquina:
+            img = _apply_image_orientation(img, config_maquina)
         nome = p.get("Program1") or Path(p.get("Filename", p.get("PartName", "etiqueta"))).stem
         path = saida / f"{nome}.{ext}"
         try:
@@ -1206,7 +1246,13 @@ def gerar_nesting(
         Path(pasta_lote),
     )
     _gerar_cyc(chapas, pasta_saida, sobras)
-    _gerar_xml_chapas(chapas, pasta_saida, largura_chapa, altura_chapa)
+    _gerar_xml_chapas(
+        chapas,
+        pasta_saida,
+        largura_chapa,
+        altura_chapa,
+        pasta.name,
+    )
     _gerar_imagens_chapas(
         chapas,
         pasta_saida,
