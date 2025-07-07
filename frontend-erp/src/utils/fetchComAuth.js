@@ -12,7 +12,7 @@ export async function fetchComAuth(url, options = {}) {
   }
 
   // Define o Content-Type como JSON, a menos que seja um FormData.
-  if (!(options.body instanceof FormData)) {
+  if (options.body && !(options.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -63,5 +63,15 @@ export async function fetchComAuth(url, options = {}) {
   }
 
   const responseText = await response.text();
-  return responseText ? JSON.parse(responseText) : null;
+  const contentType = response.headers.get("content-type") || "";
+  if (!responseText) return null;
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      console.error("Erro ao parsear JSON", e);
+      return null;
+    }
+  }
+  return responseText;
 }
