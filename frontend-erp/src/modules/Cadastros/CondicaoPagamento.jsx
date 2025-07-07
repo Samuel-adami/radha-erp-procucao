@@ -247,7 +247,7 @@ function CondicaoPagamento() {
       </div>
       <input type="file" ref={fileRef} onChange={importarExcel} className="hidden" />
         <div className="flex gap-2">
-          <Button type="submit">Salvar</Button>
+          <Button type="button" onClick={handleSubmit}>Salvar</Button>
           <Button type="button" variant="secondary" onClick={cancelar}>
             Cancelar
           </Button>
