@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
 import { useNavigate, useParams } from 'react-router-dom';
+import { fetchComAuth } from '../../utils/fetchComAuth';
 
 function Fornecedores() {
   const navigate = useNavigate();
@@ -11,9 +12,11 @@ function Fornecedores() {
 
   useEffect(() => {
     if (id) {
-      const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]');
-      const existente = lista.find(f => String(f.id) === String(id));
-      if (existente) setForm(existente);
+      fetchComAuth(`/fornecedores/${id}`)
+        .then(data => {
+          if (data && data.fornecedor) setForm({ ...initialForm, ...data.fornecedor });
+        })
+        .catch(err => console.error('Erro ao carregar fornecedor', err));
     }
   }, [id]);
 
@@ -22,24 +25,32 @@ function Fornecedores() {
     setDirty(true);
   };
 
-  const salvar = () => {
-    const lista = JSON.parse(localStorage.getItem('fornecedores') || '[]');
-    if (id) {
-      const idx = lista.findIndex(f => String(f.id) === String(id));
-      if (idx >= 0) lista[idx] = { ...form, id };
-    } else {
-      const novo = { ...form, id: Date.now() };
-      lista.push(novo);
+  const salvar = async () => {
+    const payload = { ...form };
+    try {
+      if (id) {
+        await fetchComAuth(`/fornecedores/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetchComAuth('/fornecedores', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        setForm(initialForm);
+      }
+      alert('Fornecedor salvo');
+      setDirty(false);
+    } catch (err) {
+      console.error('Erro ao salvar fornecedor', err);
+      alert('Falha ao salvar');
     }
-    localStorage.setItem('fornecedores', JSON.stringify(lista));
-    alert('Fornecedor salvo');
-    if (!id) setForm(initialForm);
-    setDirty(false);
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    salvar();
+    await salvar();
   };
 
   const cancelar = () => {
@@ -47,10 +58,10 @@ function Fornecedores() {
     setDirty(false);
   };
 
-  const sair = () => {
+  const sair = async () => {
     if (dirty) {
       if (window.confirm('Deseja salvar as informações adicionadas?')) {
-        salvar();
+        await salvar();
       }
     }
     navigate('..');

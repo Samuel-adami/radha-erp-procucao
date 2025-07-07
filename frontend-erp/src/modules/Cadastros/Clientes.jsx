@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../Producao/components/ui/button';
 import { useNavigate, useParams } from 'react-router-dom';
+import { fetchComAuth } from '../../utils/fetchComAuth';
 
 function gerarCodigo(nome, seq) {
   if (!nome) return '';
@@ -39,7 +40,6 @@ function formatCEP(valor) {
 function Clientes() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [sequencial, setSequencial] = useState(1);
   const initialForm = {
     procedencia: '',
     estadoImovel: '',
@@ -67,25 +67,20 @@ function Clientes() {
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    const seq = parseInt(localStorage.getItem('clienteCodigoSeq') || '1', 10);
-    setSequencial(seq);
-  }, []);
-
-  useEffect(() => {
     if (id) {
-      const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
-      const existente = lista.find(c => String(c.id) === String(id));
-      if (existente) {
-        setForm(existente);
-      }
+      fetchComAuth(`/clientes/${id}`)
+        .then(data => {
+          if (data && data.cliente) setForm({ ...initialForm, ...data.cliente });
+        })
+        .catch(err => console.error('Erro ao carregar cliente', err));
     }
   }, [id]);
 
   useEffect(() => {
     if (!id) {
-      setForm(f => ({ ...f, codigo: gerarCodigo(f.nome, sequencial) }));
+      setForm(f => ({ ...f, codigo: gerarCodigo(f.nome, Date.now()) }));
     }
-  }, [form.nome, sequencial, id]);
+  }, [form.nome, id]);
 
   const handle = campo => e => {
     let value = e.target.value;
@@ -120,30 +115,36 @@ function Clientes() {
     }
   };
 
-  const salvar = () => {
-    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
-    if (id) {
-      const idx = lista.findIndex(c => String(c.id) === String(id));
-      if (idx >= 0) lista[idx] = { ...form, id };
-    } else {
-      const novo = { ...form, id: Date.now() };
-      lista.push(novo);
-      localStorage.setItem('clienteCodigoSeq', String(sequencial + 1));
-      setSequencial(s => s + 1);
+  const salvar = async () => {
+    const payload = { ...form };
+    try {
+      if (id) {
+        await fetchComAuth(`/clientes/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetchComAuth('/clientes', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        setForm(initialForm);
+      }
+      alert('Cliente salvo');
+      setDirty(false);
+    } catch (err) {
+      console.error('Erro ao salvar cliente', err);
+      alert('Falha ao salvar');
     }
-    localStorage.setItem('clientes', JSON.stringify(lista));
-    alert('Cliente salvo');
-    if (!id) setForm(initialForm);
-    setDirty(false);
   };
 
   const estados = [
     'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
   ];
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    salvar();
+    await salvar();
   };
 
   const cancelar = () => {
@@ -151,10 +152,10 @@ function Clientes() {
     setDirty(false);
   };
 
-  const sair = () => {
+  const sair = async () => {
     if (dirty) {
       if (window.confirm('Deseja salvar as informações adicionadas?')) {
-        salvar();
+        await salvar();
       }
     }
     navigate('..');

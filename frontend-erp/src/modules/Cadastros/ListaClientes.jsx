@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fetchComAuth } from '../../utils/fetchComAuth';
 
 const ListaClientes = () => {
   const [clientes, setClientes] = useState([]);
 
-  const carregar = () => {
-    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
-    setClientes(lista);
+  const carregar = async () => {
+    try {
+      const data = await fetchComAuth('/clientes');
+      setClientes(data?.clientes || []);
+    } catch (err) {
+      console.error('Erro ao carregar clientes', err);
+    }
   };
 
   useEffect(() => {
     carregar();
   }, []);
 
-  const excluir = id => {
-    const lista = JSON.parse(localStorage.getItem('clientes') || '[]').filter(c => c.id !== id);
-    localStorage.setItem('clientes', JSON.stringify(lista));
-    carregar();
+  const excluir = async id => {
+    try {
+      await fetchComAuth(`/clientes/${id}`, { method: 'DELETE' });
+      carregar();
+    } catch (err) {
+      console.error('Erro ao excluir', err);
+    }
   };
 
   return (

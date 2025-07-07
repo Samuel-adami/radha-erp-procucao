@@ -25,6 +25,8 @@ export async function fetchComAuth(url, options = {}) {
             finalUrl = `${GATEWAY_URL}/producao${url}`; // Rotas de Produção via Gateway
         } else if (url.startsWith('/comercial')) {
             finalUrl = `${GATEWAY_URL}${url}`; // Rotas do módulo Comercial via Gateway
+        } else if (url.startsWith('/clientes') || url.startsWith('/fornecedores')) {
+            finalUrl = `${GATEWAY_URL}${url}`; // Cadastros básicos via Gateway
         } else if (url.startsWith('/auth') || url.startsWith('/usuarios') || url.startsWith('/empresa')) {
           finalUrl = `${GATEWAY_URL}${url}`; // Endpoints atendidos diretamente pelo Gateway
       }
