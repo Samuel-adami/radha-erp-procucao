@@ -5,12 +5,14 @@ from routes import chat, campanha, publicacao, publicos, conhecimento
 import os
 import uvicorn
 from database import init_db
+from services.auth_service import ensure_default_admin
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(redirect_slashes=False)
 
 # Initialize database tables on startup
 init_db()
+ensure_default_admin()
 
 # Removido: Configuração de CORS, pois será gerenciada pelo Gateway API
 
