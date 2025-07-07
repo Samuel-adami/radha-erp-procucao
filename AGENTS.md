@@ -210,7 +210,8 @@ server {
     }
 
     # GATEWAY (backend FastAPI rodando na porta 8040)
-    # Tudo que for /auth ou /api (ou o que for do seu gateway) vai para o backend
+    # Rotas /auth, /clientes, /fornecedores, /empresa,
+    # /condicoes-pagamento e /templates vão para o backend
     location /auth/ {
         proxy_pass http://127.0.0.1:8040;
         proxy_set_header Host $host;
@@ -218,8 +219,43 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+    location /clientes {
+        proxy_pass http://127.0.0.1:8040;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /fornecedores {
+        proxy_pass http://127.0.0.1:8040;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /empresa {
+        proxy_pass http://127.0.0.1:8040;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /condicoes-pagamento {
+        proxy_pass http://127.0.0.1:8040;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    location /templates {
+        proxy_pass http://127.0.0.1:8040;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-    # Se tiver outras rotas de API, adicione aqui:
+    # Se tiver outras rotas de API, adicione aqui
 }
 ```
 
