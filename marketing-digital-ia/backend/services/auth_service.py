@@ -11,6 +11,9 @@ from passlib.hash import bcrypt
 from sqlalchemy import text
 from database import get_db_connection, DEFAULT_ADMIN_PERMISSIONS
 
+RADHA_ADMIN_USER = os.getenv("RADHA_ADMIN_USER")
+RADHA_ADMIN_PASS = os.getenv("RADHA_ADMIN_PASS")
+
 SECRET_KEY = os.getenv("SECRET_KEY", "radha-super-secreto")
 ALGORITHM = "HS256"
 EXPIRATION_MINUTES = 60
@@ -20,6 +23,33 @@ def _row_to_user(row) -> dict:
     user = dict(row._mapping)
     user["permissoes"] = json.loads(user.get("permissoes", "[]"))
     return user
+
+
+def ensure_default_admin() -> None:
+    """Create the default administrator account if it doesn't exist."""
+    if not RADHA_ADMIN_USER or not RADHA_ADMIN_PASS:
+        return
+
+    conn = get_db_connection()
+    exists = conn.execute(
+        text("SELECT id FROM users WHERE username=:u"),
+        {"u": RADHA_ADMIN_USER},
+    ).fetchone()
+
+    if not exists:
+        conn.execute(
+            text(
+                "INSERT INTO users (username, password, nome, cargo, permissoes) "
+                "VALUES (:username, :password, 'Administrador', 'admin', :permissoes)"
+            ),
+            {
+                "username": RADHA_ADMIN_USER,
+                "password": bcrypt.hash(RADHA_ADMIN_PASS),
+                "permissoes": json.dumps(DEFAULT_ADMIN_PERMISSIONS),
+            },
+        )
+        conn.commit()
+    conn.close()
 
 
 def autenticar(username: str, password: str) -> Optional[dict]:
