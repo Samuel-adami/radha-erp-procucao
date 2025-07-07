@@ -69,7 +69,7 @@ function Fornecedores() {
         </label>
       </div>
       <div className="flex gap-2">
-        <Button type="submit">Salvar</Button>
+        <Button type="button" onClick={handleSubmit}>Salvar</Button>
         <Button type="button" variant="secondary" onClick={cancelar}>
           Cancelar
         </Button>
