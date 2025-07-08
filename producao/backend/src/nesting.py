@@ -490,6 +490,11 @@ def _gerar_gcodes(
 
     data_criacao = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
 
+    casas_dec = int(config_maquina.get("casasDecimais", 4)) if config_maquina else 4
+
+    def fmt(val: float) -> str:
+        return f"{float(val):.{casas_dec}f}"
+
     # Gerador de IDs sequenciais para sobras
     max_id = 0
     for placa in chapas:
@@ -502,13 +507,14 @@ def _gerar_gcodes(
                 max_id = val
     proximo_id = itertools.count(max_id + 1)
 
-    def coletar_ferramentas(pecas: List[Dict]) -> List[str]:
+    def coletar_ferramentas(pecas: List[Dict]) -> Tuple[List[str], Optional[Dict]]:
         usadas: List[str] = []
+        primeira: Optional[Dict] = None
         for p in pecas:
             dxf_path = None
             if pasta_lote and p.get("Filename"):
                 dxf_path = pasta_lote / p["Filename"]
-            _, _, used = _gcode_peca(
+            _, last_tool, used = _gcode_peca(
                 p,
                 p.get("x", 0),
                 p.get("y", 0),
@@ -522,10 +528,13 @@ def _gerar_gcodes(
                 orig_length=p.get("originalLength"),
                 orig_width=p.get("originalWidth"),
             )
+            if used and primeira is None:
+                code = used[0].split(" - ", 1)[0]
+                primeira = next((f for f in (ferramentas or []) if str(f.get("codigo")) == code), None)
             for u in used:
                 if u not in usadas:
                     usadas.append(u)
-        return usadas
+        return usadas, primeira
 
     intro_tpl = (
         "%\n"
@@ -559,20 +568,28 @@ def _gerar_gcodes(
         area_alt = altura_chapa - ref_inf - ref_sup
         espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
 
-        lista_ferramentas = coletar_ferramentas(pecas)
+
+        lista_ferramentas, primeira_ferramenta = coletar_ferramentas(pecas)
+
+        # Garantir que sempre haja uma ferramenta inicial para preencher o
+        # cabeçalho. Quando não há operações de furação (Broca) a
+        # função ``coletar_ferramentas`` pode retornar ``None``.
+        if primeira_ferramenta is None and ferramentas:
+            primeira_ferramenta = ferramentas[0]
+
+        material_desc = f"{prefix} [{largura_chapa}mm X {altura_chapa}mm]"
         valores_intro = {
             'CREATION_DATE_TIME': data_criacao,
             'POST_PROCESSOR_NAME': config_maquina.get('nome', '') if config_maquina else '',
             'BATCH_NAME': pasta_lote.name if pasta_lote else '',
-            'MATERIAL': material,
-            'X_LENGHT': config_maquina.get('comprimentoX', largura_chapa) if config_maquina else largura_chapa,
-            'Y_LENGHT': config_maquina.get('comprimentoY', altura_chapa) if config_maquina else altura_chapa,
-            'Z_LENGHT': config_maquina.get('movimentacaoZ', 0) if config_maquina else 0,
+            'MATERIAL': material_desc,
+            'X_LENGHT': fmt(config_maquina.get('comprimentoX', largura_chapa) if config_maquina else largura_chapa),
+            'Y_LENGHT': fmt(config_maquina.get('comprimentoY', altura_chapa) if config_maquina else altura_chapa),
+            'Z_LENGHT': fmt(config_maquina.get('movimentacaoZ', 0) if config_maquina else 0),
             'LIST_OF_USED_TOOLS': '\n'.join(f'({t})' for t in lista_ferramentas),
         }
         linhas = substituir(intro_tpl, valores_intro).splitlines()
 
-        primeira_ferramenta = ferramentas[0] if ferramentas else None
         valores_header = {
             'T': primeira_ferramenta.get('codigo') if primeira_ferramenta else '',
             'TOOL_DESCRIPTION': primeira_ferramenta.get('descricao', '') if primeira_ferramenta else '',
