@@ -171,10 +171,15 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           method: 'POST',
           body: JSON.stringify({ cd_projeto: codigo }),
         });
+        const projetosResp = info.projetos || {};
+        const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
         const novos = {
           ...dados,
           programa,
-          projetos: { ...dados.projetos, [amb]: { codigo, ...info } },
+          projetos: {
+            ...dados.projetos,
+            [amb]: { codigo, ...dadosAmb, projeto: info.projeto },
+          },
         };
         setDados(novos);
         await salvarProjeto(novos);
