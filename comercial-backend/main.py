@@ -117,13 +117,13 @@ async def criar_atendimento(request: Request):
                 rua, numero, complemento, bairro,
                 cidade, estado, cep,
                 data_cadastro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             fields,
         )
         atendimento_id = cur.lastrowid
         for nome in TASKS:
             conn.exec_driver_sql(
-                "INSERT INTO atendimento_tarefas (atendimento_id, nome) VALUES (?, ?)",
+                "INSERT INTO atendimento_tarefas (atendimento_id, nome) VALUES (%s, %s)",
                 (atendimento_id, nome),
             )
         conn.commit()
@@ -149,7 +149,7 @@ async def obter_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
-                "SELECT * FROM atendimentos WHERE id=?",
+                "SELECT * FROM atendimentos WHERE id=%s",
                 (atendimento_id,),
             )
             .mappings()
@@ -187,14 +187,14 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
         "projetos",
     ]:
         if campo in data:
-            campos.append(f"{campo}=?")
+            campos.append(f"{campo}=%s")
             valores.append(data[campo])
     if not campos:
         return {"detail": "Nada para atualizar"}
     valores.append(atendimento_id)
     with get_db_connection() as conn:
         conn.exec_driver_sql(
-            f"UPDATE atendimentos SET {', '.join(campos)} WHERE id=?",
+            f"UPDATE atendimentos SET {', '.join(campos)} WHERE id=%s",
             valores,
         )
         conn.commit()
@@ -207,7 +207,7 @@ async def listar_tarefas(atendimento_id: int):
 
         rows = (
             conn.exec_driver_sql(
-                "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
+                "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=%s ORDER BY id",
                 (atendimento_id,),
             )
             .mappings()
@@ -228,7 +228,7 @@ async def listar_tarefas(atendimento_id: int):
 
             itens_rows = (
                 conn.exec_driver_sql(
-                    "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=? ORDER BY id",
+                    "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=%s ORDER BY id",
                     (item["id"],),
                 )
                 .mappings()
@@ -264,7 +264,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
-                "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=? AND id=?",
+                "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=%s AND id=%s",
                 (atendimento_id, tarefa_id),
             )
             .mappings()
@@ -274,7 +274,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
             return JSONResponse({"detail": "Tarefa não encontrada"}, status_code=404)
         if not row["concluida"]:
             prev = conn.exec_driver_sql(
-                "SELECT COUNT(*) FROM atendimento_tarefas WHERE atendimento_id=? AND id < ? AND concluida=0",
+                "SELECT COUNT(*) FROM atendimento_tarefas WHERE atendimento_id=%s AND id < %s AND concluida=0",
                 (atendimento_id, tarefa_id),
             ).scalar()
             if prev > 0:
@@ -284,12 +284,12 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                 )
     if "concluida" in data:
         concl = bool(data["concluida"])
-        campos.append("concluida=?")
+        campos.append("concluida=%s")
         valores.append(int(concl))
-        campos.append("data_execucao=?")
+        campos.append("data_execucao=%s")
         valores.append(datetime.utcnow().isoformat() if concl else None)
     if "dados" in data:
-        campos.append("dados=?")
+        campos.append("dados=%s")
         valores.append(data["dados"])
         try:
             dados_json = json.loads(data["dados"])
@@ -300,12 +300,12 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     valores.extend([atendimento_id, tarefa_id])
     with get_db_connection() as conn:
         conn.exec_driver_sql(
-            f"UPDATE atendimento_tarefas SET {', '.join(campos)} WHERE atendimento_id=? AND id=?",
+            f"UPDATE atendimento_tarefas SET {', '.join(campos)} WHERE atendimento_id=%s AND id=%s",
             valores,
         )
         if "dados" in data and dados_json.get("projetos"):
 
-            conn.exec_driver_sql("DELETE FROM projeto_itens WHERE tarefa_id=?", (tarefa_id,))
+            conn.exec_driver_sql("DELETE FROM projeto_itens WHERE tarefa_id=%s", (tarefa_id,))
             for amb, info in dados_json["projetos"].items():
                 for it in info.get("itens", []):
                     conn.exec_driver_sql(
@@ -314,7 +314,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                         INSERT INTO projeto_itens (
                             atendimento_id, tarefa_id, ambiente,
                             descricao, unitario, quantidade, total
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                         """,
                         (
                             atendimento_id,
@@ -335,16 +335,16 @@ async def excluir_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
 
         conn.exec_driver_sql(
-            "DELETE FROM projeto_itens WHERE atendimento_id=?",
+            "DELETE FROM projeto_itens WHERE atendimento_id=%s",
             (atendimento_id,),
         )
         conn.exec_driver_sql(
 
-            "DELETE FROM atendimento_tarefas WHERE atendimento_id=?",
+            "DELETE FROM atendimento_tarefas WHERE atendimento_id=%s",
             (atendimento_id,),
         )
         conn.exec_driver_sql(
-            "DELETE FROM atendimentos WHERE id=?",
+            "DELETE FROM atendimentos WHERE id=%s",
             (atendimento_id,),
         )
         conn.commit()
@@ -391,7 +391,7 @@ async def criar_condicao(request: Request):
             """INSERT INTO condicoes_pagamento (
                 nome, numero_parcelas, juros_parcela,
                 dias_vencimento, ativa, parcelas_json
-            ) VALUES (?, ?, ?, ?, ?, ?)""",
+            ) VALUES (%s, %s, %s, %s, %s, %s)""",
             fields,
         )
         conn.commit()
@@ -404,7 +404,7 @@ async def obter_condicao(condicao_id: int):
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
-                "SELECT * FROM condicoes_pagamento WHERE id=?",
+                "SELECT * FROM condicoes_pagamento WHERE id=%s",
                 (condicao_id,),
             )
             .mappings()
@@ -438,9 +438,9 @@ async def atualizar_condicao(condicao_id: int, request: Request):
     with get_db_connection() as conn:
         conn.exec_driver_sql(
             """UPDATE condicoes_pagamento SET
-                nome=?, numero_parcelas=?, juros_parcela=?,
-                dias_vencimento=?, ativa=?, parcelas_json=?
-            WHERE id=?""",
+                nome=%s, numero_parcelas=%s, juros_parcela=%s,
+                dias_vencimento=%s, ativa=%s, parcelas_json=%s
+            WHERE id=%s""",
             fields,
         )
         conn.commit()
@@ -451,7 +451,7 @@ async def atualizar_condicao(condicao_id: int, request: Request):
 async def excluir_condicao(condicao_id: int):
     with get_db_connection() as conn:
         conn.exec_driver_sql(
-            "DELETE FROM condicoes_pagamento WHERE id=?",
+            "DELETE FROM condicoes_pagamento WHERE id=%s",
             (condicao_id,),
         )
         conn.commit()
@@ -464,7 +464,7 @@ async def listar_templates(tipo: str | None = None):
         if tipo:
             rows = (
                 conn.exec_driver_sql(
-                    "SELECT * FROM templates WHERE tipo=? ORDER BY id", (tipo,)
+                    "SELECT * FROM templates WHERE tipo=%s ORDER BY id", (tipo,)
                 )
                 .mappings()
                 .all()
@@ -493,7 +493,7 @@ async def criar_template(request: Request):
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
         cur = conn.exec_driver_sql(
-            "INSERT INTO templates (tipo, titulo, campos_json) VALUES (?, ?, ?)",
+            "INSERT INTO templates (tipo, titulo, campos_json) VALUES (%s, %s, %s)",
             (data.get("tipo"), data.get("titulo"), campos),
         )
         conn.commit()
@@ -506,7 +506,7 @@ async def obter_template(template_id: int):
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
-                "SELECT * FROM templates WHERE id=?", (template_id,)
+                "SELECT * FROM templates WHERE id=%s", (template_id,)
             )
             .mappings()
             .fetchone()
@@ -528,7 +528,7 @@ async def atualizar_template(template_id: int, request: Request):
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
         conn.exec_driver_sql(
-            """UPDATE templates SET titulo=?, tipo=?, campos_json=? WHERE id=?""",
+            """UPDATE templates SET titulo=%s, tipo=%s, campos_json=%s WHERE id=%s""",
             (data.get("titulo"), data.get("tipo"), campos, template_id),
         )
         conn.commit()
@@ -538,7 +538,7 @@ async def atualizar_template(template_id: int, request: Request):
 @app.delete("/templates/{template_id}")
 async def excluir_template(template_id: int):
     with get_db_connection() as conn:
-        conn.exec_driver_sql("DELETE FROM templates WHERE id=?", (template_id,))
+        conn.exec_driver_sql("DELETE FROM templates WHERE id=%s", (template_id,))
         conn.commit()
     return {"ok": True}
 
