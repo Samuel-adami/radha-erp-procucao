@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-from database import get_db_connection, init_db
+from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
 from gabster_api import get_projeto
 from datetime import datetime
@@ -117,7 +117,8 @@ async def criar_atendimento(request: Request):
             data.get("cep"),
             datetime.utcnow().isoformat(),
         )
-        cur = conn.exec_driver_sql(
+        atendimento_id = insert_with_id(
+            conn,
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
@@ -129,7 +130,6 @@ async def criar_atendimento(request: Request):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             fields,
         )
-        atendimento_id = cur.lastrowid
         for nome in TASKS:
             conn.exec_driver_sql(
                 "INSERT INTO atendimento_tarefas (atendimento_id, nome) VALUES (%s, %s)",
@@ -399,7 +399,8 @@ async def criar_condicao(request: Request):
         parcelas,
     )
     with get_db_connection() as conn:
-        cur = conn.exec_driver_sql(
+        new_id = insert_with_id(
+            conn,
             """INSERT INTO condicoes_pagamento (
                 nome, numero_parcelas, juros_parcela,
                 dias_vencimento, ativa, parcelas_json
@@ -407,7 +408,6 @@ async def criar_condicao(request: Request):
             fields,
         )
         conn.commit()
-        new_id = cur.lastrowid
     return {"id": new_id}
 
 
@@ -504,12 +504,12 @@ async def criar_template(request: Request):
     data = await request.json()
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
-        cur = conn.exec_driver_sql(
+        new_id = insert_with_id(
+            conn,
             "INSERT INTO templates (tipo, titulo, campos_json) VALUES (%s, %s, %s)",
             (data.get("tipo"), data.get("titulo"), campos),
         )
         conn.commit()
-        new_id = cur.lastrowid
     return {"id": new_id}
 
 
