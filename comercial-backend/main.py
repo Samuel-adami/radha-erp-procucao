@@ -155,6 +155,7 @@ async def listar_atendimentos():
 
 @app.get("/atendimentos/{atendimento_id}")
 async def obter_atendimento(atendimento_id: int):
+    """Return atendimento details including its tarefas."""
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
@@ -166,12 +167,63 @@ async def obter_atendimento(atendimento_id: int):
         )
         if not row:
             return JSONResponse({"detail": "Atendimento não encontrado"}, status_code=404)
+
         item = dict(row)
         if item.get("arquivos_json"):
             try:
                 item["arquivos"] = json.loads(item["arquivos_json"])
             except Exception:
                 item["arquivos"] = []
+
+        # carregar tarefas deste atendimento
+        tarefas_rows = (
+            conn.exec_driver_sql(
+                "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=%s ORDER BY id",
+                (atendimento_id,),
+            )
+            .mappings()
+            .all()
+        )
+
+        tarefas = []
+        for row in tarefas_rows:
+            t = dict(row)
+            dados_json = {}
+            if t.get("dados"):
+                try:
+                    dados_json = json.loads(t["dados"])
+                except Exception:
+                    dados_json = {}
+
+            itens_rows = (
+                conn.exec_driver_sql(
+                    "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=%s ORDER BY id",
+                    (t["id"],),
+                )
+                .mappings()
+                .all()
+            )
+
+            if itens_rows:
+                projetos = {}
+                for it in itens_rows:
+                    amb = it["ambiente"]
+                    projetos.setdefault(amb, {"itens": [], "total": 0})
+                    projetos[amb]["itens"].append(
+                        {
+                            "descricao": it["descricao"],
+                            "unitario": it["unitario"],
+                            "quantidade": it["quantidade"],
+                            "total": it["total"],
+                        }
+                    )
+                    projetos[amb]["total"] += it["total"]
+                dados_json["projetos"] = projetos
+                t["dados"] = json.dumps(dados_json)
+            tarefas.append(t)
+
+        item["tarefas"] = tarefas
+
         return {"atendimento": item}
 
 
