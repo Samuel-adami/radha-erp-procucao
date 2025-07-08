@@ -83,6 +83,15 @@ async def criar_atendimento(request: Request):
     data = await request.json()
     with get_db_connection() as conn:
         codigo = data.get("codigo") or get_next_codigo(conn)
+        rt_percent = data.get("rt_percent")
+        try:
+            rt_percent = float(rt_percent)
+        except (TypeError, ValueError):
+            rt_percent = 0.0
+
+        entrega = data.get("entrega_diferente")
+        entrega = 1 if str(entrega).lower() in ("sim", "1", "true") else 0
+
         fields = (
             data.get("cliente"),
             codigo,
@@ -91,8 +100,8 @@ async def criar_atendimento(request: Request):
             data.get("temperatura"),
             int(data.get("tem_especificador") or 0),
             data.get("especificador_nome"),
-            data.get("rt_percent"),
-            data.get("entrega_diferente"),
+            rt_percent,
+            entrega,
             data.get("historico"),
             json.dumps(data.get("arquivos", [])),
             data.get("procedencia"),
@@ -187,8 +196,11 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
         "projetos",
     ]:
         if campo in data:
+            val = data[campo]
+            if campo == "entrega_diferente":
+                val = 1 if str(val).lower() in ("sim", "1", "true") else 0
             campos.append(f"{campo}=%s")
-            valores.append(data[campo])
+            valores.append(val)
     if not campos:
         return {"detail": "Nada para atualizar"}
     valores.append(atendimento_id)
