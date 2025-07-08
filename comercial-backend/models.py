@@ -59,3 +59,18 @@ class Template(Base):
     tipo = Column(String)
     titulo = Column(String)
     campos_json = Column(String)
+
+
+class ProjetoItem(Base):
+    """Itens gerados nas etapas de orçamento/projeto."""
+
+    __tablename__ = "projeto_itens"
+
+    id = Column(Integer, primary_key=True)
+    atendimento_id = Column(Integer)
+    tarefa_id = Column(Integer)
+    ambiente = Column(String)
+    descricao = Column(String)
+    unitario = Column(Float)
+    quantidade = Column(Integer)
+    total = Column(Float)
