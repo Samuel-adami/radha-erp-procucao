@@ -204,6 +204,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
 @app.get("/atendimentos/{atendimento_id}/tarefas")
 async def listar_tarefas(atendimento_id: int):
     with get_db_connection() as conn:
+
         rows = (
             conn.exec_driver_sql(
                 "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
@@ -212,6 +213,7 @@ async def listar_tarefas(atendimento_id: int):
             .mappings()
             .all()
         )
+
         tarefas = []
         for row in rows:
             item = dict(row)
@@ -223,6 +225,7 @@ async def listar_tarefas(atendimento_id: int):
                     dados = {}
 
             # recuperar itens do projeto, se houver
+
             itens_rows = (
                 conn.exec_driver_sql(
                     "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=? ORDER BY id",
@@ -231,6 +234,7 @@ async def listar_tarefas(atendimento_id: int):
                 .mappings()
                 .all()
             )
+
             if itens_rows:
                 projetos = {}
                 for it in itens_rows:
@@ -300,10 +304,12 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
             valores,
         )
         if "dados" in data and dados_json.get("projetos"):
+
             conn.exec_driver_sql("DELETE FROM projeto_itens WHERE tarefa_id=?", (tarefa_id,))
             for amb, info in dados_json["projetos"].items():
                 for it in info.get("itens", []):
                     conn.exec_driver_sql(
+
                         """
                         INSERT INTO projeto_itens (
                             atendimento_id, tarefa_id, ambiente,
@@ -327,11 +333,13 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
 @app.delete("/atendimentos/{atendimento_id}")
 async def excluir_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
+
         conn.exec_driver_sql(
             "DELETE FROM projeto_itens WHERE atendimento_id=?",
             (atendimento_id,),
         )
         conn.exec_driver_sql(
+
             "DELETE FROM atendimento_tarefas WHERE atendimento_id=?",
             (atendimento_id,),
         )

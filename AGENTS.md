@@ -22,7 +22,7 @@ locally for tests and how the production environment is structured.
    npm install
    ```
 4. **Environment variables**: copy `frontend-erp/.env.example` to `.env` and set
-   `VITE_GATEWAY_URL=http://localhost:8040`. Optionally set `VITE_DEFAULT_USERNAME` and
+   `VITE_GATEWAY_URL=https://erp.radhadigital.com.br`. Optionally set `VITE_DEFAULT_USERNAME` and
    `VITE_DEFAULT_PASSWORD` for automatic login. Each backend also provides a
    `.env.example` file with `DATABASE_URL`, `SECRET_KEY` and other variables. Copy
    them to `.env` in their respective folders:
