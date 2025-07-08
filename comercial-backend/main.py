@@ -200,7 +200,38 @@ async def listar_tarefas(atendimento_id: int):
             "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
             (atendimento_id,),
         ).fetchall()
-        tarefas = [dict(row) for row in rows]
+        tarefas = []
+        for row in rows:
+            item = dict(row)
+            dados = {}
+            if item.get("dados"):
+                try:
+                    dados = json.loads(item["dados"])
+                except Exception:
+                    dados = {}
+
+            # recuperar itens do projeto, se houver
+            itens_rows = conn.execute(
+                "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=? ORDER BY id",
+                (item["id"],),
+            ).fetchall()
+            if itens_rows:
+                projetos = {}
+                for it in itens_rows:
+                    amb = it["ambiente"]
+                    projetos.setdefault(amb, {"itens": [], "total": 0})
+                    projetos[amb]["itens"].append(
+                        {
+                            "descricao": it["descricao"],
+                            "unitario": it["unitario"],
+                            "quantidade": it["quantidade"],
+                            "total": it["total"],
+                        }
+                    )
+                    projetos[amb]["total"] += it["total"]
+                dados["projetos"] = projetos
+                item["dados"] = json.dumps(dados)
+            tarefas.append(item)
     return {"tarefas": tarefas}
 
 
@@ -209,6 +240,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     data = await request.json()
     campos = []
     valores = []
+    dados_json = {}
     with get_db_connection() as conn:
         row = conn.execute(
             "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=? AND id=?",
@@ -235,6 +267,10 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     if "dados" in data:
         campos.append("dados=?")
         valores.append(data["dados"])
+        try:
+            dados_json = json.loads(data["dados"])
+        except Exception:
+            dados_json = {}
     if not campos:
         return {"detail": "Nada para atualizar"}
     valores.extend([atendimento_id, tarefa_id])
@@ -243,6 +279,27 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
             f"UPDATE atendimento_tarefas SET {', '.join(campos)} WHERE atendimento_id=? AND id=?",
             valores,
         )
+        if "dados" in data and dados_json.get("projetos"):
+            conn.execute("DELETE FROM projeto_itens WHERE tarefa_id=?", (tarefa_id,))
+            for amb, info in dados_json["projetos"].items():
+                for it in info.get("itens", []):
+                    conn.execute(
+                        """
+                        INSERT INTO projeto_itens (
+                            atendimento_id, tarefa_id, ambiente,
+                            descricao, unitario, quantidade, total
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            atendimento_id,
+                            tarefa_id,
+                            amb,
+                            it.get("descricao"),
+                            float(it.get("unitario", 0)),
+                            int(it.get("quantidade", 0)),
+                            float(it.get("total", 0)),
+                        ),
+                    )
         conn.commit()
     return {"ok": True}
 
@@ -250,6 +307,10 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
 @app.delete("/atendimentos/{atendimento_id}")
 async def excluir_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
+        conn.execute(
+            "DELETE FROM projeto_itens WHERE atendimento_id=?",
+            (atendimento_id,),
+        )
         conn.execute(
             "DELETE FROM atendimento_tarefas WHERE atendimento_id=?",
             (atendimento_id,),

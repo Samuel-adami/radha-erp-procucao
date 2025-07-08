@@ -1,7 +1,14 @@
 import os
 from sqlalchemy import create_engine
 from dotenv import load_dotenv, find_dotenv
-from models import Base, Atendimento, AtendimentoTarefa, CondicaoPagamento, Template
+from models import (
+    Base,
+    Atendimento,
+    AtendimentoTarefa,
+    CondicaoPagamento,
+    Template,
+    ProjetoItem,
+)
 
 load_dotenv(find_dotenv())
 
