@@ -30,9 +30,15 @@ def get_db_connection():
 
 
 def insert_with_id(conn, sql: str, params: tuple):
-    """Execute INSERT statement returning the new record id."""
-    result = conn.exec_driver_sql(sql + " RETURNING id", params)
-    return result.scalar()
+
+    """Execute INSERT and return generated primary key across DBs."""
+    if engine.dialect.name == "postgresql":
+        result = conn.exec_driver_sql(sql + " RETURNING id", params)
+        return result.scalar()
+    else:
+        result = conn.exec_driver_sql(sql, params)
+        return result.lastrowid
+
 
 
 def init_db():
