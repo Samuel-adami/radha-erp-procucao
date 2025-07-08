@@ -8,6 +8,22 @@ import re
 import json
 import requests
 
+
+def safe_float(value):
+    """Convert value to float returning 0.0 when invalid."""
+    try:
+        return float(str(value).replace(",", "."))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def safe_int(value):
+    """Convert value to int returning 0 when invalid."""
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return 0
+
 TASKS = [
     "Contato Inicial",
     "Visita Técnica/Briefing",
@@ -83,11 +99,7 @@ async def criar_atendimento(request: Request):
     data = await request.json()
     with get_db_connection() as conn:
         codigo = data.get("codigo") or get_next_codigo(conn)
-        rt_percent = data.get("rt_percent")
-        try:
-            rt_percent = float(rt_percent)
-        except (TypeError, ValueError):
-            rt_percent = 0.0
+        rt_percent = safe_float(data.get("rt_percent"))
 
         entrega = data.get("entrega_diferente")
         entrega = 1 if str(entrega).lower() in ("sim", "1", "true") else 0
@@ -385,9 +397,9 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                             tarefa_id,
                             amb,
                             it.get("descricao"),
-                            float(it.get("unitario", 0)),
-                            int(it.get("quantidade", 0)),
-                            float(it.get("total", 0)),
+                            safe_float(it.get("unitario")),
+                            safe_int(it.get("quantidade")),
+                            safe_float(it.get("total")),
                         ),
                     )
         conn.commit()
