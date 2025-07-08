@@ -28,8 +28,12 @@ function Atendimentos() {
   const carregar = async () => {
     try {
       const dados = await fetchComAuth('/comercial/atendimentos');
+      const items = Array.isArray(dados?.atendimentos) ? dados.atendimentos : [];
+      if (!Array.isArray(dados?.atendimentos)) {
+        console.error('Resposta inesperada ao carregar atendimentos', dados);
+      }
       const lista = await Promise.all(
-        dados.atendimentos.map(async (at) => {
+        items.map(async (at) => {
           try {
             const t = await fetchComAuth(`/comercial/atendimentos/${at.id}/tarefas`);
             const tarefas = t.tarefas.map((tt) => {
