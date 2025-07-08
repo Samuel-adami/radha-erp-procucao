@@ -13,7 +13,8 @@ import requests
 def safe_float(value):
     """Convert value to float returning 0.0 when invalid."""
     try:
-        return float(str(value).replace(",", "."))
+        val = str(value).replace(".", "").replace(",", ".")
+        return float(val)
     except (TypeError, ValueError):
         return 0.0
 
@@ -21,7 +22,8 @@ def safe_float(value):
 def safe_int(value):
     """Convert value to int returning 0 when invalid."""
     try:
-        return int(float(value))
+        val = str(value).replace(".", "").replace(",", ".")
+        return int(float(val))
     except (TypeError, ValueError):
         return 0
 
