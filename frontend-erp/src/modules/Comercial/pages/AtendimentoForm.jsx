@@ -72,7 +72,7 @@ function AtendimentoForm() {
   const [files, setFiles] = useState([]);
   const [sugestoesClientes, setSugestoesClientes] = useState([]);
   const [clienteInfo, setClienteInfo] = useState(null);
-  const [sequencial, setSequencial] = useState(1);
+  const [clientes, setClientes] = useState([]);
   const [projetosOpen, setProjetosOpen] = useState(false);
   const [entregaOpcao, setEntregaOpcao] = useState('');
   const navigate = useNavigate();
@@ -83,32 +83,52 @@ function AtendimentoForm() {
   }, [form.entrega_diferente]);
 
   useEffect(() => {
-    const seq = parseInt(localStorage.getItem('atendimentoCodigoSeq') || '1', 10);
-    setSequencial(seq);
-    setInitialForm({
-      cliente: '',
-      codigo: '',
-      procedencia: '',
-      vendedor: '',
-      telefone: '',
-      email: '',
-      rua: '',
-      numero: '',
-      complemento: '',
-      bairro: '',
-      cidade: '',
-      estado: '',
-      cep: '',
-      projetos: [],
-      previsao_fechamento: '',
-      temperatura: '',
-      tem_especificador: false,
-      especificador_nome: '',
-      rt_percent: '',
-      entrega_diferente: '',
-      historico: '',
-    });
-  }, []);
+    const carregar = async () => {
+      try {
+        const data = await fetchComAuth('/clientes');
+        setClientes(data?.clientes || []);
+      } catch (err) {
+        console.error('Erro ao carregar clientes', err);
+      }
+
+      if (!id) {
+        try {
+          const resp = await fetchComAuth(
+            '/comercial/atendimentos/proximo-codigo'
+          );
+          setForm(f => ({ ...f, codigo: resp.codigo || '' }));
+        } catch (err) {
+          console.error('Erro ao gerar código', err);
+        }
+      }
+
+      setInitialForm({
+        cliente: '',
+        codigo: '',
+        procedencia: '',
+        vendedor: '',
+        telefone: '',
+        email: '',
+        rua: '',
+        numero: '',
+        complemento: '',
+        bairro: '',
+        cidade: '',
+        estado: '',
+        cep: '',
+        projetos: [],
+        previsao_fechamento: '',
+        temperatura: '',
+        tem_especificador: false,
+        especificador_nome: '',
+        rt_percent: '',
+        entrega_diferente: '',
+        historico: '',
+      });
+    };
+
+    carregar();
+  }, [id]);
 
   useEffect(() => {
     if (!id) return;
@@ -171,10 +191,9 @@ function AtendimentoForm() {
 
   useEffect(() => {
     if (!form.cliente) return;
-    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
-    const encontrado = lista.find(c => c.nome === form.cliente);
+    const encontrado = clientes.find(c => c.nome === form.cliente);
     setClienteInfo(encontrado || null);
-  }, [form.cliente, id]);
+  }, [form.cliente, id, clientes]);
 
   useEffect(() => {
     if (entregaOpcao === 'Sim' && clienteInfo) {
@@ -191,11 +210,6 @@ function AtendimentoForm() {
     }
   }, [clienteInfo, entregaOpcao]);
 
-  useEffect(() => {
-    if (id) return;
-    const codigo = `AT-${String(sequencial).padStart(4, '0')}`;
-    setForm(prev => ({ ...prev, codigo }));
-  }, [sequencial, id]);
 
   const handle = campo => e => {
     let value = e.target.value;
@@ -217,7 +231,7 @@ function AtendimentoForm() {
   const handleClienteChange = e => {
     const value = e.target.value;
     setForm(prev => ({ ...prev, cliente: value }));
-    const lista = JSON.parse(localStorage.getItem('clientes') || '[]');
+    const lista = clientes;
     if (value.length >= 3) {
       const termo = value.toLowerCase();
       setSugestoesClientes(
@@ -309,8 +323,6 @@ function AtendimentoForm() {
         method: 'POST',
         body: JSON.stringify(payload),
       });
-      localStorage.setItem('atendimentoCodigoSeq', String(sequencial + 1));
-      setSequencial(s => s + 1);
     }
   };
 
