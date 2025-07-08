@@ -271,7 +271,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
     with get_db_connection() as conn:
         conn.exec_driver_sql(
             f"UPDATE atendimentos SET {', '.join(campos)} WHERE id=%s",
-            valores,
+            tuple(valores),
         )
         conn.commit()
     return {"ok": True}
@@ -377,7 +377,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     with get_db_connection() as conn:
         conn.exec_driver_sql(
             f"UPDATE atendimento_tarefas SET {', '.join(campos)} WHERE atendimento_id=%s AND id=%s",
-            valores,
+            tuple(valores),
         )
         if "dados" in data and dados_json.get("projetos"):
 
