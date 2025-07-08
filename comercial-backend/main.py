@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-from database import get_db_connection, init_db
+from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
 from gabster_api import get_projeto
 from datetime import datetime
@@ -117,7 +117,8 @@ async def criar_atendimento(request: Request):
             data.get("cep"),
             datetime.utcnow().isoformat(),
         )
-        cur = conn.exec_driver_sql(
+        atendimento_id = insert_with_id(
+            conn,
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
@@ -129,7 +130,6 @@ async def criar_atendimento(request: Request):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             fields,
         )
-        atendimento_id = cur.lastrowid
         for nome in TASKS:
             conn.exec_driver_sql(
                 "INSERT INTO atendimento_tarefas (atendimento_id, nome) VALUES (%s, %s)",
@@ -155,6 +155,7 @@ async def listar_atendimentos():
 
 @app.get("/atendimentos/{atendimento_id}")
 async def obter_atendimento(atendimento_id: int):
+    """Return atendimento details including its tarefas."""
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
@@ -166,12 +167,63 @@ async def obter_atendimento(atendimento_id: int):
         )
         if not row:
             return JSONResponse({"detail": "Atendimento não encontrado"}, status_code=404)
+
         item = dict(row)
         if item.get("arquivos_json"):
             try:
                 item["arquivos"] = json.loads(item["arquivos_json"])
             except Exception:
                 item["arquivos"] = []
+
+        # carregar tarefas deste atendimento
+        tarefas_rows = (
+            conn.exec_driver_sql(
+                "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=%s ORDER BY id",
+                (atendimento_id,),
+            )
+            .mappings()
+            .all()
+        )
+
+        tarefas = []
+        for row in tarefas_rows:
+            t = dict(row)
+            dados_json = {}
+            if t.get("dados"):
+                try:
+                    dados_json = json.loads(t["dados"])
+                except Exception:
+                    dados_json = {}
+
+            itens_rows = (
+                conn.exec_driver_sql(
+                    "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=%s ORDER BY id",
+                    (t["id"],),
+                )
+                .mappings()
+                .all()
+            )
+
+            if itens_rows:
+                projetos = {}
+                for it in itens_rows:
+                    amb = it["ambiente"]
+                    projetos.setdefault(amb, {"itens": [], "total": 0})
+                    projetos[amb]["itens"].append(
+                        {
+                            "descricao": it["descricao"],
+                            "unitario": it["unitario"],
+                            "quantidade": it["quantidade"],
+                            "total": it["total"],
+                        }
+                    )
+                    projetos[amb]["total"] += it["total"]
+                dados_json["projetos"] = projetos
+                t["dados"] = json.dumps(dados_json)
+            tarefas.append(t)
+
+        item["tarefas"] = tarefas
+
         return {"atendimento": item}
 
 
@@ -399,7 +451,8 @@ async def criar_condicao(request: Request):
         parcelas,
     )
     with get_db_connection() as conn:
-        cur = conn.exec_driver_sql(
+        new_id = insert_with_id(
+            conn,
             """INSERT INTO condicoes_pagamento (
                 nome, numero_parcelas, juros_parcela,
                 dias_vencimento, ativa, parcelas_json
@@ -407,7 +460,6 @@ async def criar_condicao(request: Request):
             fields,
         )
         conn.commit()
-        new_id = cur.lastrowid
     return {"id": new_id}
 
 
@@ -504,12 +556,12 @@ async def criar_template(request: Request):
     data = await request.json()
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
-        cur = conn.exec_driver_sql(
+        new_id = insert_with_id(
+            conn,
             "INSERT INTO templates (tipo, titulo, campos_json) VALUES (%s, %s, %s)",
             (data.get("tipo"), data.get("titulo"), campos),
         )
         conn.commit()
-        new_id = cur.lastrowid
     return {"id": new_id}
 
 
