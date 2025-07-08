@@ -149,6 +149,20 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     const dadosProj = dados.projetos || {};
     const programa = dados.programa || 'Gabster';
 
+    const salvarProjeto = async novosDados => {
+      await fetchComAuth(
+        `/comercial/atendimentos/${atendimentoId}/tarefas/${tarefa.id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            concluida: projetos.every(p => novosDados.projetos?.[p]),
+            dados: JSON.stringify(novosDados),
+          }),
+        }
+      );
+      await onChange();
+    };
+
     const importarGabster = amb => async () => {
       const codigo = window.prompt('Código do projeto Gabster');
       if (!codigo) return;
@@ -157,10 +171,13 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
           method: 'POST',
           body: JSON.stringify({ cd_projeto: codigo }),
         });
-        setDados(prev => ({
-          ...prev,
-          projetos: { ...prev.projetos, [amb]: { codigo, ...info } },
-        }));
+        const novos = {
+          ...dados,
+          programa,
+          projetos: { ...dados.projetos, [amb]: { codigo, ...info } },
+        };
+        setDados(novos);
+        await salvarProjeto(novos);
         alert('Importação realizada com sucesso');
       } catch (err) {
         console.error('Erro ao importar do Gabster', err);
@@ -180,13 +197,16 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         });
         const projetosResp = info.projetos || {};
         const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
-        setDados(prev => ({
-          ...prev,
+        const novos = {
+          ...dados,
+          programa,
           projetos: {
-            ...prev.projetos,
+            ...dados.projetos,
             [amb]: { arquivo: file.name, ...dadosAmb },
           },
-        }));
+        };
+        setDados(novos);
+        await salvarProjeto(novos);
         alert('Importação realizada com sucesso');
       } catch (err) {
         console.error('Erro ao importar do Promob', err);
@@ -260,11 +280,8 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             ))}
           </div>
         )}
-        <div className="flex gap-2">
-          <Button size="sm" className="bg-white text-black" onClick={() => salvar(true)}>
-            Salvar Projeto 3D
-          </Button>
-          {tarefa.concluida && (
+        {tarefa.concluida && (
+          <div className="flex gap-2">
             <Button
               size="sm"
               variant="destructive"
@@ -273,8 +290,8 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             >
               Desfazer
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </li>
     );
   }
