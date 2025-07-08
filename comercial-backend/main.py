@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
 from gabster_api import get_projeto
+from orcamento_gabster import parse_gabster_projeto
 from datetime import datetime
 import re
 import json
@@ -84,7 +85,10 @@ async def leitor_orcamento_gabster(request: Request):
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:  # generic errors
         raise HTTPException(status_code=400, detail=str(exc))
-    return projeto
+
+    parsed = parse_gabster_projeto(projeto)
+    parsed["projeto"] = projeto
+    return parsed
 
 
 @app.post("/leitor-orcamento-promob")
