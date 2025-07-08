@@ -6,6 +6,14 @@ from datetime import datetime
 import os
 from pathlib import Path
 
+
+def parse_float(value, default=0.0):
+    """Converte valores numéricos tratando vírgula e ponto."""
+    try:
+        return float(str(value).replace(',', '.'))
+    except (ValueError, TypeError):
+        return default
+
 def fix_dxf_content(file_path):
     encodings_to_try = ['cp1252', 'latin-1', 'utf-8']
     for enc in encodings_to_try:
@@ -244,9 +252,9 @@ def classificar_item(item, xml_type='orcamento'):
         return "ignorar"
 
     try:
-        largura = float(item.get("WIDTH", 0))
-        comprimento = float(item.get("DEPTH", 0))
-        espessura = float(item.get("HEIGHT", 0))
+        largura = parse_float(item.get("WIDTH", 0))
+        comprimento = parse_float(item.get("DEPTH", 0))
+        espessura = parse_float(item.get("HEIGHT", 0))
         if (
             item.get("COMPONENT") == "Y"
             and item.get("STRUCTURE") == "N"
@@ -390,9 +398,9 @@ def parse_dxt_producao(root, dxt_path):
                     continue
 
             print(f"    -> Processando: {descricao_item} | DXF: {dxf_da_peca}")
-            comprimento = float(item_data.get("Length", 0))
-            largura = float(item_data.get("Width", 0))
-            espessura = float(item_data.get("Thickness", 0))
+            comprimento = parse_float(item_data.get("Length", 0))
+            largura = parse_float(item_data.get("Width", 0))
+            espessura = parse_float(item_data.get("Thickness", 0))
 
             operacoes_dxf = processar_dxf_producao(
                 caminho_dxf,
@@ -492,7 +500,7 @@ def parse_xml_orcamento(root):
         elif tipo_item == "ferragem":
             nome_ferragem = atributos.get("DESCRIPTION", "Ferragem sem descrição")
             try:
-                quantidade = int(float(atributos.get("AMOUNT", "1")))
+                quantidade = int(parse_float(atributos.get("AMOUNT", "1")))
             except ValueError:
                 quantidade = 1
             item_existente = next((f for f in ferragens if f["nome"] == nome_ferragem), None)
@@ -555,9 +563,9 @@ def parse_xml_producao(root, xml_path):
 
                 descricao = atributos.get("DESCRICAO", "Peça sem descrição").strip().upper()
 
-                comprimento_xml = float(atributos.get("LARGURA", "0"))
-                largura_xml = float(atributos.get("PROFUNDIDADE", "0"))
-                espessura = float(atributos.get("ALTURA", "0"))
+                comprimento_xml = parse_float(atributos.get("LARGURA", "0"))
+                largura_xml = parse_float(atributos.get("PROFUNDIDADE", "0"))
+                espessura = parse_float(atributos.get("ALTURA", "0"))
 
                 operacoes_dxf = processar_dxf_producao(
                     caminho_dxf,
@@ -600,7 +608,7 @@ def parse_xml_producao(root, xml_path):
             nome_ferragem = atributos.get("DESCRICAO", "Ferragem sem descrição")
             codigo_ferragem = atributos.get("REFERENCIA", "S/REF")
             try:
-                quantidade = int(float(atributos.get("QUANTIDADE", "1")))
+                quantidade = int(parse_float(atributos.get("QUANTIDADE", "1")))
             except ValueError:
                 quantidade = 1
 
