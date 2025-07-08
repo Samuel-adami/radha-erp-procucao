@@ -1,9 +1,0 @@
-chmod +x start_radha_erp.sh
-
-./start_radha_erp.sh
-
-
-chmod +x update_github.sh
-
-./update_github.sh
-
