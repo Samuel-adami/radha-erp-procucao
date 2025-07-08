@@ -73,15 +73,21 @@ function BriefingVendas() {
       let cidade = at.atendimento.cidade || '';
       let estado = at.atendimento.estado || '';
       let cep = at.atendimento.cep || '';
-      if (!rua && typeof localStorage !== 'undefined') {
-        const clientes = JSON.parse(localStorage.getItem('clientes') || '[]');
-        const cli = clientes.find(c => c.nome === at.atendimento.cliente);
-        if (cli) {
-          rua = cli.endereco || '';
-          numero = cli.numero || '';
-          cidade = cli.cidade || '';
-          estado = cli.estado || '';
-          cep = cli.cep || '';
+      if (!rua) {
+        try {
+          const dataCli = await fetchComAuth('/clientes');
+          const cli = (dataCli.clientes || []).find(
+            c => c.nome === at.atendimento.cliente
+          );
+          if (cli) {
+            rua = cli.endereco || '';
+            numero = cli.numero || '';
+            cidade = cli.cidade || '';
+            estado = cli.estado || '';
+            cep = cli.cep || '';
+          }
+        } catch (e) {
+          console.error('Erro ao carregar clientes', e);
         }
       }
 
