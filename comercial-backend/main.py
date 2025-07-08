@@ -20,7 +20,7 @@ TASKS = [
 
 
 def get_next_codigo(conn):
-    row = conn.execute(
+    row = conn.exec_driver_sql(
         "SELECT codigo FROM atendimentos ORDER BY id DESC LIMIT 1"
     ).fetchone()
     if row and row[0]:
@@ -108,7 +108,7 @@ async def criar_atendimento(request: Request):
             data.get("cep"),
             datetime.utcnow().isoformat(),
         )
-        cur = conn.execute(
+        cur = conn.exec_driver_sql(
             """INSERT INTO atendimentos (
                 cliente, codigo, projetos, previsao_fechamento,
                 temperatura, tem_especificador, especificador_nome,
@@ -117,12 +117,12 @@ async def criar_atendimento(request: Request):
                 rua, numero, complemento, bairro,
                 cidade, estado, cep,
                 data_cadastro
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             fields,
         )
         atendimento_id = cur.lastrowid
         for nome in TASKS:
-            conn.execute(
+            conn.exec_driver_sql(
                 "INSERT INTO atendimento_tarefas (atendimento_id, nome) VALUES (?, ?)",
                 (atendimento_id, nome),
             )
@@ -133,9 +133,13 @@ async def criar_atendimento(request: Request):
 @app.get("/atendimentos")
 async def listar_atendimentos():
     with get_db_connection() as conn:
-        rows = conn.execute(
-            "SELECT id, cliente, codigo, previsao_fechamento, temperatura, data_cadastro FROM atendimentos ORDER BY id DESC"
-        ).fetchall()
+        rows = (
+            conn.exec_driver_sql(
+                "SELECT id, cliente, codigo, previsao_fechamento, temperatura, data_cadastro FROM atendimentos ORDER BY id DESC"
+            )
+            .mappings()
+            .all()
+        )
         itens = [dict(row) for row in rows]
     return {"atendimentos": itens}
 
@@ -143,10 +147,14 @@ async def listar_atendimentos():
 @app.get("/atendimentos/{atendimento_id}")
 async def obter_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM atendimentos WHERE id=?",
-            (atendimento_id,),
-        ).fetchone()
+        row = (
+            conn.exec_driver_sql(
+                "SELECT * FROM atendimentos WHERE id=?",
+                (atendimento_id,),
+            )
+            .mappings()
+            .fetchone()
+        )
         if not row:
             return JSONResponse({"detail": "Atendimento não encontrado"}, status_code=404)
         item = dict(row)
@@ -185,7 +193,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
         return {"detail": "Nada para atualizar"}
     valores.append(atendimento_id)
     with get_db_connection() as conn:
-        conn.execute(
+        conn.exec_driver_sql(
             f"UPDATE atendimentos SET {', '.join(campos)} WHERE id=?",
             valores,
         )
@@ -196,10 +204,16 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
 @app.get("/atendimentos/{atendimento_id}/tarefas")
 async def listar_tarefas(atendimento_id: int):
     with get_db_connection() as conn:
-        rows = conn.execute(
-            "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
-            (atendimento_id,),
-        ).fetchall()
+
+        rows = (
+            conn.exec_driver_sql(
+                "SELECT id, nome, concluida, dados, data_execucao FROM atendimento_tarefas WHERE atendimento_id=? ORDER BY id",
+                (atendimento_id,),
+            )
+            .mappings()
+            .all()
+        )
+
         tarefas = []
         for row in rows:
             item = dict(row)
@@ -211,10 +225,16 @@ async def listar_tarefas(atendimento_id: int):
                     dados = {}
 
             # recuperar itens do projeto, se houver
-            itens_rows = conn.execute(
-                "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=? ORDER BY id",
-                (item["id"],),
-            ).fetchall()
+
+            itens_rows = (
+                conn.exec_driver_sql(
+                    "SELECT ambiente, descricao, unitario, quantidade, total FROM projeto_itens WHERE tarefa_id=? ORDER BY id",
+                    (item["id"],),
+                )
+                .mappings()
+                .all()
+            )
+
             if itens_rows:
                 projetos = {}
                 for it in itens_rows:
@@ -242,17 +262,21 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     valores = []
     dados_json = {}
     with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=? AND id=?",
-            (atendimento_id, tarefa_id),
-        ).fetchone()
+        row = (
+            conn.exec_driver_sql(
+                "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=? AND id=?",
+                (atendimento_id, tarefa_id),
+            )
+            .mappings()
+            .fetchone()
+        )
         if not row:
             return JSONResponse({"detail": "Tarefa não encontrada"}, status_code=404)
         if not row["concluida"]:
-            prev = conn.execute(
+            prev = conn.exec_driver_sql(
                 "SELECT COUNT(*) FROM atendimento_tarefas WHERE atendimento_id=? AND id < ? AND concluida=0",
                 (atendimento_id, tarefa_id),
-            ).fetchone()[0]
+            ).scalar()
             if prev > 0:
                 return JSONResponse(
                     {"detail": "Não é possível executar esta tarefa antes de concluir as anteriores"},
@@ -275,15 +299,17 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
         return {"detail": "Nada para atualizar"}
     valores.extend([atendimento_id, tarefa_id])
     with get_db_connection() as conn:
-        conn.execute(
+        conn.exec_driver_sql(
             f"UPDATE atendimento_tarefas SET {', '.join(campos)} WHERE atendimento_id=? AND id=?",
             valores,
         )
         if "dados" in data and dados_json.get("projetos"):
-            conn.execute("DELETE FROM projeto_itens WHERE tarefa_id=?", (tarefa_id,))
+
+            conn.exec_driver_sql("DELETE FROM projeto_itens WHERE tarefa_id=?", (tarefa_id,))
             for amb, info in dados_json["projetos"].items():
                 for it in info.get("itens", []):
-                    conn.execute(
+                    conn.exec_driver_sql(
+
                         """
                         INSERT INTO projeto_itens (
                             atendimento_id, tarefa_id, ambiente,
@@ -307,15 +333,17 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
 @app.delete("/atendimentos/{atendimento_id}")
 async def excluir_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
-        conn.execute(
+
+        conn.exec_driver_sql(
             "DELETE FROM projeto_itens WHERE atendimento_id=?",
             (atendimento_id,),
         )
-        conn.execute(
+        conn.exec_driver_sql(
+
             "DELETE FROM atendimento_tarefas WHERE atendimento_id=?",
             (atendimento_id,),
         )
-        conn.execute(
+        conn.exec_driver_sql(
             "DELETE FROM atendimentos WHERE id=?",
             (atendimento_id,),
         )
@@ -326,9 +354,13 @@ async def excluir_atendimento(atendimento_id: int):
 @app.get("/condicoes-pagamento")
 async def listar_condicoes():
     with get_db_connection() as conn:
-        rows = conn.execute(
-            "SELECT * FROM condicoes_pagamento ORDER BY id"
-        ).fetchall()
+        rows = (
+            conn.exec_driver_sql(
+                "SELECT * FROM condicoes_pagamento ORDER BY id"
+            )
+            .mappings()
+            .all()
+        )
         itens = []
         for row in rows:
             item = dict(row)
@@ -355,7 +387,7 @@ async def criar_condicao(request: Request):
         parcelas,
     )
     with get_db_connection() as conn:
-        cur = conn.execute(
+        cur = conn.exec_driver_sql(
             """INSERT INTO condicoes_pagamento (
                 nome, numero_parcelas, juros_parcela,
                 dias_vencimento, ativa, parcelas_json
@@ -370,10 +402,14 @@ async def criar_condicao(request: Request):
 @app.get("/condicoes-pagamento/{condicao_id}")
 async def obter_condicao(condicao_id: int):
     with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM condicoes_pagamento WHERE id=?",
-            (condicao_id,),
-        ).fetchone()
+        row = (
+            conn.exec_driver_sql(
+                "SELECT * FROM condicoes_pagamento WHERE id=?",
+                (condicao_id,),
+            )
+            .mappings()
+            .fetchone()
+        )
         if not row:
             return JSONResponse({"detail": "Condição não encontrada"}, status_code=404)
         item = dict(row)
@@ -400,7 +436,7 @@ async def atualizar_condicao(condicao_id: int, request: Request):
         condicao_id,
     )
     with get_db_connection() as conn:
-        conn.execute(
+        conn.exec_driver_sql(
             """UPDATE condicoes_pagamento SET
                 nome=?, numero_parcelas=?, juros_parcela=?,
                 dias_vencimento=?, ativa=?, parcelas_json=?
@@ -414,7 +450,7 @@ async def atualizar_condicao(condicao_id: int, request: Request):
 @app.delete("/condicoes-pagamento/{condicao_id}")
 async def excluir_condicao(condicao_id: int):
     with get_db_connection() as conn:
-        conn.execute(
+        conn.exec_driver_sql(
             "DELETE FROM condicoes_pagamento WHERE id=?",
             (condicao_id,),
         )
@@ -426,13 +462,21 @@ async def excluir_condicao(condicao_id: int):
 async def listar_templates(tipo: str | None = None):
     with get_db_connection() as conn:
         if tipo:
-            rows = conn.execute(
-                "SELECT * FROM templates WHERE tipo=? ORDER BY id", (tipo,)
-            ).fetchall()
+            rows = (
+                conn.exec_driver_sql(
+                    "SELECT * FROM templates WHERE tipo=? ORDER BY id", (tipo,)
+                )
+                .mappings()
+                .all()
+            )
         else:
-            rows = conn.execute(
-                "SELECT * FROM templates ORDER BY id"
-            ).fetchall()
+            rows = (
+                conn.exec_driver_sql(
+                    "SELECT * FROM templates ORDER BY id"
+                )
+                .mappings()
+                .all()
+            )
         itens = [dict(row) for row in rows]
         for it in itens:
             if it.get("campos_json"):
@@ -448,7 +492,7 @@ async def criar_template(request: Request):
     data = await request.json()
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
-        cur = conn.execute(
+        cur = conn.exec_driver_sql(
             "INSERT INTO templates (tipo, titulo, campos_json) VALUES (?, ?, ?)",
             (data.get("tipo"), data.get("titulo"), campos),
         )
@@ -460,9 +504,13 @@ async def criar_template(request: Request):
 @app.get("/templates/{template_id}")
 async def obter_template(template_id: int):
     with get_db_connection() as conn:
-        row = conn.execute(
-            "SELECT * FROM templates WHERE id=?", (template_id,)
-        ).fetchone()
+        row = (
+            conn.exec_driver_sql(
+                "SELECT * FROM templates WHERE id=?", (template_id,)
+            )
+            .mappings()
+            .fetchone()
+        )
         if not row:
             return JSONResponse({"detail": "Template não encontrado"}, status_code=404)
         item = dict(row)
@@ -479,7 +527,7 @@ async def atualizar_template(template_id: int, request: Request):
     data = await request.json()
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
-        conn.execute(
+        conn.exec_driver_sql(
             """UPDATE templates SET titulo=?, tipo=?, campos_json=? WHERE id=?""",
             (data.get("titulo"), data.get("tipo"), campos, template_id),
         )
@@ -490,7 +538,7 @@ async def atualizar_template(template_id: int, request: Request):
 @app.delete("/templates/{template_id}")
 async def excluir_template(template_id: int):
     with get_db_connection() as conn:
-        conn.execute("DELETE FROM templates WHERE id=?", (template_id,))
+        conn.exec_driver_sql("DELETE FROM templates WHERE id=?", (template_id,))
         conn.commit()
     return {"ok": True}
 
