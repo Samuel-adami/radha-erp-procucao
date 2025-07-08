@@ -21,9 +21,18 @@ connect_args = {"options": f"-c search_path={schema}"} if schema else {}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
+if engine.dialect.name != "postgresql":
+    raise RuntimeError("Comercial backend requires a PostgreSQL database")
+
 
 def get_db_connection():
     return engine.connect()
+
+
+def insert_with_id(conn, sql: str, params: tuple):
+    """Execute INSERT statement returning the new record id."""
+    result = conn.exec_driver_sql(sql + " RETURNING id", params)
+    return result.scalar()
 
 
 def init_db():
