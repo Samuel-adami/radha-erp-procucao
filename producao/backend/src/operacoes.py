@@ -328,8 +328,10 @@ def parse_bpp_furos_topo(file_path, peca_largura):
             face = face_parts[1].strip()
             if face == '1':
                 face1_holes_raw.append({
-                    "x_bpp": float(parts[7]), "y_bpp": float(parts[8]),
-                    "profundidade": float(parts[10]), "diametro": float(parts[11])
+                    "x_bpp": parse_float(parts[7]),
+                    "y_bpp": parse_float(parts[8]),
+                    "profundidade": parse_float(parts[10]),
+                    "diametro": parse_float(parts[11])
                 })
         except (IndexError, ValueError):
             continue
@@ -465,12 +467,12 @@ def parse_xml_orcamento(root):
         if tipo_item == "mdf":
             try:
                 nome_item = atributos.get("DESCRIPTION", "").upper()
-                largura = float(atributos.get("DEPTH", "0"))
-                comprimento = float(atributos.get("WIDTH", "0"))
+                largura = parse_float(atributos.get("DEPTH", "0"))
+                comprimento = parse_float(atributos.get("WIDTH", "0"))
                 if (
                     "PORTA" in nome_item or "FRENTE DE" in nome_item
                 ) and "BASCULANTE" not in nome_item:
-                    largura = float(atributos.get("HEIGHT", "0"))
+                    largura = parse_float(atributos.get("HEIGHT", "0"))
 
                 ref_parts = atributos.get("REFERENCE", "").split(".")
                 espessura = ref_parts[2] if len(ref_parts) > 2 else "?"

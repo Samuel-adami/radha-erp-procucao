@@ -120,8 +120,8 @@ async def gerar_lote_final(request: Request):
     os.makedirs(pasta_saida, exist_ok=True)
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT OR IGNORE INTO lotes (pasta, criado_em) VALUES (?, ?)",
+            conn.exec_driver_sql(
+                "INSERT INTO lotes (pasta, criado_em) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                 (str(pasta_saida), datetime.now().isoformat()),
             )
             conn.commit()
@@ -353,7 +353,7 @@ async def listar_lotes():
                 if pasta.is_dir():
                     lotes_validos.append(str(pasta))
                 else:
-                    conn.execute("DELETE FROM lotes WHERE id=?", (row["id"],))
+                    conn.exec_driver_sql("DELETE FROM lotes WHERE id=%s", (row["id"],))
             conn.commit()
     except Exception:
         lotes_validos = []
@@ -379,14 +379,19 @@ async def listar_nestings():
             for lote_dir in SAIDA_DIR.glob("Lote_*/"):
                 pasta_nest = lote_dir / "nesting"
                 if pasta_nest.is_dir() and str(pasta_nest) not in existentes:
-                    cur = conn.execute(
-                        "INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES (?, ?, ?)",
+                    cur = conn.exec_driver_sql(
+                        """
+                        INSERT INTO nestings (lote, pasta_resultado, criado_em)
+                        VALUES (%s, %s, %s)
+                        RETURNING id
+                        """,
                         (str(lote_dir), str(pasta_nest), datetime.now().isoformat()),
                     )
+                    nid = cur.fetchone()[0]
                     conn.commit()
                     dados.append(
                         {
-                            "id": cur.lastrowid,
+                            "id": nid,
                             "lote": str(lote_dir),
                             "pasta_resultado": str(pasta_nest),
                             "criado_em": datetime.now().isoformat(),
@@ -425,8 +430,8 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     """Compacta e faz o download dos arquivos de uma otimização."""
     try:
         with get_db_connection() as conn:
-            row = conn.execute(
-                "SELECT pasta_resultado FROM nestings WHERE id=?",
+            row = conn.exec_driver_sql(
+                "SELECT pasta_resultado FROM nestings WHERE id=%s",
                 (nid,),
             ).fetchone()
             pasta_str = row["pasta_resultado"] if row else None
@@ -465,16 +470,16 @@ async def remover_nesting(request: Request):
     try:
         with get_db_connection() as conn:
             if nid:
-                row = conn.execute(
-                    "SELECT pasta_resultado FROM nestings WHERE id=?",
+                row = conn.exec_driver_sql(
+                    "SELECT pasta_resultado FROM nestings WHERE id=%s",
                     (nid,),
                 ).fetchone()
                 if row:
                     pasta_resultado = pasta_resultado or row["pasta_resultado"]
-                conn.execute("DELETE FROM nestings WHERE id=?", (nid,))
+                conn.exec_driver_sql("DELETE FROM nestings WHERE id=%s", (nid,))
             elif pasta_resultado:
-                conn.execute(
-                    "DELETE FROM nestings WHERE pasta_resultado=?",
+                conn.exec_driver_sql(
+                    "DELETE FROM nestings WHERE pasta_resultado=%s",
                     (pasta_resultado,),
                 )
             conn.commit()
@@ -503,7 +508,7 @@ async def excluir_lote(request: Request):
     delete_file(f"lotes/Lote_{numero_lote}.zip")
     try:
         with get_db_connection() as conn:
-            conn.execute("DELETE FROM lotes WHERE pasta = ?", (str(pasta),))
+            conn.exec_driver_sql("DELETE FROM lotes WHERE pasta = %s", (str(pasta),))
             conn.commit()
     except Exception:
         pass
@@ -533,8 +538,8 @@ async def salvar_config_maquina(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT INTO config_maquina (id, dados) VALUES (1, ?) "
+            conn.exec_driver_sql(
+                "INSERT INTO config_maquina (id, dados) VALUES (1, %s) "
                 "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
@@ -568,8 +573,8 @@ async def salvar_ferramentas(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT INTO config_ferramentas (id, dados) VALUES (1, ?) "
+            conn.exec_driver_sql(
+                "INSERT INTO config_ferramentas (id, dados) VALUES (1, %s) "
                 "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
@@ -600,8 +605,8 @@ async def salvar_cortes(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT INTO config_cortes (id, dados) VALUES (1, ?) "
+            conn.exec_driver_sql(
+                "INSERT INTO config_cortes (id, dados) VALUES (1, %s) "
                 "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
@@ -632,8 +637,8 @@ async def salvar_layers(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT INTO config_layers (id, dados) VALUES (1, ?) "
+            conn.exec_driver_sql(
+                "INSERT INTO config_layers (id, dados) VALUES (1, %s) "
                 "ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
@@ -663,8 +668,8 @@ async def salvar_chapa(request: Request):
     try:
         with get_db_connection() as conn:
             if dados.get("id"):
-                conn.execute(
-                    "UPDATE chapas SET possui_veio=?, propriedade=?, espessura=?, comprimento=?, largura=? WHERE id=?",
+                conn.exec_driver_sql(
+                    "UPDATE chapas SET possui_veio=%s, propriedade=%s, espessura=%s, comprimento=%s, largura=%s WHERE id=%s",
                     (
                         1 if dados.get("possui_veio") else 0,
                         dados.get("propriedade"),
@@ -675,8 +680,8 @@ async def salvar_chapa(request: Request):
                     ),
                 )
             else:
-                conn.execute(
-                    "INSERT INTO chapas (possui_veio, propriedade, espessura, comprimento, largura) VALUES (?, ?, ?, ?, ?)",
+                conn.exec_driver_sql(
+                    "INSERT INTO chapas (possui_veio, propriedade, espessura, comprimento, largura) VALUES (%s, %s, %s, %s, %s)",
                     (
                         1 if dados.get("possui_veio") else 0,
                         dados.get("propriedade"),
@@ -695,7 +700,7 @@ async def salvar_chapa(request: Request):
 async def remover_chapa(chapa_id: int):
     try:
         with get_db_connection() as conn:
-            conn.execute("DELETE FROM chapas WHERE id=?", (chapa_id,))
+            conn.exec_driver_sql("DELETE FROM chapas WHERE id=%s", (chapa_id,))
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
@@ -820,12 +825,16 @@ async def gerar_lote_ocorrencia(request: Request):
 
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT OR IGNORE INTO lotes (pasta, criado_em) VALUES (?, ?)",
+            conn.exec_driver_sql(
+                "INSERT INTO lotes (pasta, criado_em) VALUES (%s, %s) ON CONFLICT DO NOTHING",
                 (str(pasta_saida), datetime.now().isoformat()),
             )
-            conn.execute(
-                "INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, pasta, criado_em) VALUES (?, ?, ?, ?, ?)",
+            cur = conn.exec_driver_sql(
+                """
+                INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, pasta, criado_em)
+                VALUES (%s, %s, %s, %s, %s)
+                RETURNING id
+                """,
                 (
                     lote,
                     pacote,
@@ -834,10 +843,10 @@ async def gerar_lote_ocorrencia(request: Request):
                     datetime.now().isoformat(),
                 ),
             )
-            oc_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+            oc_id = cur.fetchone()[0]
             for p in pecas:
-                conn.execute(
-                    "INSERT INTO ocorrencias_pecas (oc_id, peca_id, descricao_peca, motivo_id) VALUES (?, ?, ?, ?)",
+                conn.exec_driver_sql(
+                    "INSERT INTO ocorrencias_pecas (oc_id, peca_id, descricao_peca, motivo_id) VALUES (%s, %s, %s, %s)",
                     (oc_id, p.get('id'), p.get('nome', ''), p.get('motivo_codigo')),
                 )
             conn.commit()
@@ -852,8 +861,8 @@ async def excluir_lote_ocorrencia(oc_id: int):
     """Remove um lote de ocorrência."""
     try:
         with get_db_connection() as conn:
-            row = conn.execute(
-                "SELECT pasta FROM lotes_ocorrencias WHERE id=?", (oc_id,)
+            row = conn.exec_driver_sql(
+                "SELECT pasta FROM lotes_ocorrencias WHERE id=%s", (oc_id,)
             ).fetchone()
             if row:
                 try:
@@ -863,8 +872,8 @@ async def excluir_lote_ocorrencia(oc_id: int):
                 if pasta.is_dir():
                     shutil.rmtree(pasta, ignore_errors=True)
                 delete_file(f"ocorrencias/{pasta.name}.zip")
-                conn.execute(
-                    "DELETE FROM lotes_ocorrencias WHERE id=?", (oc_id,)
+                conn.exec_driver_sql(
+                    "DELETE FROM lotes_ocorrencias WHERE id=%s", (oc_id,)
                 )
                 conn.commit()
                 return {"status": "ok"}
@@ -896,8 +905,8 @@ async def salvar_motivo(request: Request):
     setor = dados.get("setor", "")
     try:
         with get_db_connection() as conn:
-            conn.execute(
-                "INSERT INTO motivos_ocorrencia (codigo, descricao, tipo, setor) VALUES (?, ?, ?, ?) "
+            conn.exec_driver_sql(
+                "INSERT INTO motivos_ocorrencia (codigo, descricao, tipo, setor) VALUES (%s, %s, %s, %s) "
                 "ON CONFLICT(codigo) DO UPDATE SET descricao=excluded.descricao, tipo=excluded.tipo, setor=excluded.setor",
                 (codigo, descricao, tipo, setor),
             )
@@ -911,7 +920,7 @@ async def salvar_motivo(request: Request):
 async def deletar_motivo(codigo: str):
     try:
         with get_db_connection() as conn:
-            conn.execute("DELETE FROM motivos_ocorrencia WHERE codigo=?", (codigo,))
+            conn.exec_driver_sql("DELETE FROM motivos_ocorrencia WHERE codigo=%s", (codigo,))
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
@@ -932,24 +941,24 @@ async def relatorio_ocorrencias(request: Request):
     """
     params_list = []
     if params.get("data_inicio"):
-        query += " AND o.criado_em >= ?"
+        query += " AND o.criado_em >= %s"
         params_list.append(params.get("data_inicio"))
     if params.get("data_fim"):
-        query += " AND o.criado_em <= ?"
+        query += " AND o.criado_em <= %s"
         params_list.append(params.get("data_fim"))
     if params.get("motivo"):
-        query += " AND m.codigo = ?"
+        query += " AND m.codigo = %s"
         params_list.append(params.get("motivo"))
     if params.get("tipo"):
-        query += " AND m.tipo = ?"
+        query += " AND m.tipo = %s"
         params_list.append(params.get("tipo"))
     if params.get("setor"):
-        query += " AND m.setor = ?"
+        query += " AND m.setor = %s"
         params_list.append(params.get("setor"))
     query += " ORDER BY o.oc_numero, p.peca_id"
     try:
         with get_db_connection() as conn:
-            rows = conn.execute(query, params_list).fetchall()
+            rows = conn.exec_driver_sql(query, params_list).fetchall()
             return [dict(row) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
