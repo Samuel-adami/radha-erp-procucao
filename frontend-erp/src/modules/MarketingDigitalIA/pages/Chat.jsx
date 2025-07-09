@@ -47,7 +47,9 @@ function Chat({ usuarioLogado }) {
       setMensagens((prevMensagens) => [...prevMensagens, respostaAI]);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
+
       setErro(error?.message || String(error));
+
       setMensagens((prevMensagens) => [
         ...prevMensagens,
         { remetente: "ai", texto: "Desculpe, houve um erro ao processar sua solicitação." },
