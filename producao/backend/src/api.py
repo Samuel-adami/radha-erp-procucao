@@ -9,7 +9,13 @@ from leitor_dxf import aplicar_usinagem_retangular
 from gerador_dxf import gerar_dxf_base
 from pathlib import Path
 import json
-from database import get_db_connection, init_db, exec_ignore, insert_with_id
+from database import (
+    get_db_connection,
+    init_db,
+    exec_ignore,
+    insert_with_id,
+    PLACEHOLDER,
+)
 import tempfile
 import shutil
 from operacoes import (
@@ -120,8 +126,7 @@ async def gerar_lote_final(request: Request):
     os.makedirs(pasta_saida, exist_ok=True)
     try:
         with get_db_connection() as conn:
-            placeholder = "%s" if conn.engine.dialect.name == "postgresql" else "?"
-            sql = f"INSERT INTO lotes (pasta, criado_em) VALUES ({placeholder}, {placeholder})"
+            sql = f"INSERT INTO lotes (pasta, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
             exec_ignore(conn, sql, (str(pasta_saida), datetime.now().isoformat()))
             conn.commit()
     except Exception:
@@ -352,9 +357,8 @@ async def listar_lotes():
                 if pasta.is_dir():
                     lotes_validos.append(str(pasta))
                 else:
-                    ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
                     conn.exec_driver_sql(
-                        f"DELETE FROM lotes WHERE id={ph}",
+                        f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
                         (row["id"],),
                     )
             conn.commit()
@@ -382,9 +386,8 @@ async def listar_nestings():
             for lote_dir in SAIDA_DIR.glob("Lote_*/"):
                 pasta_nest = lote_dir / "nesting"
                 if pasta_nest.is_dir() and str(pasta_nest) not in existentes:
-                    ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
                     cur = conn.exec_driver_sql(
-                        f"INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES ({ph}, {ph}, {ph})",
+                        f"INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
                         (str(lote_dir), str(pasta_nest), datetime.now().isoformat()),
                     )
                     conn.commit()
@@ -429,9 +432,8 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     """Compacta e faz o download dos arquivos de uma otimização."""
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             row = conn.exec_driver_sql(
-                f"SELECT pasta_resultado FROM nestings WHERE id={ph}",
+                f"SELECT pasta_resultado FROM nestings WHERE id={PLACEHOLDER}",
                 (nid,),
             ).fetchone()
             pasta_str = row["pasta_resultado"] if row else None
@@ -469,21 +471,20 @@ async def remover_nesting(request: Request):
     pasta_resultado = dados.get("pasta_resultado")
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             if nid:
                 row = conn.exec_driver_sql(
-                    f"SELECT pasta_resultado FROM nestings WHERE id={ph}",
+                    f"SELECT pasta_resultado FROM nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 ).fetchone()
                 if row:
                     pasta_resultado = pasta_resultado or row["pasta_resultado"]
                 conn.exec_driver_sql(
-                    f"DELETE FROM nestings WHERE id={ph}",
+                    f"DELETE FROM nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 )
             elif pasta_resultado:
                 conn.exec_driver_sql(
-                    f"DELETE FROM nestings WHERE pasta_resultado={ph}",
+                    f"DELETE FROM nestings WHERE pasta_resultado={PLACEHOLDER}",
                     (pasta_resultado,),
                 )
             conn.commit()
@@ -512,9 +513,8 @@ async def excluir_lote(request: Request):
     delete_file(f"lotes/Lote_{numero_lote}.zip")
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"DELETE FROM lotes WHERE pasta = {ph}",
+                f"DELETE FROM lotes WHERE pasta = {PLACEHOLDER}",
                 (str(pasta),),
             )
             conn.commit()
@@ -546,9 +546,8 @@ async def salvar_config_maquina(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"INSERT INTO config_maquina (id, dados) VALUES (1, {ph}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                f"INSERT INTO config_maquina (id, dados) VALUES (1, {PLACEHOLDER}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
             conn.commit()
@@ -581,9 +580,8 @@ async def salvar_ferramentas(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"INSERT INTO config_ferramentas (id, dados) VALUES (1, {ph}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                f"INSERT INTO config_ferramentas (id, dados) VALUES (1, {PLACEHOLDER}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
             conn.commit()
@@ -613,9 +611,8 @@ async def salvar_cortes(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"INSERT INTO config_cortes (id, dados) VALUES (1, {ph}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                f"INSERT INTO config_cortes (id, dados) VALUES (1, {PLACEHOLDER}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
             conn.commit()
@@ -645,9 +642,8 @@ async def salvar_layers(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"INSERT INTO config_layers (id, dados) VALUES (1, {ph}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
+                f"INSERT INTO config_layers (id, dados) VALUES (1, {PLACEHOLDER}) ON CONFLICT(id) DO UPDATE SET dados=excluded.dados",
                 (json.dumps(dados, ensure_ascii=False),),
             )
             conn.commit()
@@ -675,10 +671,9 @@ async def salvar_chapa(request: Request):
     dados = await request.json()
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             if dados.get("id"):
                 sql_up = (
-                    f"UPDATE chapas SET possui_veio={ph}, propriedade={ph}, espessura={ph}, comprimento={ph}, largura={ph} WHERE id={ph}"
+                    f"UPDATE chapas SET possui_veio={PLACEHOLDER}, propriedade={PLACEHOLDER}, espessura={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER} WHERE id={PLACEHOLDER}"
                 )
                 conn.exec_driver_sql(
                     sql_up,
@@ -694,7 +689,7 @@ async def salvar_chapa(request: Request):
             else:
                 sql_ins = (
                     f"INSERT INTO chapas (possui_veio, propriedade, espessura, comprimento, largura)"
-                    f" VALUES ({ph}, {ph}, {ph}, {ph}, {ph})"
+                    f" VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
                 )
                 conn.exec_driver_sql(
                     sql_ins,
@@ -716,9 +711,8 @@ async def salvar_chapa(request: Request):
 async def remover_chapa(chapa_id: int):
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"DELETE FROM chapas WHERE id={ph}",
+                f"DELETE FROM chapas WHERE id={PLACEHOLDER}",
                 (chapa_id,),
             )
             conn.commit()
@@ -845,13 +839,12 @@ async def gerar_lote_ocorrencia(request: Request):
 
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
-            sql_lote = f"INSERT INTO lotes (pasta, criado_em) VALUES ({ph}, {ph})"
+            sql_lote = f"INSERT INTO lotes (pasta, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
             exec_ignore(conn, sql_lote, (str(pasta_saida), datetime.now().isoformat()))
 
             sql_oc = (
                 f"INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, pasta, criado_em) "
-                f"VALUES ({ph}, {ph}, {ph}, {ph}, {ph})"
+                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
             )
             oc_id = insert_with_id(
                 conn,
@@ -867,7 +860,7 @@ async def gerar_lote_ocorrencia(request: Request):
             for p in pecas:
                 sql_op = (
                     f"INSERT INTO ocorrencias_pecas (oc_id, peca_id, descricao_peca, motivo_id) "
-                    f"VALUES ({ph}, {ph}, {ph}, {ph})"
+                    f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
                 )
                 conn.exec_driver_sql(
                     sql_op,
@@ -890,9 +883,8 @@ async def excluir_lote_ocorrencia(oc_id: int):
     """Remove um lote de ocorrência."""
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             row = conn.exec_driver_sql(
-                f"SELECT pasta FROM lotes_ocorrencias WHERE id={ph}",
+                f"SELECT pasta FROM lotes_ocorrencias WHERE id={PLACEHOLDER}",
                 (oc_id,),
             ).fetchone()
             if row:
@@ -904,7 +896,7 @@ async def excluir_lote_ocorrencia(oc_id: int):
                     shutil.rmtree(pasta, ignore_errors=True)
                 delete_file(f"ocorrencias/{pasta.name}.zip")
                 conn.exec_driver_sql(
-                    f"DELETE FROM lotes_ocorrencias WHERE id={ph}",
+                    f"DELETE FROM lotes_ocorrencias WHERE id={PLACEHOLDER}",
                     (oc_id,),
                 )
                 conn.commit()
@@ -937,10 +929,9 @@ async def salvar_motivo(request: Request):
     setor = dados.get("setor", "")
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             sql = (
                 "INSERT INTO motivos_ocorrencia (codigo, descricao, tipo, setor) "
-                f"VALUES ({ph}, {ph}, {ph}, {ph}) ON CONFLICT(codigo) DO UPDATE SET descricao=excluded.descricao, tipo=excluded.tipo, setor=excluded.setor"
+                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}) ON CONFLICT(codigo) DO UPDATE SET descricao=excluded.descricao, tipo=excluded.tipo, setor=excluded.setor"
             )
             conn.exec_driver_sql(
                 sql,
@@ -956,9 +947,8 @@ async def salvar_motivo(request: Request):
 async def deletar_motivo(codigo: str):
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
             conn.exec_driver_sql(
-                f"DELETE FROM motivos_ocorrencia WHERE codigo={ph}",
+                f"DELETE FROM motivos_ocorrencia WHERE codigo={PLACEHOLDER}",
                 (codigo,),
             )
             conn.commit()
@@ -981,25 +971,24 @@ async def relatorio_ocorrencias(request: Request):
     """
     params_list = []
     if params.get("data_inicio"):
-        query += " AND o.criado_em >= ?"
+        query += f" AND o.criado_em >= {PLACEHOLDER}"
         params_list.append(params.get("data_inicio"))
     if params.get("data_fim"):
-        query += " AND o.criado_em <= ?"
+        query += f" AND o.criado_em <= {PLACEHOLDER}"
         params_list.append(params.get("data_fim"))
     if params.get("motivo"):
-        query += " AND m.codigo = ?"
+        query += f" AND m.codigo = {PLACEHOLDER}"
         params_list.append(params.get("motivo"))
     if params.get("tipo"):
-        query += " AND m.tipo = ?"
+        query += f" AND m.tipo = {PLACEHOLDER}"
         params_list.append(params.get("tipo"))
     if params.get("setor"):
-        query += " AND m.setor = ?"
+        query += f" AND m.setor = {PLACEHOLDER}"
         params_list.append(params.get("setor"))
     query += " ORDER BY o.oc_numero, p.peca_id"
     try:
         with get_db_connection() as conn:
-            ph = "%s" if conn.engine.dialect.name == "postgresql" else "?"
-            rows = conn.exec_driver_sql(query.replace("?", ph), tuple(params_list)).fetchall()
+            rows = conn.exec_driver_sql(query, tuple(params_list)).fetchall()
             return [dict(row) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
