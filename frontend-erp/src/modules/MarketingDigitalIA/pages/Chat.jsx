@@ -32,8 +32,11 @@ function Chat() {
     setCarregando(true);
 
     try {
+
+
       const respostaBackend = await fetchComAuth('/chat/', {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: JSON.stringify({ mensagem: inputMensagem, id_assistant: 'asst_OuBtdCCByhjfqPFPZwMK6d9y' }),
       });
       console.log('Resposta do backend', respostaBackend);
