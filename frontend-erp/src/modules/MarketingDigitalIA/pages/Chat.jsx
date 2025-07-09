@@ -5,7 +5,14 @@ function Chat({ usuarioLogado }) {
   const [mensagens, setMensagens] = useState([]);
   const [inputMensagem, setInputMensagem] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [erro, setErro] = useState("");
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    if (erro) {
+      console.error("Erro no chat:", erro);
+    }
+  }, [erro]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -18,8 +25,10 @@ function Chat({ usuarioLogado }) {
     if (!inputMensagem.trim()) return;
 
     const novaMensagem = { remetente: "user", texto: inputMensagem };
+    console.log("Enviando mensagem", novaMensagem);
     setMensagens((prevMensagens) => [...prevMensagens, novaMensagem]);
     setInputMensagem("");
+    setErro("");
     setCarregando(true);
 
     try {
@@ -28,11 +37,17 @@ function Chat({ usuarioLogado }) {
         method: 'POST',
         body: JSON.stringify({ mensagem: inputMensagem, id_assistant: 'asst_OuBtdCCByhjfqPFPZwMK6d9y' }),
       });
+      console.log('Resposta do backend', respostaBackend);
+
+      if (!respostaBackend || !respostaBackend.resposta) {
+        throw new Error('Resposta inválida do servidor');
+      }
 
       const respostaAI = { remetente: "ai", texto: respostaBackend.resposta };
       setMensagens((prevMensagens) => [...prevMensagens, respostaAI]);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
+      setErro(error?.message || String(error));
       setMensagens((prevMensagens) => [
         ...prevMensagens,
         { remetente: "ai", texto: "Desculpe, houve um erro ao processar sua solicitação." },
@@ -77,6 +92,11 @@ function Chat({ usuarioLogado }) {
         )}
         <div ref={messagesEndRef} />
       </div>
+      {erro && (
+        <div className="p-2 text-sm text-red-700 bg-red-100 rounded mx-4">
+          {erro}
+        </div>
+      )}
 
       <form onSubmit={enviarMensagem} className="p-4 border-t flex items-center">
         <input
@@ -98,5 +118,4 @@ function Chat({ usuarioLogado }) {
     </div>
   );
 }
-
 export default Chat;
