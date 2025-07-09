@@ -17,6 +17,14 @@ const modeloLayer = {
   estrategia: "",
 };
 
+const modeloChapa = {
+  possui_veio: false,
+  propriedade: '',
+  espessura: '',
+  comprimento: '',
+  largura: '',
+};
+
 const criaLayer = (nome) => {
   const matchFuro = nome.match(/^FURO_(\d+)_([\d\.]+)$/i);
   const matchUsinar = nome.match(/^USINAR_([\d\.]+)_([\w]+)/i);
@@ -58,6 +66,9 @@ const Nesting = () => {
   );
   const [aguardarExecucao, setAguardarExecucao] = useState(false);
   const [nestings, setNestings] = useState([]);
+  const [chapas, setChapas] = useState([]);
+  const [filaChapas, setFilaChapas] = useState([]);
+  const [chapaAtual, setChapaAtual] = useState(null);
 
   useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
@@ -70,6 +81,9 @@ const Nesting = () => {
     fetchComAuth("/nestings")
       .then((d) => setNestings(d?.nestings || []))
       .catch((e) => console.error("Falha ao carregar nestings", e));
+    fetchComAuth("/chapas")
+      .then((d) => setChapas(Array.isArray(d) ? d : []))
+      .catch((e) => console.error("Falha ao carregar chapas", e));
   }, []);
 
   useEffect(() => {
@@ -87,6 +101,49 @@ const Nesting = () => {
   const handleLayer = (campo) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setLayerAtual({ ...layerAtual, [campo]: value });
+  };
+
+  const handleChapa = (campo) => (e) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setChapaAtual({ ...chapaAtual, [campo]: value });
+  };
+
+  const normalizar = (s) =>
+    String(s || '')
+      .replace(/(\d+)\.\d+(?=mm)/gi, '$1')
+      .trim()
+      .toLowerCase();
+
+  const verificarChapas = async () => {
+    try {
+      if (!chapas.length) {
+        const dados = await fetchComAuth('/chapas');
+        if (Array.isArray(dados)) setChapas(dados);
+      }
+      const resp = await fetchComAuth('/coletar-chapas', {
+        method: 'POST',
+        body: JSON.stringify({ pasta_lote: pastaLote }),
+      });
+      if (resp?.erro) {
+        alert(resp.erro);
+        return false;
+      }
+      const materiais = resp.materiais || [];
+      const faltantes = materiais.filter(
+        (m) => !chapas.some((c) => normalizar(c.propriedade) === normalizar(m))
+      );
+      if (faltantes.length) {
+        const filaInicial = faltantes.map((p) => ({ ...modeloChapa, propriedade: p }));
+        setFilaChapas(filaInicial);
+        setChapaAtual(filaInicial[0]);
+        setAguardarExecucao(true);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      alert('Erro ao verificar chapas');
+      return false;
+    }
   };
 
   const executarBackend = async () => {
@@ -161,7 +218,8 @@ const Nesting = () => {
       alert("Erro ao verificar layers");
       return;
     }
-
+    
+    if (!(await verificarChapas())) return;
     await executarBackend();
 
     localStorage.setItem(
@@ -391,6 +449,57 @@ const Nesting = () => {
                 Cadastrar
               </Button>
               <Button variant="outline" onClick={() => { setFila([]); setLayerAtual(null); setAguardarExecucao(false); }}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {chapaAtual && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 space-y-2 rounded shadow max-w-sm w-full">
+            <h3 className="font-semibold">Cadastrar Chapa</h3>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={chapaAtual.possui_veio} onChange={handleChapa('possui_veio')} />
+              <span className="text-sm">Possui Veio</span>
+            </label>
+            <label className="block">
+              <span className="text-sm">Propriedade do Material</span>
+              <input className="input w-full" value={chapaAtual.propriedade} onChange={handleChapa('propriedade')} />
+            </label>
+            <label className="block">
+              <span className="text-sm">Espessura (mm)</span>
+              <input type="number" className="input w-full" value={chapaAtual.espessura} onChange={handleChapa('espessura')} />
+            </label>
+            <label className="block">
+              <span className="text-sm">Comprimento</span>
+              <input type="number" className="input w-full" value={chapaAtual.comprimento} onChange={handleChapa('comprimento')} />
+            </label>
+            <label className="block">
+              <span className="text-sm">Largura</span>
+              <input type="number" className="input w-full" value={chapaAtual.largura} onChange={handleChapa('largura')} />
+            </label>
+            <div className="space-x-2 pt-2">
+              <Button
+                onClick={async () => {
+                  const prox = filaChapas.slice(1);
+                  try {
+                    await fetchComAuth('/chapas', { method: 'POST', body: JSON.stringify(chapaAtual) });
+                  } catch (err) {
+                    console.error('Erro ao salvar chapa', err);
+                  }
+                  setChapas([...chapas, chapaAtual]);
+                  setFilaChapas(prox);
+                  setChapaAtual(prox[0] || null);
+                  if (prox.length === 0 && aguardarExecucao) {
+                    setAguardarExecucao(false);
+                    executarBackend();
+                  }
+                }}
+              >
+                Cadastrar
+              </Button>
+              <Button variant="outline" onClick={() => { setFilaChapas([]); setChapaAtual(null); setAguardarExecucao(false); }}>
                 Cancelar
               </Button>
             </div>
