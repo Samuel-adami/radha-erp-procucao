@@ -40,10 +40,16 @@ export async function fetchComAuth(url, options = {}) {
   }
   // --- FIM DA LÓGICA DE PREFIXO DE URL ---
 
-  const response = await fetch(finalUrl, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(finalUrl, {
+      ...options,
+      headers,
+    });
+  } catch (networkError) {
+    console.error('Erro de rede ao chamar', finalUrl, networkError);
+    throw new Error(`Erro de rede: ${networkError.message}`);
+  }
 
   if (!response.ok) {
     const contentType = response.headers.get("content-type");

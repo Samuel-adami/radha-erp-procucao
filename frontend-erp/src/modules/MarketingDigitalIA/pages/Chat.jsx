@@ -8,6 +8,12 @@ function Chat({ usuarioLogado }) {
   const [erro, setErro] = useState("");
   const messagesEndRef = useRef(null);
 
+  useEffect(() => {
+    if (erro) {
+      console.error("Erro no chat:", erro);
+    }
+  }, [erro]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -19,6 +25,7 @@ function Chat({ usuarioLogado }) {
     if (!inputMensagem.trim()) return;
 
     const novaMensagem = { remetente: "user", texto: inputMensagem };
+    console.log("Enviando mensagem", novaMensagem);
     setMensagens((prevMensagens) => [...prevMensagens, novaMensagem]);
     setInputMensagem("");
     setErro("");
@@ -30,12 +37,19 @@ function Chat({ usuarioLogado }) {
         method: 'POST',
         body: JSON.stringify({ mensagem: inputMensagem, id_assistant: 'asst_OuBtdCCByhjfqPFPZwMK6d9y' }),
       });
+      console.log('Resposta do backend', respostaBackend);
+
+      if (!respostaBackend || !respostaBackend.resposta) {
+        throw new Error('Resposta inválida do servidor');
+      }
 
       const respostaAI = { remetente: "ai", texto: respostaBackend.resposta };
       setMensagens((prevMensagens) => [...prevMensagens, respostaAI]);
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
-      setErro(error.message || String(error));
+
+      setErro(error?.message || String(error));
+
       setMensagens((prevMensagens) => [
         ...prevMensagens,
         { remetente: "ai", texto: "Desculpe, houve um erro ao processar sua solicitação." },
