@@ -70,7 +70,17 @@ def ensure_pasta_local(pasta: Path) -> None:
         tmp.close()
         try:
             download_file(key, tmp.name)
-            shutil.unpack_archive(tmp.name, pasta.parent)
+
+            if pasta.parent == SAIDA_DIR and pasta.name.startswith("Lote_"):
+                extract_to = SAIDA_DIR
+            elif pasta.parent.parent == SAIDA_DIR and pasta.name == "nesting":
+                extract_to = pasta.parent
+            elif pasta.parent == SAIDA_DIR and "_OC" in pasta.name:
+                extract_to = SAIDA_DIR
+            else:
+                extract_to = pasta.parent
+            shutil.unpack_archive(tmp.name, extract_to)
+
         finally:
             os.remove(tmp.name)
 
@@ -236,7 +246,11 @@ async def gerar_lote_final(request: Request):
                 f.write(f"       <Field><Name>{k}</Name><Type>{tipo}</Type><Value>{v}</Value></Field>\n")
             f.write('     </Part>\n')
         f.write('   </PartData>\n</ListInformation>\n')
-    zip_path = shutil.make_archive(str(pasta_saida), "zip", pasta_saida)
+
+    zip_path = shutil.make_archive(
+        str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
+    )
+
     upload_file(zip_path, f"lotes/{pasta_saida.name}.zip")
     os.remove(zip_path)
     shutil.rmtree(pasta_saida, ignore_errors=True)
@@ -359,7 +373,14 @@ async def executar_nesting_final(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     pasta_resultado_path = Path(pasta_resultado)
-    zip_path = shutil.make_archive(str(pasta_resultado_path), "zip", pasta_resultado_path)
+
+    zip_path = shutil.make_archive(
+        str(pasta_resultado_path),
+        "zip",
+        root_dir=pasta_resultado_path.parent,
+        base_dir=pasta_resultado_path.name,
+    )
+
     upload_file(zip_path, f"nestings/{pasta_resultado_path.parent.name}.zip")
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
@@ -463,7 +484,11 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     base_name = tmp.name[:-4]
     zip_path = base_name + ".zip"
     if pasta.is_dir():
-        shutil.make_archive(base_name, "zip", pasta)
+
+        shutil.make_archive(
+            base_name, "zip", root_dir=pasta.parent, base_dir=pasta.name
+        )
+
         upload_file(zip_path, object_name)
     elif not object_exists(object_name):
         os.remove(zip_path)
@@ -499,7 +524,11 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     base_name = tmp.name[:-4]
     zip_path = base_name + ".zip"
     if pasta.is_dir():
-        shutil.make_archive(base_name, "zip", pasta)
+
+        shutil.make_archive(
+            base_name, "zip", root_dir=pasta.parent, base_dir=pasta.name
+        )
+
         upload_file(zip_path, object_name)
     elif not object_exists(object_name):
         os.remove(zip_path)
@@ -777,14 +806,30 @@ async def remover_chapa(chapa_id: int):
 @app.get("/lotes-ocorrencias")
 async def listar_lotes_ocorrencias():
     """Retorna os lotes de ocorrências cadastrados."""
+    dados: list[dict] = []
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
                 "SELECT id, lote, pacote, oc_numero, pasta, criado_em FROM lotes_ocorrencias ORDER BY id"
             ).fetchall()
-            return [dict(row) for row in rows]
+            dados = [dict(row) for row in rows]
+
+            novos: list[dict] = []
+            for d in dados:
+                pasta_oc = Path(d["pasta"])
+                if pasta_oc.is_dir() or object_exists(f"ocorrencias/{pasta_oc.name}.zip"):
+                    novos.append(d)
+                else:
+                    conn.exec_driver_sql(
+                        f"DELETE FROM lotes_ocorrencias WHERE id={PLACEHOLDER}",
+                        (d["id"],),
+                    )
+            conn.commit()
+            dados = novos
     except Exception as e:
         return {"erro": str(e)}
+    dados.sort(key=lambda d: d.get("id") or 0, reverse=True)
+    return {"lotes": dados}
 
 
 @app.post("/lotes-ocorrencias")
@@ -924,7 +969,11 @@ async def gerar_lote_ocorrencia(request: Request):
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
-    zip_path = shutil.make_archive(str(pasta_saida), "zip", pasta_saida)
+
+    zip_path = shutil.make_archive(
+        str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
+    )
+
     upload_file(zip_path, f"ocorrencias/{pasta_saida.name}.zip")
     os.remove(zip_path)
     shutil.rmtree(pasta_saida, ignore_errors=True)
