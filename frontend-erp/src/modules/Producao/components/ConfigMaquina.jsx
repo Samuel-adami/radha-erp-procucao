@@ -52,7 +52,7 @@ const modeloConfigMaquina = {
   comprimentoX: "",
   comprimentoY: "",
   movimentacaoZ: "",
-  casasDecimais: "",
+  casasDecimais: "4",
   // ETIQUETADORA - Chapa
   pontoReferenciaChapa: "Esquerda Superior",
   xOffsetChapa: "",
