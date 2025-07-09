@@ -70,6 +70,7 @@ def ensure_pasta_local(pasta: Path) -> None:
         tmp.close()
         try:
             download_file(key, tmp.name)
+
             if pasta.parent == SAIDA_DIR and pasta.name.startswith("Lote_"):
                 extract_to = SAIDA_DIR
             elif pasta.parent.parent == SAIDA_DIR and pasta.name == "nesting":
@@ -79,6 +80,7 @@ def ensure_pasta_local(pasta: Path) -> None:
             else:
                 extract_to = pasta.parent
             shutil.unpack_archive(tmp.name, extract_to)
+
         finally:
             os.remove(tmp.name)
 
@@ -244,9 +246,11 @@ async def gerar_lote_final(request: Request):
                 f.write(f"       <Field><Name>{k}</Name><Type>{tipo}</Type><Value>{v}</Value></Field>\n")
             f.write('     </Part>\n')
         f.write('   </PartData>\n</ListInformation>\n')
+
     zip_path = shutil.make_archive(
         str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
     )
+
     upload_file(zip_path, f"lotes/{pasta_saida.name}.zip")
     os.remove(zip_path)
     shutil.rmtree(pasta_saida, ignore_errors=True)
@@ -369,12 +373,14 @@ async def executar_nesting_final(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     pasta_resultado_path = Path(pasta_resultado)
+
     zip_path = shutil.make_archive(
         str(pasta_resultado_path),
         "zip",
         root_dir=pasta_resultado_path.parent,
         base_dir=pasta_resultado_path.name,
     )
+
     upload_file(zip_path, f"nestings/{pasta_resultado_path.parent.name}.zip")
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
@@ -478,9 +484,11 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     base_name = tmp.name[:-4]
     zip_path = base_name + ".zip"
     if pasta.is_dir():
+
         shutil.make_archive(
             base_name, "zip", root_dir=pasta.parent, base_dir=pasta.name
         )
+
         upload_file(zip_path, object_name)
     elif not object_exists(object_name):
         os.remove(zip_path)
@@ -516,9 +524,11 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     base_name = tmp.name[:-4]
     zip_path = base_name + ".zip"
     if pasta.is_dir():
+
         shutil.make_archive(
             base_name, "zip", root_dir=pasta.parent, base_dir=pasta.name
         )
+
         upload_file(zip_path, object_name)
     elif not object_exists(object_name):
         os.remove(zip_path)
@@ -959,9 +969,11 @@ async def gerar_lote_ocorrencia(request: Request):
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
+
     zip_path = shutil.make_archive(
         str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
     )
+
     upload_file(zip_path, f"ocorrencias/{pasta_saida.name}.zip")
     os.remove(zip_path)
     shutil.rmtree(pasta_saida, ignore_errors=True)
