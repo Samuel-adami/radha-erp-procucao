@@ -44,7 +44,9 @@ const ChapaViewer: React.FC<Props> = ({
   const svgWidth = width;
   const escala = svgWidth / chapa.largura;
   const alturaSvg = chapa.altura * escala;
-  const isHorizontal = chapa.largura >= chapa.altura;
+  // As linhas de veio devem acompanhar a primeira medida da chapa
+  // (comprimento), que é representada pelo eixo horizontal no viewer.
+  const isHorizontal = true;
   let sobraCount = 0;
 
   return (
