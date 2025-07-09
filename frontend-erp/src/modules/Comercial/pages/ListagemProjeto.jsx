@@ -24,6 +24,7 @@ export default function ListagemProjeto() {
       const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
       if (!orc) return;
       let dados = {};
+
       try {
         dados = orc.dados ? JSON.parse(orc.dados) : {};
       } catch {
@@ -32,6 +33,7 @@ export default function ListagemProjeto() {
       const projetos = dados.projetos || {};
       const chave = Object.keys(projetos).find(
         k => normalize(k) === normalize(ambiente)
+
       );
       const info = chave ? projetos[chave] : projetos[ambiente];
       const lista = info?.itens || [];
