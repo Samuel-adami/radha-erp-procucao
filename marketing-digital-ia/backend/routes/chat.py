@@ -17,7 +17,8 @@ async def conversar(
     input: ChatInput,
     # Inclui "admin" para que usuários administradores também possam utilizar o chat
 
-    usuario=Depends(verificar_autenticacao(["Diretoria", "Marketing", "Comercial", "Logística", "admin"]))
+    usuario=Depends(verificar_autenticacao(["Diretoria", "Marketing", "Diretor", "Comercial", "Logística", "admin"]))
+
 
 ):
     if not input.id_assistant:

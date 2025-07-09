@@ -33,6 +33,7 @@ function Chat() {
 
     try {
 
+      const token = localStorage.getItem('token');
 
       const respostaBackend = await fetchComAuth('/chat/', {
         method: 'POST',
