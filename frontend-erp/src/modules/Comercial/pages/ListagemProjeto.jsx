@@ -2,11 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
+function normalize(str) {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .trim()
+    .toLowerCase();
+}
+
 export default function ListagemProjeto() {
   const params = useParams();
   const id = params.id;
   const tarefaId = params.tarefaId;
-  const ambiente = decodeURIComponent(params.ambiente || '');
+  const ambiente = decodeURIComponent(params.ambiente || '').trim();
   const [itens, setItens] = useState([]);
   const [headers, setHeaders] = useState([]);
 
@@ -16,8 +24,16 @@ export default function ListagemProjeto() {
       const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
       if (!orc) return;
       let dados = {};
-      try { dados = orc.dados ? JSON.parse(orc.dados) : {}; } catch {}
-      const info = dados.projetos?.[ambiente];
+      try {
+        dados = orc.dados ? JSON.parse(orc.dados) : {};
+      } catch {
+        // ignore parse errors
+      }
+      const projetos = dados.projetos || {};
+      const chave = Object.keys(projetos).find(
+        k => normalize(k) === normalize(ambiente)
+      );
+      const info = chave ? projetos[chave] : projetos[ambiente];
       const lista = info?.itens || [];
       setItens(lista);
       setHeaders(lista[0] ? Object.keys(lista[0]) : []);
