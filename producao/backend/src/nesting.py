@@ -286,11 +286,20 @@ def _gcode_peca(
             if tpl:
                 linhas.extend(substituir(tpl, valores).splitlines())
             else:
-                linhas.extend([
-                    "G0 Z50.0",
-                    f"M6 T{tool.get('codigo', '')}",
-                    f"M3 S{tool.get('velocidadeRotacao', '20000')}",
-                ])
+                titulo = (
+                    "(######## HEADER ########)"
+                    if atual is None
+                    else "(######## Troca de ferramentas ########)"
+                )
+                linhas.extend(
+                    [
+                        titulo,
+                        f"( NUMERO DA FERRAMENTA: {tool.get('codigo', '')} - {tool.get('descricao', '')} )",
+                        "G0 Z50.0",
+                        f"M6 T{tool.get('codigo', '')}",
+                        f"M3 S{tool.get('velocidadeRotacao', '20000')}",
+                    ]
+                )
             atual = tool
 
         if op.get("contorno"):
@@ -589,6 +598,7 @@ def _gerar_gcodes(
             'LIST_OF_USED_TOOLS': '\n'.join(f'({t})' for t in lista_ferramentas),
         }
         linhas = substituir(intro_tpl, valores_intro).splitlines()
+        linhas.append("")
 
         valores_header = {
             'T': primeira_ferramenta.get('codigo') if primeira_ferramenta else '',
