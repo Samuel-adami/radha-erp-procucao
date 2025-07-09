@@ -1,12 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 import logging
+import os
 from pydantic import BaseModel
 from services.openai_service import gerar_resposta
 from services.embedding_service import buscar_contexto
 from security import verificar_autenticacao
 
 # CORRIGIDO: Removido prefix="/chat" daqui. Ele já é adicionado em main.py
-router = APIRouter(tags=["Chat"]) 
+router = APIRouter(tags=["Chat"])
+
+# Permite retornar detalhes do erro quando em modo de depuração
+DEBUG = os.getenv("DEBUG", "false").lower() == "true"
 
 class ChatInput(BaseModel):
     mensagem: str
@@ -49,5 +53,9 @@ Pergunta: {input.mensagem}
     except Exception as e:
         logging.exception("Erro ao gerar resposta: %s", e)
         resposta = "Desculpe, ocorreu um erro ao processar a mensagem."
+
+        if DEBUG:
+            resposta += f" Detalhes: {e}"
+
 
     return {"resposta": resposta}
