@@ -345,25 +345,48 @@ async def api_coletar_layers(request: Request):
 
 @app.get("/listar-lotes")
 async def listar_lotes():
-    """Retorna uma lista das pastas de lote registradas."""
+    """Retorna uma lista das pastas de lote registradas.
+
+    Caso existam pastas ``Lote_*`` em ``SAIDA_DIR`` que ainda não estejam
+    cadastradas no banco de dados, elas são inseridas automaticamente. Esse
+    comportamento evita que um lote fique invisível nas telas de Nesting e
+    Ocorrência quando a gravação inicial falha por algum motivo.
+    """
+
+    lotes_validos: list[str] = []
     try:
         with get_db_connection() as conn:
-            rows = conn.execute(
+            rows = conn.exec_driver_sql(
                 "SELECT id, pasta FROM lotes ORDER BY id"
             ).fetchall()
-            lotes_validos = []
-            for row in rows:
-                pasta = Path(row["pasta"])
+            dados = [dict(r) for r in rows]
+
+            registrados = {d["pasta"] for d in dados}
+
+            # Adiciona entradas ausentes para pastas existentes no filesystem
+            for pasta_dir in SAIDA_DIR.glob("Lote_*/"):
+                if pasta_dir.is_dir() and str(pasta_dir) not in registrados:
+                    cur = conn.exec_driver_sql(
+                        f"INSERT INTO lotes (pasta, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})",
+                        (str(pasta_dir), datetime.now().isoformat()),
+                    )
+                    conn.commit()
+                    dados.append({"id": cur.lastrowid, "pasta": str(pasta_dir)})
+
+            for d in dados:
+                pasta = Path(d["pasta"])
                 if pasta.is_dir():
                     lotes_validos.append(str(pasta))
                 else:
                     conn.exec_driver_sql(
                         f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
-                        (row["id"],),
+                        (d["id"],),
                     )
             conn.commit()
     except Exception:
         lotes_validos = []
+
+    lotes_validos.sort()
     return {"lotes": lotes_validos}
 
 
