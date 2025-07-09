@@ -8,6 +8,7 @@ from models import (
     CondicaoPagamento,
     Template,
     ProjetoItem,
+    GabsterProjetoItem,
 )
 
 load_dotenv(find_dotenv())

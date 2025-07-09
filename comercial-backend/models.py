@@ -74,3 +74,31 @@ class ProjetoItem(Base):
     unitario = Column(Float)
     quantidade = Column(Integer)
     total = Column(Float)
+
+
+class GabsterProjetoItem(Base):
+    """Itens originais importados via API Gabster."""
+
+    __tablename__ = "gabster_projeto_itens"
+
+    pk = Column(Integer, primary_key=True)
+    atendimento_id = Column(Integer)
+    tarefa_id = Column(Integer)
+    cd_acabamento = Column(Integer)
+    cd_componente = Column(Integer)
+    cd_orcamento_cliente = Column(Integer)
+    cd_produto = Column(Integer)
+    cd_usuario_cadastro = Column(Integer)
+    cd_usuario_modificacao = Column(Integer)
+    codigo_montagem = Column(Integer)
+    comprimento = Column(String)
+    datahora_cadastro = Column(String)
+    datahora_cancelamento = Column(String)
+    datahora_modificacao = Column(String)
+    espessura_altura = Column(String)
+    guid = Column(String)
+    gabster_id = Column("id", Integer)
+    largura_profundidade = Column(String)
+    quantidade = Column(Integer)
+    referencia = Column(String)
+    valor = Column(Float)
