@@ -1,6 +1,12 @@
 from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from storage import upload_file, download_stream, delete_file
+from storage import (
+    upload_file,
+    download_stream,
+    delete_file,
+    download_file,
+    object_exists,
+)
 import xml.etree.ElementTree as ET
 import os
 import re
@@ -32,6 +38,7 @@ init_db()
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
 SAIDA_DIR = BASE_DIR / "saida"
+OBJECT_PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "")
 
 
 def resolve_saidadir_path(p: Union[str, Path]) -> Path:
@@ -45,6 +52,27 @@ def resolve_saidadir_path(p: Union[str, Path]) -> Path:
     except ValueError:
         raise ValueError("Caminho fora de SAIDA_DIR")
     return resolved
+
+
+def ensure_pasta_local(pasta: Path) -> None:
+    """Garante que a pasta exista baixando o zip do object storage se preciso."""
+    if pasta.is_dir():
+        return
+    key = None
+    if pasta.parent == SAIDA_DIR and pasta.name.startswith("Lote_"):
+        key = f"lotes/{pasta.name}.zip"
+    elif pasta.parent.parent == SAIDA_DIR and pasta.name == "nesting":
+        key = f"nestings/{pasta.parent.name}.zip"
+    elif pasta.parent == SAIDA_DIR and "_OC" in pasta.name:
+        key = f"ocorrencias/{pasta.name}.zip"
+    if key and object_exists(key):
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+        tmp.close()
+        try:
+            download_file(key, tmp.name)
+            shutil.unpack_archive(tmp.name, pasta.parent)
+        finally:
+            os.remove(tmp.name)
 
 
 def proximo_oc_numero() -> int:
@@ -208,6 +236,10 @@ async def gerar_lote_final(request: Request):
                 f.write(f"       <Field><Name>{k}</Name><Type>{tipo}</Type><Value>{v}</Value></Field>\n")
             f.write('     </Part>\n')
         f.write('   </PartData>\n</ListInformation>\n')
+    zip_path = shutil.make_archive(str(pasta_saida), "zip", pasta_saida)
+    upload_file(zip_path, f"lotes/{pasta_saida.name}.zip")
+    os.remove(zip_path)
+    shutil.rmtree(pasta_saida, ignore_errors=True)
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
 
 
@@ -218,6 +250,7 @@ async def carregar_lote_final(pasta: str):
         pasta_path = resolve_saidadir_path(pasta)
     except ValueError:
         return {"erro": "Caminho inválido"}
+    ensure_pasta_local(pasta_path)
     dxt_path = pasta_path / f"{pasta_path.name}.dxt"
     if not dxt_path.exists():
         return {"erro": "DXT nao encontrado"}
@@ -244,6 +277,7 @@ async def executar_nesting(request: Request):
         pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
     except ValueError:
         return {"erro": "Caminho inválido"}
+    ensure_pasta_local(pasta_lote_resolved)
     try:
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
@@ -278,6 +312,7 @@ async def nesting_preview(request: Request):
         pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
     except ValueError:
         return {"erro": "Caminho inválido"}
+    ensure_pasta_local(pasta_lote_resolved)
     try:
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
@@ -311,6 +346,7 @@ async def executar_nesting_final(request: Request):
         pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
     except ValueError:
         return {"erro": "Caminho inválido"}
+    ensure_pasta_local(pasta_lote_resolved)
     try:
         pasta_resultado = gerar_nesting(
             str(pasta_lote_resolved),
@@ -322,6 +358,11 @@ async def executar_nesting_final(request: Request):
         )
     except Exception as e:
         return {"erro": str(e)}
+    pasta_resultado_path = Path(pasta_resultado)
+    zip_path = shutil.make_archive(str(pasta_resultado_path), "zip", pasta_resultado_path)
+    upload_file(zip_path, f"nestings/{pasta_resultado_path.parent.name}.zip")
+    os.remove(zip_path)
+    shutil.rmtree(pasta_resultado_path, ignore_errors=True)
     return {"status": "ok", "pasta_resultado": pasta_resultado}
 
 
@@ -336,6 +377,7 @@ async def api_coletar_layers(request: Request):
         pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
     except ValueError:
         return {"erro": "Caminho inválido"}
+    ensure_pasta_local(pasta_lote_resolved)
     try:
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
@@ -361,21 +403,9 @@ async def listar_lotes():
             ).fetchall()
             dados = [dict(r) for r in rows]
 
-            registrados = {d["pasta"] for d in dados}
-
-            # Adiciona entradas ausentes para pastas existentes no filesystem
-            for pasta_dir in SAIDA_DIR.glob("Lote_*/"):
-                if pasta_dir.is_dir() and str(pasta_dir) not in registrados:
-                    cur = conn.exec_driver_sql(
-                        f"INSERT INTO lotes (pasta, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})",
-                        (str(pasta_dir), datetime.now().isoformat()),
-                    )
-                    conn.commit()
-                    dados.append({"id": cur.lastrowid, "pasta": str(pasta_dir)})
-
             for d in dados:
                 pasta = Path(d["pasta"])
-                if pasta.is_dir():
+                if pasta.is_dir() or object_exists(f"lotes/{pasta.name}.zip"):
                     lotes_validos.append(str(pasta))
                 else:
                     conn.exec_driver_sql(
@@ -405,23 +435,18 @@ async def listar_nestings():
             ).fetchall()
             dados = [dict(r) for r in rows]
 
-            existentes = {d["pasta_resultado"] for d in dados}
-            for lote_dir in SAIDA_DIR.glob("Lote_*/"):
-                pasta_nest = lote_dir / "nesting"
-                if pasta_nest.is_dir() and str(pasta_nest) not in existentes:
-                    cur = conn.exec_driver_sql(
-                        f"INSERT INTO nestings (lote, pasta_resultado, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
-                        (str(lote_dir), str(pasta_nest), datetime.now().isoformat()),
+            novos: list[dict] = []
+            for d in dados:
+                pasta_nest = Path(d["pasta_resultado"])
+                if pasta_nest.is_dir() or object_exists(f"nestings/{pasta_nest.parent.name}.zip"):
+                    novos.append(d)
+                else:
+                    conn.exec_driver_sql(
+                        f"DELETE FROM nestings WHERE id={PLACEHOLDER}",
+                        (d["id"],),
                     )
-                    conn.commit()
-                    dados.append(
-                        {
-                            "id": cur.lastrowid,
-                            "lote": str(lote_dir),
-                            "pasta_resultado": str(pasta_nest),
-                            "criado_em": datetime.now().isoformat(),
-                        }
-                    )
+            conn.commit()
+            dados = novos
     except Exception:
         pass
     dados.sort(key=lambda d: d.get("id") or 0, reverse=True)
@@ -432,16 +457,17 @@ async def listar_nestings():
 async def download_lote(lote: str, background_tasks: BackgroundTasks):
     """Compacta e faz o download do lote especificado."""
     pasta = SAIDA_DIR / f"Lote_{lote}"
-    if not pasta.is_dir():
-        return {"erro": "Lote não encontrado"}
-
+    object_name = f"lotes/Lote_{lote}.zip"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
-    shutil.make_archive(base_name, "zip", pasta)
     zip_path = base_name + ".zip"
-    object_name = f"lotes/Lote_{lote}.zip"
-    upload_file(zip_path, object_name)
+    if pasta.is_dir():
+        shutil.make_archive(base_name, "zip", pasta)
+        upload_file(zip_path, object_name)
+    elif not object_exists(object_name):
+        os.remove(zip_path)
+        return {"erro": "Lote não encontrado"}
     background_tasks.add_task(os.remove, zip_path)
     return StreamingResponse(
         download_stream(object_name, zip_path),
@@ -467,17 +493,18 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
         return {"erro": "Nesting não encontrado"}
 
     pasta = Path(pasta_str)
-    if not pasta.is_dir():
-        return {"erro": "Pasta não encontrada"}
-
+    object_name = f"nestings/{pasta.parent.name}.zip"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
-    shutil.make_archive(base_name, "zip", pasta)
     zip_path = base_name + ".zip"
-    filename = f"{pasta.name}.zip"
-    object_name = f"nestings/{filename}"
-    upload_file(zip_path, object_name)
+    if pasta.is_dir():
+        shutil.make_archive(base_name, "zip", pasta)
+        upload_file(zip_path, object_name)
+    elif not object_exists(object_name):
+        os.remove(zip_path)
+        return {"erro": "Pasta não encontrada"}
+    filename = f"{pasta.parent.name}.zip"
     background_tasks.add_task(os.remove, zip_path)
     return StreamingResponse(
         download_stream(object_name, zip_path),
@@ -519,7 +546,7 @@ async def remover_nesting(request: Request):
         except ValueError:
             return {"erro": "Caminho inválido"}
         shutil.rmtree(pasta_resultado_resolved, ignore_errors=True)
-        delete_file(f"nestings/{pasta_resultado_resolved.name}.zip")
+        delete_file(f"nestings/{pasta_resultado_resolved.parent.name}.zip")
     return {"status": "ok"}
 
 
@@ -543,7 +570,7 @@ async def excluir_lote(request: Request):
             conn.commit()
     except Exception:
         pass
-    if pasta.is_dir():
+    if pasta.is_dir() or object_exists(f"lotes/Lote_{numero_lote}.zip"):
         return {"status": "ok", "mensagem": f"Lote {numero_lote} removido"}
     return {"status": "ok", "mensagem": "Lote não encontrado"}
 
@@ -897,7 +924,10 @@ async def gerar_lote_ocorrencia(request: Request):
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
-
+    zip_path = shutil.make_archive(str(pasta_saida), "zip", pasta_saida)
+    upload_file(zip_path, f"ocorrencias/{pasta_saida.name}.zip")
+    os.remove(zip_path)
+    shutil.rmtree(pasta_saida, ignore_errors=True)
     return {"status": "ok", "oc_numero": numero_oc}
 
 
