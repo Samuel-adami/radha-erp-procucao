@@ -14,7 +14,8 @@ class ChatInput(BaseModel):
 @router.post("/")
 async def conversar(
     input: ChatInput,
-    usuario=Depends(verificar_autenticacao(["Diretoria", "Marketing", "Comercial", "Logística"]))
+    # Inclui "admin" para que usuários administradores também possam utilizar o chat
+    usuario=Depends(verificar_autenticacao(["Diretoria", "Marketing", "Comercial", "Logística", "admin"]))
 ):
     if not input.id_assistant:
         raise HTTPException(status_code=400, detail="ID do assistente é obrigatório.")
