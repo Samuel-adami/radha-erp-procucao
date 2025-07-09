@@ -2,14 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
-function currency(v) {
-  return Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 export default function ListagemProjeto() {
   const { id, tarefaId, ambiente } = useParams();
   const [itens, setItens] = useState([]);
-  const [total, setTotal] = useState(0);
+  const [headers, setHeaders] = useState([]);
 
   useEffect(() => {
     const carregar = async () => {
@@ -19,8 +15,9 @@ export default function ListagemProjeto() {
       let dados = {};
       try { dados = orc.dados ? JSON.parse(orc.dados) : {}; } catch {}
       const info = dados.projetos?.[ambiente];
-      setItens(info?.itens || []);
-      setTotal(info?.total || 0);
+      const lista = info?.itens || [];
+      setItens(lista);
+      setHeaders(lista[0] ? Object.keys(lista[0]) : []);
     };
     carregar();
   }, [id, tarefaId, ambiente]);
@@ -31,28 +28,20 @@ export default function ListagemProjeto() {
       <table className="min-w-full text-sm border">
         <thead>
           <tr>
-            <th className="border px-2">Descrição</th>
-            <th className="border px-2">Unitário</th>
-            <th className="border px-2">Qtde</th>
-            <th className="border px-2">Total</th>
+            {headers.map(h => (
+              <th key={h} className="border px-2 text-left">{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {itens.map((it, idx) => (
             <tr key={idx}>
-              <td className="border px-2">{it.descricao}</td>
-              <td className="border px-2 text-right">{currency(it.unitario)}</td>
-              <td className="border px-2 text-right">{it.quantidade}</td>
-              <td className="border px-2 text-right">{currency(it.total)}</td>
+              {headers.map(h => (
+                <td key={h} className="border px-2 text-left">{String(it[h] ?? '')}</td>
+              ))}
             </tr>
           ))}
         </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan="3" className="border px-2 text-right font-semibold">Total</td>
-            <td className="border px-2 text-right font-semibold">{currency(total)}</td>
-          </tr>
-        </tfoot>
       </table>
       <Link to={`/comercial/${id}`} className="px-3 py-1 rounded bg-blue-600 text-white">Voltar</Link>
     </div>

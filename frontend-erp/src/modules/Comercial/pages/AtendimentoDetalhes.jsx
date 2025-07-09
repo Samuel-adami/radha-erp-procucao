@@ -169,16 +169,15 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
       try {
         const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
           method: 'POST',
-          body: JSON.stringify({ cd_projeto: codigo }),
+          body: JSON.stringify({ offset: 0, limit: 20 }),
         });
-        const projetosResp = info.projetos || {};
-        const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
+        const itens = info.results || info.itens || [];
         const novos = {
           ...dados,
           programa,
           projetos: {
             ...dados.projetos,
-            [amb]: { codigo, ...dadosAmb, projeto: info.projeto },
+            [amb]: { codigo, itens },
           },
         };
         setDados(novos);
@@ -251,11 +250,9 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                     </Link>
                   )}
                 </div>
-                {dadosProj[amb] && dadosProj[amb].total > 0 && (
-                  <div className="text-sm text-gray-700 ml-2">
-                    Projeto {dadosProj[amb].codigo} - Valor: {dadosProj[amb].total}
-                  </div>
-                )}
+                  {dadosProj[amb] && (
+                    <div className="text-sm text-gray-700 ml-2">Projeto {dadosProj[amb].codigo}</div>
+                  )}
               </div>
             ))}
           </div>
