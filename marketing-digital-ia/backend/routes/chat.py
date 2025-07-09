@@ -53,7 +53,9 @@ Pergunta: {input.mensagem}
     except Exception as e:
         logging.exception("Erro ao gerar resposta: %s", e)
         resposta = "Desculpe, ocorreu um erro ao processar a mensagem."
+
         if DEBUG:
             resposta += f" Detalhes: {e}"
+
 
     return {"resposta": resposta}
