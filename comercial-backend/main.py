@@ -2,7 +2,8 @@ from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
-from gabster_api import list_orcamento_cliente_item
+from gabster_api import list_orcamento_cliente_item, get_projeto
+from orcamento_gabster import parse_gabster_projeto
 from datetime import datetime
 import re
 import json
@@ -85,6 +86,25 @@ async def leitor_orcamento_gabster(request: Request):
         raise HTTPException(status_code=400, detail=str(exc))
 
     return itens
+
+
+@app.post("/gabster-projeto")
+async def gabster_projeto(request: Request):
+    """Return structured project data from Gabster API."""
+    params = await request.json()
+    codigo = params.get("codigo")
+    usuario = params.get("usuario")
+    chave = params.get("chave")
+    if not codigo:
+        raise HTTPException(status_code=400, detail="Codigo obrigatorio")
+    try:
+        raw = get_projeto(int(codigo), user=usuario, api_key=chave)
+        data = parse_gabster_projeto(raw)
+    except requests.exceptions.HTTPError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:  # generic errors
+        raise HTTPException(status_code=400, detail=str(exc))
+    return data
 
 
 @app.post("/leitor-orcamento-promob")
