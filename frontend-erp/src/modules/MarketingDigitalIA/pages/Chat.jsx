@@ -32,7 +32,9 @@ function Chat() {
     setCarregando(true);
 
     try {
+
       const token = localStorage.getItem('token');
+
       const respostaBackend = await fetchComAuth('/chat/', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},

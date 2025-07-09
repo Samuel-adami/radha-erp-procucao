@@ -16,7 +16,10 @@ class ChatInput(BaseModel):
 async def conversar(
     input: ChatInput,
     # Inclui "admin" para que usuários administradores também possam utilizar o chat
-    usuario=Depends(verificar_autenticacao(["Diretoria", "Marketing", "Comercial", "Logística", "admin"]))
+
+    usuario=Depends(verificar_autenticacao(["Diretoria", "Marketing", "Diretor", "Comercial", "Logística", "admin"]))
+
+
 ):
     if not input.id_assistant:
         raise HTTPException(status_code=400, detail="ID do assistente é obrigatório.")
@@ -40,9 +43,11 @@ Informações disponíveis:
 
 Pergunta: {input.mensagem}
 """
+
     try:
         resposta = await gerar_resposta(prompt_com_contexto, input.id_assistant)
     except Exception:
         logging.exception("Erro ao gerar resposta")
         raise HTTPException(status_code=500, detail="Falha ao processar a mensagem")
+
     return {"resposta": resposta}

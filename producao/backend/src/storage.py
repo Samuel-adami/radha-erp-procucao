@@ -7,6 +7,7 @@ ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT")
 ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
 SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
 BUCKET = os.getenv("OBJECT_STORAGE_BUCKET")
+PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "")
 
 client = None
 if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
@@ -21,13 +22,13 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
 
 def upload_file(local_path: str, object_name: str) -> None:
     if client:
-        client.upload_file(local_path, BUCKET, object_name)
+        client.upload_file(local_path, BUCKET, f"{PREFIX}{object_name}")
 
 
 def download_stream(object_name: str, fallback_path: str):
     if client:
         bio = io.BytesIO()
-        client.download_fileobj(BUCKET, object_name, bio)
+        client.download_fileobj(BUCKET, f"{PREFIX}{object_name}", bio)
         bio.seek(0)
         return bio
     return open(fallback_path, "rb")
@@ -36,6 +37,21 @@ def download_stream(object_name: str, fallback_path: str):
 def delete_file(object_name: str) -> None:
     if client:
         try:
-            client.delete_object(Bucket=BUCKET, Key=object_name)
+            client.delete_object(Bucket=BUCKET, Key=f"{PREFIX}{object_name}")
         except Exception:
             pass
+
+
+def download_file(object_name: str, local_path: str) -> None:
+    if client:
+        client.download_file(BUCKET, f"{PREFIX}{object_name}", local_path)
+
+
+def object_exists(object_name: str) -> bool:
+    if not client:
+        return False
+    try:
+        client.head_object(Bucket=BUCKET, Key=f"{PREFIX}{object_name}")
+        return True
+    except Exception:
+        return False
