@@ -12,3 +12,4 @@ sentence-transformers
 passlib[bcrypt]
 sqlalchemy
 psycopg2-binary
+numpy
