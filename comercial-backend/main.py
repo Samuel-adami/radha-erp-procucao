@@ -2,8 +2,7 @@ from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
-from gabster_api import get_projeto
-from orcamento_gabster import parse_gabster_projeto
+from gabster_api import list_orcamento_cliente_item
 from datetime import datetime
 import re
 import json
@@ -69,28 +68,23 @@ async def proximo_codigo():
 
 @app.post("/leitor-orcamento-gabster")
 async def leitor_orcamento_gabster(request: Request):
-    """Retrieve Gabster project via API instead of PDF upload."""
+    """Retrieve budget item information from Gabster API."""
     params = await request.json()
-    cd_projeto = params.get("cd_projeto")
     usuario = params.get("usuario")
     chave = params.get("chave")
-    if not cd_projeto:
-        return JSONResponse({"detail": "cd_projeto ausente"}, status_code=400)
+    offset = int(params.get("offset") or 0)
+    limit = int(params.get("limit") or 20)
+
     try:
-        projeto = get_projeto(cd_projeto, user=usuario, api_key=chave)
+        itens = list_orcamento_cliente_item(
+            offset=offset, limit=limit, user=usuario, api_key=chave
+        )
     except requests.exceptions.HTTPError as exc:
-        if exc.response is not None and exc.response.status_code == 404:
-            raise HTTPException(
-                status_code=404,
-                detail="Projeto não encontrado na Gabster. Verifique o código informado.",
-            )
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:  # generic errors
         raise HTTPException(status_code=400, detail=str(exc))
 
-    parsed = parse_gabster_projeto(projeto)
-    parsed["projeto"] = projeto
-    return parsed
+    return itens
 
 
 @app.post("/leitor-orcamento-promob")
