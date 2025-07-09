@@ -67,5 +67,5 @@ def buscar_contexto(pergunta: str, top_k=3):
 
     query_embedding = modelo.encode([pergunta])
     distancias, indices = index.search(query_embedding, top_k)
-
-    resultados = [docs[i] for i in indices[0]]    return "\n---\n".join(resultados)
+    resultados = [docs[i] for i in indices[0]]
+    return "\n---\n".join(resultados)
