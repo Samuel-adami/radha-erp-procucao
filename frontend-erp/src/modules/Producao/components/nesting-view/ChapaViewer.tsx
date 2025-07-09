@@ -10,6 +10,7 @@ export interface Operacao {
   y: number;
   largura: number;
   altura: number;
+  coords?: [number, number][];
 }
 
 export interface Chapa {
@@ -87,16 +88,28 @@ const ChapaViewer: React.FC<Props> = ({
         const stroke = destaqueId === op.id ? '#e11d48' : '#000';
         return (
           <g key={op.id} onClick={() => onSelect(op)} className="cursor-pointer">
-            <rect
-              x={x}
-              y={y}
-              width={w}
-              height={h}
-              fill={cor}
-              opacity={op.tipo === 'Sobra' ? 0.3 : 0.6}
-              stroke={stroke}
-              strokeWidth={1}
-            />
+            {op.tipo === 'Sobra' && op.coords && op.coords.length > 0 ? (
+              <polygon
+                points={op.coords
+                  .map(([px, py]) => `${px * escala},${py * escala}`)
+                  .join(' ')}
+                fill={cor}
+                opacity={0.3}
+                stroke={stroke}
+                strokeWidth={1}
+              />
+            ) : (
+              <rect
+                x={x}
+                y={y}
+                width={w}
+                height={h}
+                fill={cor}
+                opacity={op.tipo === 'Sobra' ? 0.3 : 0.6}
+                stroke={stroke}
+                strokeWidth={1}
+              />
+            )}
             {op.tipo === 'Sobra' && (
               <text
                 x={x + w / 2}
