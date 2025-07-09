@@ -6,7 +6,7 @@ export default function ListagemProjeto() {
   const params = useParams();
   const id = params.id;
   const tarefaId = params.tarefaId;
-  const ambiente = decodeURIComponent(params.ambiente || '');
+  const ambiente = decodeURIComponent(params.ambiente || '').trim();
   const [itens, setItens] = useState([]);
   const [headers, setHeaders] = useState([]);
 
@@ -17,7 +17,11 @@ export default function ListagemProjeto() {
       if (!orc) return;
       let dados = {};
       try { dados = orc.dados ? JSON.parse(orc.dados) : {}; } catch {}
-      const info = dados.projetos?.[ambiente];
+      const projetos = dados.projetos || {};
+      const chave = Object.keys(projetos).find(
+        k => k.trim().toLowerCase() === ambiente.toLowerCase()
+      );
+      const info = chave ? projetos[chave] : projetos[ambiente];
       const lista = info?.itens || [];
       setItens(lista);
       setHeaders(lista[0] ? Object.keys(lista[0]) : []);
