@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 
-function Chat({ usuarioLogado }) {
+function Chat() {
   const [mensagens, setMensagens] = useState([]);
   const [inputMensagem, setInputMensagem] = useState("");
   const [carregando, setCarregando] = useState(false);
@@ -32,7 +32,6 @@ function Chat({ usuarioLogado }) {
     setCarregando(true);
 
     try {
-      // CORRIGIDO: Removido usuarioLogado.token da chamada, fetchComAuth já cuida disso
       const respostaBackend = await fetchComAuth('/chat/', {
         method: 'POST',
         body: JSON.stringify({ mensagem: inputMensagem, id_assistant: 'asst_OuBtdCCByhjfqPFPZwMK6d9y' }),
