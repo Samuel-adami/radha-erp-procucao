@@ -167,17 +167,18 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
       const codigo = window.prompt('Código do projeto Gabster');
       if (!codigo) return;
       try {
-        const info = await fetchComAuth('/comercial/leitor-orcamento-gabster', {
+        const info = await fetchComAuth('/comercial/gabster-projeto', {
           method: 'POST',
-          body: JSON.stringify({ offset: 0, limit: 20 }),
+          body: JSON.stringify({ codigo }),
         });
-        const itens = info.results || info.itens || [];
+        const projetosResp = info.projetos || {};
+        const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
         const novos = {
           ...dados,
           programa,
           projetos: {
             ...dados.projetos,
-            [amb]: { codigo, itens },
+            [amb]: { codigo, ...dadosAmb },
           },
         };
         setDados(novos);

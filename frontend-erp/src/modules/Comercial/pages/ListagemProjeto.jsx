@@ -3,7 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
 export default function ListagemProjeto() {
-  const { id, tarefaId, ambiente } = useParams();
+  const params = useParams();
+  const id = params.id;
+  const tarefaId = params.tarefaId;
+  const ambiente = decodeURIComponent(params.ambiente || '');
   const [itens, setItens] = useState([]);
   const [headers, setHeaders] = useState([]);
 
