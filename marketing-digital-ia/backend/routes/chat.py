@@ -46,8 +46,8 @@ Pergunta: {input.mensagem}
 
     try:
         resposta = await gerar_resposta(prompt_com_contexto, input.id_assistant)
-    except Exception:
-        logging.exception("Erro ao gerar resposta")
-        raise HTTPException(status_code=500, detail="Falha ao processar a mensagem")
+    except Exception as e:
+        logging.exception("Erro ao gerar resposta: %s", e)
+        resposta = "Desculpe, ocorreu um erro ao processar a mensagem."
 
     return {"resposta": resposta}
