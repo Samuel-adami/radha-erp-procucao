@@ -43,6 +43,13 @@ Todas retornam JSON, por exemplo `{"status":"validado","usuario":{...}}` em `/au
 Principais rotas:
 
 - `POST /importar-xml` – upload de XML/DXT (retorna `{pacotes:[...]}`).
+  - **Exemplo de requisição**:
+```bash
+curl -X POST https://erp.radhadigital.com.br/producao/importar-xml \
+     -H "Authorization: Bearer <TOKEN>" \
+     -F "files=@pedido.xml" \
+     -F "files=@pecas.dxt"
+```
 - `POST /gerar-lote-final` – gera lote e salva `lotes/{nome}.zip` (campo `lotes.obj_key`).
 - `GET /carregar-lote-final?pasta=...`
 - `POST /executar-nesting`, `POST /nesting-preview`, `POST /executar-nesting-final` – gera `nestings/{lote}.zip` (tabela `nestings.obj_key`).
@@ -94,6 +101,11 @@ Manipulado em `/usuarios` e autenticação (`/auth/login`, `/auth/validate`).
 - **MotivoOcorrencia** – tabela `motivos_ocorrencia` (`codigo`, `descricao`, `tipo`, `setor`).
 
 Relacionadas às rotas de produção descritas na seção anterior.
+
+#### Diagrama ERD (Produção)
+
+![ERD Produção](erd_producao.png)
+
 
 ### 2.4 Comercial (`comercial-backend/models.py`)
 
@@ -172,3 +184,89 @@ O Nginx direciona requisições para o Gateway e para o frontend conforme `nginx
 8. O download ocorre via `GET /producao/download-nesting/{id}` e o Gateway faz streaming do arquivo do bucket até o navegador.
 
 ---
+## 8. Variáveis de Ambiente
+
+Os arquivos `.env.example` em cada módulo definem as variáveis necessárias.
+
+### 8.1 Gateway
+
+```ini
+DATABASE_URL=
+DATABASE_SCHEMA=
+SECRET_KEY=
+RADHA_DATA_DIR=
+OBJECT_STORAGE_ENDPOINT=
+OBJECT_STORAGE_ACCESS_KEY=
+OBJECT_STORAGE_SECRET_KEY=
+OBJECT_STORAGE_BUCKET=
+OBJECT_STORAGE_PREFIX=
+MARKETING_IA_BACKEND_URL=
+PRODUCAO_BACKEND_URL=
+COMERCIAL_BACKEND_URL=
+RADHA_ADMIN_USER=  # opcional
+RADHA_ADMIN_PASS=  # opcional
+```
+
+### 8.2 Marketing Digital IA
+
+```ini
+DATABASE_URL=
+DATABASE_SCHEMA=
+SECRET_KEY=
+RADHA_DATA_DIR=
+OBJECT_STORAGE_ENDPOINT=
+OBJECT_STORAGE_ACCESS_KEY=
+OBJECT_STORAGE_SECRET_KEY=
+OBJECT_STORAGE_BUCKET=
+OBJECT_STORAGE_PREFIX=
+OPENAI_API_KEY=
+OPENAI_API_BASE=
+```
+
+### 8.3 Produção
+
+```ini
+DATABASE_URL=
+DATABASE_SCHEMA=
+SECRET_KEY=
+RADHA_DATA_DIR=
+OBJECT_STORAGE_ENDPOINT=
+OBJECT_STORAGE_ACCESS_KEY=
+OBJECT_STORAGE_SECRET_KEY=
+OBJECT_STORAGE_BUCKET=
+OBJECT_STORAGE_PREFIX=
+```
+
+### 8.4 Comercial
+
+```ini
+DATABASE_URL=
+DATABASE_SCHEMA=
+SECRET_KEY=
+RADHA_DATA_DIR=
+OBJECT_STORAGE_ENDPOINT=
+OBJECT_STORAGE_ACCESS_KEY=
+OBJECT_STORAGE_SECRET_KEY=
+OBJECT_STORAGE_BUCKET=
+OBJECT_STORAGE_PREFIX=
+GABSTER_API_USER=
+GABSTER_API_KEY=
+```
+
+### 8.5 Frontend
+
+```ini
+VITE_GATEWAY_URL=
+```
+
+As variáveis sem comentário são obrigatórias para execução de cada backend.
+
+## 9. Permissões por Rota
+
+| Módulo | Caminho | Cargos requeridos |
+|--------|---------|-------------------|
+| Marketing | `/chat/` | Diretoria, Marketing, Diretor, Comercial, Logística, admin |
+| Marketing | `/nova-campanha/` e `/nova-publicacao/` | Marketing, Diretoria |
+| Marketing | `/publicos/` | Marketing, Diretoria |
+| Marketing | `/conhecimento/perguntar-sara` | Diretoria |
+| Outros módulos | Demais rotas | Qualquer usuário autenticado |
