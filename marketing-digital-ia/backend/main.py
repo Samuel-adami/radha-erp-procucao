@@ -7,6 +7,13 @@ import uvicorn
 from database import init_db
 from services.auth_service import ensure_default_admin
 
+import sys
+import numpy
+
+print(f"Numpy version: {numpy.__version__}")
+print(f"Python path: {sys.executable}")
+
+
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(redirect_slashes=False)
 
