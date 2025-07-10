@@ -42,26 +42,37 @@ for prefixo in PREFIXOS_BUCKET:
             break
 
 # Função para buscar campos com caminhos de arquivos
+erros_consulta = []
+
 def buscar_chaves(schema):
     resultados = []
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT table_name, column_name
         FROM information_schema.columns
         WHERE table_schema = %s AND column_name ILIKE ANY (ARRAY['%pasta%', '%arquivo%', '%obj_key%'])
     """, (schema,))
     colunas = cursor.fetchall()
 
+    if not colunas:
+        return resultados
+
     for tabela, coluna in colunas:
-        cursor.execute(f"SELECT {coluna} FROM {schema}.{tabela}")
-        linhas = cursor.fetchall()
-        for linha in linhas:
-            if linha[0] and isinstance(linha[0], str):
-                resultados.append({
-                    "schema": schema,
-                    "tabela": tabela,
-                    "coluna": coluna,
-                    "chave": linha[0]
-                })
+        try:
+            cursor.execute(f"SELECT {coluna} FROM {schema}.{tabela}")
+            linhas = cursor.fetchall()
+            for linha in linhas:
+                if linha and isinstance(linha[0], str):
+                    resultados.append({
+                        "schema": schema,
+                        "tabela": tabela,
+                        "coluna": coluna,
+                        "chave": linha[0]
+                    })
+        except Exception as e:
+            erro_msg = f"Erro ao consultar {schema}.{tabela}.{coluna}: {e}"
+            print(erro_msg)
+            erros_consulta.append(erro_msg)
+            continue
     return resultados
 
 # Buscar chaves em todos os schemas
@@ -91,7 +102,8 @@ objetos_sem_referencia = list(s3_objects - referencias_banco)
 # Salvar relatório
 relatorio = {
     "ausentes_no_bucket": divergencias,
-    "no_bucket_sem_referencia": objetos_sem_referencia
+    "no_bucket_sem_referencia": objetos_sem_referencia,
+    "erros_consulta": erros_consulta
 }
 
 with open("relatorio_integridade.json", "w", encoding="utf-8") as f:
