@@ -5,7 +5,7 @@ import time
 from dotenv import load_dotenv
 try:
     from openai import AsyncOpenAI, OpenAIError
-except Exception:  # pragma: no cover - fallback when package is missing
+except Exception:  # pragma: no cover
     AsyncOpenAI = None
     class OpenAIError(Exception):
         pass
@@ -14,63 +14,25 @@ from io import BytesIO
 import base64
 import requests
 
-from services.embedding_service import buscar_contexto as consultar_conhecimento
-
 # 🔄 Variáveis de ambiente
 load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
-# 🔧 Cliente OpenAI assíncrono (pode ser None se API_KEY não estiver configurada)
+# 🔧 Cliente OpenAI assíncrono
 client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE) if API_KEY and AsyncOpenAI else None
-
-# 🧠 Hashtags temáticas
-HASHTAGS_TEMATICAS = {
-    "fábrica": ["#FabricaDeMoveis", "#FabricaPropria", "#MovelPlanejado"],
-    "cozinha": ["#CozinhaPlanejada", "#DesignDeInteriores"],
-    "dormitório": ["#QuartoPlanejado", "#AmbientesPersonalizados"],
-    "closet": ["#ClosetDosSonhos", "#AmbienteSobMedida"],
-    "home office": ["#HomeOffice", "#TrabalhoComEstilo"],
-    "banheiro": ["#BanheiroPlanejado", "#DesignDeBanheiros"],
-    "corporativo": ["#MoveisCorporativos", "#AmbienteDeTrabalho"],
-}
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-# 🎯 Geração de texto via Assistente
-async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
-    logging.info("🟢 Entrando em gerar_resposta")
-    logging.info(f"Prompt: {prompt}")
-    logging.info(f"Assistant ID: {id_assistant}")
+# 🎯 Geração de resposta via Assistant com arquivos
+async def gerar_resposta(mensagem: str, id_assistant: str) -> str:
     if client is None:
-        logging.warning("OPENAI_API_KEY não configurada. Respondendo com mensagem padrão.")
+        logging.warning("OPENAI_API_KEY não configurada.")
         return "Serviço de IA indisponível no momento."
-    try:
-        conhecimento = consultar_conhecimento(prompt)
-    except FileNotFoundError as e:
-        logging.error(f"Índice de embeddings não encontrado: {e}")
-        conhecimento = ""
-    except Exception as e:
-        logging.error(f"Erro ao consultar conhecimento: {e}")
-        conhecimento = ""
-
-    if conhecimento:
-        prompt = f"{conhecimento}\n\nUsuário: {prompt}"
-
-    if contexto in ["publicacao", "campanha"]:
-        partes_prompt = ["Inclua hashtags relacionadas ao tema e que reforcem os diferenciais da Radha."]
-        if tema:
-            hashtags = []
-            for palavra, tags in HASHTAGS_TEMATICAS.items():
-                if palavra in tema.lower():
-                    hashtags.extend(tags)
-            if hashtags:
-                partes_prompt.append(f"Inclua também as hashtags: {' '.join(hashtags)}.")
-        prompt += " " + " ".join(partes_prompt)
 
     try:
         thread = await client.beta.threads.create()
-        await client.beta.threads.messages.create(thread_id=thread.id, role="user", content=prompt)
+        await client.beta.threads.messages.create(thread_id=thread.id, role="user", content=mensagem)
         run = await client.beta.threads.runs.create(thread_id=thread.id, assistant_id=id_assistant)
 
         inicio = time.time()
@@ -79,11 +41,11 @@ async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
             if status.status == "completed":
                 break
             if status.status in ("failed", "cancelled", "expired"):
-                logging.error(f"Execução do assistente finalizada com status {status.status}")
+                logging.error(f"Execução falhou com status: {status.status}")
                 return "Não foi possível obter uma resposta no momento."
             if time.time() - inicio > 60:
-                logging.error("Tempo limite ao aguardar conclusão da execução do assistente")
-                return "Não foi possível obter uma resposta no momento."
+                logging.error("Timeout ao aguardar resposta do Assistant.")
+                return "Tempo esgotado. Tente novamente mais tarde."
             await asyncio.sleep(1)
 
         messages = await client.beta.threads.messages.list(thread_id=thread.id)
@@ -91,14 +53,14 @@ async def gerar_resposta(prompt, id_assistant, contexto='geral', tema=None):
             msg.content[0].text.value.strip()
             for msg in messages.data if msg.role == "assistant"
         ]
-        return "\n\n".join(respostas) if respostas else "Não foi possível obter uma resposta do assistente."
+        return "\n\n".join(respostas) if respostas else "O assistente não retornou uma resposta."
 
     except OpenAIError as e:
-        logging.error(f"Erro na API da OpenAI: {e}")
-        return "Estamos passando por instabilidades técnicas no momento. Por favor, tente novamente mais tarde."
+        logging.error(f"Erro OpenAI: {e}")
+        return "Instabilidade técnica ao acessar o assistente. Tente novamente mais tarde."
     except Exception as e:
-        logging.exception(f"Falha inesperada ao gerar resposta: {e}")
-        return "Não foi possível obter uma resposta no momento."
+        logging.exception(f"Erro inesperado: {e}")
+        return "Erro inesperado ao processar a mensagem."
 
 # 🖼️ Geração de imagem DALL·E 3
 async def gerar_imagem(prompt: str) -> str:
@@ -122,7 +84,6 @@ async def gerar_imagem(prompt: str) -> str:
         return ""
 
 # 📝 Sobrepor texto na imagem
-
 def gerar_imagem_com_texto(imagem_url: str, texto: str) -> str:
     try:
         response = requests.get(imagem_url)
