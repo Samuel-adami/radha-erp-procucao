@@ -99,6 +99,7 @@ function App() {
     return stored ? JSON.parse(stored) : null;
   });
   const [carregando, setCarregando] = useState(true);
+  const [logs, setLogs] = useState([]);
   const navigate = useNavigate();
 
   const handleLoginSuccess = (usuario) => {
@@ -159,6 +160,18 @@ function App() {
     setUsuarioLogado(null);
     navigate("/");
   };
+
+  useEffect(() => {
+    const handler = (e) => {
+      const msg = e.detail;
+      setLogs((prev) => [...prev, msg]);
+      setTimeout(() => {
+        setLogs((prev) => prev.filter((m) => m !== msg));
+      }, 5000);
+    };
+    window.addEventListener('log', handler);
+    return () => window.removeEventListener('log', handler);
+  }, []);
   
 
   // Enquanto a validação inicial do token está acontecendo, exibe uma mensagem
@@ -167,6 +180,7 @@ function App() {
   }
   
   return (
+    <>
       <Routes>
         <Route
           element={
@@ -189,6 +203,19 @@ function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {logs.length > 0 && (
+        <div className="fixed bottom-2 right-2 space-y-1 z-50">
+          {logs.map((msg, i) => (
+            <div
+              key={i}
+              className="bg-red-200 border border-red-400 text-red-800 px-2 py-1 rounded shadow"
+            >
+              {msg}
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 

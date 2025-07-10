@@ -48,6 +48,7 @@ export async function fetchComAuth(url, options = {}) {
     });
   } catch (networkError) {
     console.error('Erro de rede ao chamar', finalUrl, networkError);
+    window.dispatchEvent(new CustomEvent('log', { detail: `Erro de rede: ${networkError.message}` }));
     throw new Error(`Erro de rede: ${networkError.message}`);
   }
 
@@ -66,7 +67,7 @@ export async function fetchComAuth(url, options = {}) {
       // Apenas remove o token; quem chamar decide se recarrega a página
       localStorage.removeItem("token");
     }
-
+    window.dispatchEvent(new CustomEvent('log', { detail: errorMessage }));
     throw new Error(`Erro ${response.status}: ${errorMessage}`);
   }
 
@@ -75,7 +76,11 @@ export async function fetchComAuth(url, options = {}) {
   if (!responseText) return null;
   if (contentType.includes("application/json")) {
     try {
-      return JSON.parse(responseText);
+      const data = JSON.parse(responseText);
+      if (data && data.erro) {
+        window.dispatchEvent(new CustomEvent('log', { detail: data.erro }));
+      }
+      return data;
     } catch (e) {
       console.error("Erro ao parsear JSON", e);
       return null;
