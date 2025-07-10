@@ -40,22 +40,24 @@ init_db()
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
 SAIDA_DIR = BASE_DIR / "saida"
-OBJECT_PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "")
+OBJECT_PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
 
 
 def ensure_pasta_local(key: str) -> Path:
-    """Garantir que o objeto ``key`` esteja extraído localmente em ``SAIDA_DIR``.
+    """Garantir que ``key`` esteja extraído localmente em ``SAIDA_DIR``.
 
     Retorna o caminho da pasta extraída.
     """
-    if key.startswith("lotes/"):
-        pasta = SAIDA_DIR / Path(key).stem
+    key_no_prefix = key[len(OBJECT_PREFIX) :] if key.startswith(OBJECT_PREFIX) else key
+
+    if key_no_prefix.startswith("lotes/"):
+        pasta = SAIDA_DIR / Path(key_no_prefix).stem
         extract_to = SAIDA_DIR
-    elif key.startswith("nestings/"):
-        pasta = SAIDA_DIR / Path(key).stem / "nesting"
+    elif key_no_prefix.startswith("nestings/"):
+        pasta = SAIDA_DIR / Path(key_no_prefix).stem / "nesting"
         extract_to = pasta.parent
-    elif key.startswith("ocorrencias/"):
-        pasta = SAIDA_DIR / Path(key).stem
+    elif key_no_prefix.startswith("ocorrencias/"):
+        pasta = SAIDA_DIR / Path(key_no_prefix).stem
         extract_to = SAIDA_DIR
     else:
         raise ValueError("Chave de objeto invalida")
@@ -153,10 +155,11 @@ async def gerar_lote_final(request: Request):
     numero_lote = dados.get('lote', 'sem_nome')
     pasta_saida = SAIDA_DIR / f"Lote_{numero_lote}"
     os.makedirs(pasta_saida, exist_ok=True)
+    obj_key = f"{OBJECT_PREFIX}lotes/{pasta_saida.name}.zip"
     try:
         with get_db_connection() as conn:
             sql = f"INSERT INTO lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
-            exec_ignore(conn, sql, (f"lotes/{pasta_saida.name}.zip", datetime.now().isoformat()))
+            exec_ignore(conn, sql, (obj_key, datetime.now().isoformat()))
             conn.commit()
     except Exception:
         pass
@@ -242,7 +245,7 @@ async def gerar_lote_final(request: Request):
         str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
     )
 
-    upload_file(zip_path, f"lotes/{pasta_saida.name}.zip")
+    upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_saida, ignore_errors=True)
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
@@ -376,7 +379,7 @@ async def executar_nesting_final(request: Request):
         base_dir=pasta_resultado_path.name,
     )
 
-    obj_key = f"nestings/{pasta_resultado_path.parent.name}.zip"
+    obj_key = f"{OBJECT_PREFIX}nestings/{pasta_resultado_path.parent.name}.zip"
     upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
@@ -495,7 +498,7 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
         with get_db_connection() as conn:
             row = conn.exec_driver_sql(
                 "SELECT obj_key FROM lotes WHERE obj_key=%s",
-                (f"lotes/Lote_{lote}.zip",),
+                (f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",),
             ).fetchone()
             object_name = row["obj_key"] if row else None
     except Exception:
@@ -503,7 +506,7 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
 
     pasta = SAIDA_DIR / f"Lote_{lote}"
     if not object_name:
-        object_name = f"lotes/Lote_{lote}.zip"
+        object_name = f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
@@ -621,7 +624,7 @@ async def excluir_lote(request: Request):
     pasta = SAIDA_DIR / f"Lote_{numero_lote}"
     if pasta.is_dir():
         shutil.rmtree(pasta, ignore_errors=True)
-    key = f"lotes/Lote_{numero_lote}.zip"
+    key = f"{OBJECT_PREFIX}lotes/Lote_{numero_lote}.zip"
     delete_file(key)
     try:
         with get_db_connection() as conn:
@@ -969,10 +972,12 @@ async def gerar_lote_ocorrencia(request: Request):
             f.write("     </Part>\n")
         f.write("   </PartData>\n</ListInformation>\n")
 
+    key_lote = f"{OBJECT_PREFIX}lotes/{pasta_saida.name}.zip"
+    key_oc = f"{OBJECT_PREFIX}ocorrencias/{pasta_saida.name}.zip"
     try:
         with get_db_connection() as conn:
             sql_lote = f"INSERT INTO lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
-            exec_ignore(conn, sql_lote, (f"lotes/{pasta_saida.name}.zip", datetime.now().isoformat()))
+            exec_ignore(conn, sql_lote, (key_lote, datetime.now().isoformat()))
 
             sql_oc = (
                 f"INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, obj_key, criado_em) "
@@ -985,7 +990,7 @@ async def gerar_lote_ocorrencia(request: Request):
                     lote,
                     pacote,
                     numero_oc,
-                    f"ocorrencias/{pasta_saida.name}.zip",
+                    key_oc,
                     datetime.now().isoformat(),
                 ),
             )
@@ -1011,7 +1016,7 @@ async def gerar_lote_ocorrencia(request: Request):
         str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
     )
 
-    upload_file(zip_path, f"ocorrencias/{pasta_saida.name}.zip")
+    upload_file(zip_path, key_oc)
     os.remove(zip_path)
     shutil.rmtree(pasta_saida, ignore_errors=True)
     return {"status": "ok", "oc_numero": numero_oc}
