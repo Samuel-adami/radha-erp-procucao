@@ -6,6 +6,7 @@ from storage import (
     delete_file,
     download_file,
     object_exists,
+    get_public_url,
 )
 import xml.etree.ElementTree as ET
 import os
@@ -425,19 +426,20 @@ async def listar_lotes():
     Ocorrência quando a gravação inicial falha por algum motivo.
     """
 
-    lotes_validos: list[str] = []
+    lotes_validos: list[dict] = []
     try:
         with get_db_connection() as conn:
             rows = conn.exec_driver_sql(
-                "SELECT id, obj_key FROM lotes ORDER BY id"
+                "SELECT id, obj_key, criado_em FROM lotes ORDER BY id"
             ).fetchall()
             dados = [dict(r) for r in rows]
 
-            novos: list[str] = []
+            novos: list[dict] = []
             for d in dados:
                 key = d["obj_key"]
                 if object_exists(key):
-                    novos.append(key)
+                    d["arquivo_url"] = get_public_url(key)
+                    novos.append(d)
                 else:
                     conn.exec_driver_sql(
                         f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
@@ -448,7 +450,7 @@ async def listar_lotes():
     except Exception:
         lotes_validos = []
 
-    lotes_validos.sort()
+    lotes_validos.sort(key=lambda d: d.get("id"))
     return {"lotes": lotes_validos}
 
 
@@ -471,6 +473,7 @@ async def listar_nestings():
             for d in dados:
                 key = d["obj_key"]
                 if object_exists(key):
+                    d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
                 else:
                     conn.exec_driver_sql(
@@ -851,6 +854,7 @@ async def listar_lotes_ocorrencias():
                 key = d["obj_key"]
                 pasta_oc = Path(SAIDA_DIR / Path(key).stem)
                 if pasta_oc.is_dir() or object_exists(key):
+                    d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
                 else:
                     conn.exec_driver_sql(

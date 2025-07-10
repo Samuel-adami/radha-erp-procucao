@@ -196,7 +196,7 @@ Principais variáveis de ambiente do módulo (`.env.example`):
 2  DATABASE_URL=postgresql://radha_admin:12345@localhost:5432/producao
 3  DATABASE_SCHEMA=producao
 4  SECRET_KEY=radha-super-secreto
-5  RADHA_DATA_DIR=./data
+5  RADHA_DATA_DIR=radha-arquivos
 6  OBJECT_STORAGE_ENDPOINT=https://nyc3.digitaloceanspaces.com
 7  OBJECT_STORAGE_ACCESS_KEY=DO801RV.......
 8  OBJECT_STORAGE_SECRET_KEY=0D4o8nUESJUP0X......

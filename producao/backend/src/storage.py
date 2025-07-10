@@ -61,3 +61,9 @@ def object_exists(object_name: str) -> bool:
         return True
     except Exception:
         return False
+
+
+def get_public_url(object_name: str) -> str:
+    """Retorna a URL pública para ``object_name`` no bucket."""
+    endpoint_host = ENDPOINT.replace("https://", "").replace("http://", "")
+    return f"https://{BUCKET}.{endpoint_host}/{PREFIX}{object_name}"
