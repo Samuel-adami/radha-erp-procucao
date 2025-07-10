@@ -27,3 +27,39 @@ class Nesting(Base):
     lote = Column(String)
     obj_key = Column(String)
     criado_em = Column(String)
+
+
+class LoteOcorrencia(Base):
+    """Representa um lote de ocorrência gerado pelo backend."""
+
+    __tablename__ = "lotes_ocorrencias"
+
+    id = Column(Integer, primary_key=True)
+    lote = Column(String)
+    pacote = Column(String)
+    oc_numero = Column(Integer)
+    obj_key = Column(String)
+    criado_em = Column(String)
+
+
+class OcorrenciaPeca(Base):
+    """Peças pertencentes a um lote de ocorrência."""
+
+    __tablename__ = "ocorrencias_pecas"
+
+    id = Column(Integer, primary_key=True)
+    oc_id = Column(Integer)
+    peca_id = Column(Integer)
+    descricao_peca = Column(String)
+    motivo_id = Column(String)
+
+
+class MotivoOcorrencia(Base):
+    """Motivos cadastrados para ocorrências."""
+
+    __tablename__ = "motivos_ocorrencia"
+
+    codigo = Column(String, primary_key=True)
+    descricao = Column(String)
+    tipo = Column(String)
+    setor = Column(String)
