@@ -60,14 +60,17 @@ def ensure_pasta_local(key: str) -> Path:
 
     if pasta.is_dir():
         return pasta
-    if object_exists(key):
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-        tmp.close()
-        try:
-            download_file(key, tmp.name)
-            shutil.unpack_archive(tmp.name, extract_to)
-        finally:
-            os.remove(tmp.name)
+
+    if not object_exists(key):
+        raise FileNotFoundError(f"Objeto {key} nao encontrado")
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp.close()
+    try:
+        download_file(key, tmp.name)
+        shutil.unpack_archive(tmp.name, extract_to)
+    finally:
+        os.remove(tmp.name)
+
     return pasta
 
 
@@ -246,7 +249,12 @@ async def gerar_lote_final(request: Request):
 @app.get("/carregar-lote-final")
 async def carregar_lote_final(pasta: str):
     """Lê o lote final identificado pela chave de objeto ``pasta``."""
-    pasta_path = ensure_pasta_local(pasta)
+
+    try:
+        pasta_path = ensure_pasta_local(pasta)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
     dxt_path = pasta_path / f"{pasta_path.name}.dxt"
     if not dxt_path.exists():
         return {"erro": "DXT nao encontrado"}
@@ -269,7 +277,12 @@ async def executar_nesting(request: Request):
     config_layers = dados.get('config_layers')
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+
+    try:
+        pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
     try:
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
@@ -300,7 +313,12 @@ async def nesting_preview(request: Request):
     config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+
+    try:
+        pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
     try:
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
@@ -330,7 +348,12 @@ async def executar_nesting_final(request: Request):
     config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+
+    try:
+        pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
     try:
         pasta_resultado = gerar_nesting(
             str(pasta_lote_resolved),
@@ -378,7 +401,12 @@ async def api_coletar_layers(request: Request):
     pasta_lote = dados.get("pasta_lote")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+
+    try:
+        pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
     try:
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
@@ -510,7 +538,12 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     if not object_name:
         return {"erro": "Nesting não encontrado"}
 
-    pasta = ensure_pasta_local(object_name)
+
+    try:
+        pasta = ensure_pasta_local(object_name)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
@@ -562,8 +595,14 @@ async def remover_nesting(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     if obj_key:
-        pasta_local = ensure_pasta_local(obj_key)
-        shutil.rmtree(pasta_local, ignore_errors=True)
+
+        try:
+            pasta_local = ensure_pasta_local(obj_key)
+        except FileNotFoundError:
+            pasta_local = None
+        if pasta_local:
+            shutil.rmtree(pasta_local, ignore_errors=True)
+
         delete_file(obj_key)
     return {"status": "ok"}
 
@@ -982,8 +1021,13 @@ async def excluir_lote_ocorrencia(oc_id: int):
             ).fetchone()
             if row:
                 key = row["obj_key"]
-                pasta = ensure_pasta_local(key)
-                if pasta.is_dir():
+
+                try:
+                    pasta = ensure_pasta_local(key)
+                except FileNotFoundError:
+                    pasta = None
+                if pasta and pasta.is_dir():
+
                     shutil.rmtree(pasta, ignore_errors=True)
                 delete_file(key)
                 conn.exec_driver_sql(
