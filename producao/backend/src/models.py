@@ -17,7 +17,7 @@ class Lote(Base):
     __tablename__ = "lotes"
 
     id = Column(Integer, primary_key=True)
-    pasta = Column(String)
+    obj_key = Column(String)
     criado_em = Column(String)
 
 class Nesting(Base):
@@ -25,5 +25,5 @@ class Nesting(Base):
 
     id = Column(Integer, primary_key=True)
     lote = Column(String)
-    pasta_resultado = Column(String)
+    obj_key = Column(String)
     criado_em = Column(String)
