@@ -53,7 +53,9 @@ async def read_root():
 # Rota para o módulo de Marketing Digital IA (mantém as rotas existentes)
 @app.api_route("/marketing-ia/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def call_marketing_ia_backend(path: str, request: Request):
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(30.0)  # aumenta timeout para 30 segundos
+    async with httpx.AsyncClient(timeout=timeout) as client:
+
         url = f"{MARKETING_IA_BACKEND_URL}/{path}"
         try:
             # Reenvia headers, query params e body
@@ -73,7 +75,11 @@ async def call_marketing_ia_backend(path: str, request: Request):
         except httpx.HTTPStatusError as e:
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
+            import traceback
+            print("🟥 ERRO DE CONEXÃO COM BACKEND MARKETING:")
+            traceback.print_exc()
             return JSONResponse({"detail": f"Erro de conexão com o backend de Marketing Digital IA: {e}"}, status_code=503)
+
 
 # Rota para o módulo de Produção (mantém as rotas existentes)
 @app.api_route("/producao/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
