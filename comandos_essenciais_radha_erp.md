@@ -61,10 +61,13 @@ deactivate
 ```bash
 pip install -r requirements.txt
 # Ou instalar individualmente:
-pip install fastapi uvicorn pydantic httpx python-dotenv openai Pillow requests python-jose passlib[bcrypt] sqlalchemy psycopg2-binary boto3 sentence-transformers==2.2.2 huggingface_hub<0.15 transformers==4.31.0 faiss-cpu torch==2.0.1 torchvision==0.15.2
+pip install fastapi uvicorn pydantic httpx python-dotenv openai Pillow requests python-jose passlib[bcrypt] sqlalchemy psycopg2-binary boto3 sentence-transformers==2.2.2 huggingface_hub<0.15 transformers==4.31.0 faiss-cpu torch==2.0.1 torchvision==0.15.2 numpy
 ```
 
 **Função:** Instala pacotes obrigatórios para funcionamento dos serviços backend do Radha ERP.
+
+Caso apareça o erro `Numpy is not available` ao iniciar o módulo Marketing Digital IA,
+execute `pip install numpy` dentro do seu ambiente virtual e reinicie o serviço.
 
 ---
 
