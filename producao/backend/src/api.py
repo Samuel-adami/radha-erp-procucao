@@ -15,6 +15,7 @@ from leitor_dxf import aplicar_usinagem_retangular
 from gerador_dxf import gerar_dxf_base
 from pathlib import Path
 import json
+from sqlalchemy import text
 from database import (
     get_db_connection,
     init_db,
@@ -78,7 +79,7 @@ def proximo_oc_numero() -> int:
     """Retorna o próximo número sequencial de OC."""
     with get_db_connection() as conn:
         row = conn.execute(
-            "SELECT MAX(oc_numero) as m FROM lotes_ocorrencias"
+            text("SELECT MAX(oc_numero) as m FROM lotes_ocorrencias")
         ).fetchone()
         try:
             max_val = int(row["m"]) if row["m"] is not None else 0
@@ -839,7 +840,9 @@ async def listar_lotes_ocorrencias():
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT id, lote, pacote, oc_numero, obj_key, criado_em FROM lotes_ocorrencias ORDER BY id"
+                text(
+                    "SELECT id, lote, pacote, oc_numero, obj_key, criado_em FROM lotes_ocorrencias ORDER BY id"
+                )
             ).fetchall()
             dados = [dict(row) for row in rows]
 

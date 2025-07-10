@@ -91,6 +91,7 @@ def _apply_image_orientation(img: Image.Image, cfg: Dict) -> Image.Image:
 
 
 from database import get_db_connection
+from sqlalchemy import text
 
 
 def _sanitize_extension(ext: Optional[str], default: str = "bmp") -> str:
@@ -1234,7 +1235,9 @@ def gerar_nesting_preview(
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+                text(
+                    "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+                )
             ).fetchall()
             for r in rows:
                 chapas_cfg[r["propriedade"]] = dict(r)
@@ -1453,7 +1456,9 @@ def gerar_nesting(
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+                text(
+                    "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+                )
             ).fetchall()
             for r in rows:
                 chapas_cfg[r["propriedade"]] = dict(r)
