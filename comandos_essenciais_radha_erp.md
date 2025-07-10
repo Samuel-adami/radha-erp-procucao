@@ -164,6 +164,20 @@ ALTER USER NOME_USUARIO WITH PASSWORD 'NOVA_SENHA';
 
 ---
 
+## 🟩 Atualização do esquema
+
+Caso o banco tenha sido criado com versões antigas do backend, execute a migração
+abaixo para renomear as colunas `pasta` e `pasta_resultado` para `obj_key`.
+
+```bash
+sudo -u postgres psql -d producao -f producao/backend/migrations/002_obj_key.sql
+```
+
+Após rodar o script, os endpoints que manipulam lotes e nestings conseguem
+encontrar os arquivos `.zip` normalmente.
+
+---
+
 ## 🟩 Docker (Para MinIO/S3 Local)
 
 ```bash
