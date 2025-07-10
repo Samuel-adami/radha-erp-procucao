@@ -2,6 +2,12 @@ import os
 import io
 import boto3
 from botocore.client import Config
+from dotenv import load_dotenv, find_dotenv
+
+# Garantir que variáveis de ambiente do .env sejam carregadas antes de
+# inicializar o cliente S3. Sem isso, ``client`` ficaria ``None`` quando o
+# módulo fosse importado antes de ``database.py``.
+load_dotenv(find_dotenv())
 
 ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT")
 ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
