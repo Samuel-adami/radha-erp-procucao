@@ -65,7 +65,12 @@ def buscar_contexto(pergunta: str, top_k=3):
     with open(DOCS_PATH, "rb") as f:
         docs = pickle.load(f)
 
-    query_embedding = modelo.encode([pergunta])
+    try:
+        query_embedding = modelo.encode([pergunta])
+    except Exception as e:
+        logging.error(f"Falha ao gerar embedding: {e}")
+        return ""
+
     distancias, indices = index.search(query_embedding, top_k)
     resultados = [docs[i] for i in indices[0]]
     return "\n---\n".join(resultados)
