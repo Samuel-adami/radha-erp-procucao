@@ -47,6 +47,8 @@ python3.11 -m venv venv
 
 # Ativar ambiente virtual
 source venv/bin/activate
+source ../../venv/bin/activate
+source ../../../venv/bin/activate
 
 # Sair do ambiente virtual
 deactivate
