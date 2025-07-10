@@ -16,7 +16,7 @@ Os objetivos e as principais rotas do backend estão descritos em `manual-arquit
 61    - `POST /importar-xml` – identifica e processa arquivos XML ou DXT
 62    - `POST /gerar-lote-final` – cria o lote final em DXF
 63    - `POST /executar-nesting` – executa algoritmo de nesting e registra o resultado
-64    - `GET /listar-lotes` – lista lotes registrados
+64    - `GET /listar-lotes` – retorna as chaves dos lotes registrados
 65    - `GET /nestings` – lista otimizações realizadas
 66    - `GET /download-lote/{lote}` e `GET /download-nesting/{id}` – baixa arquivos
 67    - Cadastros auxiliares (`/chapas`, `/config-maquina`, `/config-ferramentas`, `/config-cortes`, `/config-layers`)
