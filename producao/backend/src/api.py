@@ -41,48 +41,34 @@ SAIDA_DIR = BASE_DIR / "saida"
 OBJECT_PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "")
 
 
-def resolve_saidadir_path(p: Union[str, Path]) -> Path:
-    """Resolve ``p`` ensuring the resulting path is inside ``SAIDA_DIR``.
+def ensure_pasta_local(key: str) -> Path:
+    """Garantir que o objeto ``key`` esteja extraído localmente em ``SAIDA_DIR``.
 
-    This avoids ``Path.is_relative_to`` for compatibility with Python < 3.9.
+    Retorna o caminho da pasta extraída.
     """
-    resolved = Path(p).resolve()
-    try:
-        resolved.relative_to(SAIDA_DIR)
-    except ValueError:
-        raise ValueError("Caminho fora de SAIDA_DIR")
-    return resolved
+    if key.startswith("lotes/"):
+        pasta = SAIDA_DIR / Path(key).stem
+        extract_to = SAIDA_DIR
+    elif key.startswith("nestings/"):
+        pasta = SAIDA_DIR / Path(key).stem / "nesting"
+        extract_to = pasta.parent
+    elif key.startswith("ocorrencias/"):
+        pasta = SAIDA_DIR / Path(key).stem
+        extract_to = SAIDA_DIR
+    else:
+        raise ValueError("Chave de objeto invalida")
 
-
-def ensure_pasta_local(pasta: Path) -> None:
-    """Garante que a pasta exista baixando o zip do object storage se preciso."""
     if pasta.is_dir():
-        return
-    key = None
-    if pasta.parent == SAIDA_DIR and pasta.name.startswith("Lote_"):
-        key = f"lotes/{pasta.name}.zip"
-    elif pasta.parent.parent == SAIDA_DIR and pasta.name == "nesting":
-        key = f"nestings/{pasta.parent.name}.zip"
-    elif pasta.parent == SAIDA_DIR and "_OC" in pasta.name:
-        key = f"ocorrencias/{pasta.name}.zip"
-    if key and object_exists(key):
+        return pasta
+    if object_exists(key):
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
         tmp.close()
         try:
             download_file(key, tmp.name)
-
-            if pasta.parent == SAIDA_DIR and pasta.name.startswith("Lote_"):
-                extract_to = SAIDA_DIR
-            elif pasta.parent.parent == SAIDA_DIR and pasta.name == "nesting":
-                extract_to = pasta.parent
-            elif pasta.parent == SAIDA_DIR and "_OC" in pasta.name:
-                extract_to = SAIDA_DIR
-            else:
-                extract_to = pasta.parent
             shutil.unpack_archive(tmp.name, extract_to)
-
         finally:
             os.remove(tmp.name)
+    return pasta
 
 
 def proximo_oc_numero() -> int:
@@ -164,8 +150,8 @@ async def gerar_lote_final(request: Request):
     os.makedirs(pasta_saida, exist_ok=True)
     try:
         with get_db_connection() as conn:
-            sql = f"INSERT INTO lotes (pasta, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
-            exec_ignore(conn, sql, (str(pasta_saida), datetime.now().isoformat()))
+            sql = f"INSERT INTO lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
+            exec_ignore(conn, sql, (f"lotes/{pasta_saida.name}.zip", datetime.now().isoformat()))
             conn.commit()
     except Exception:
         pass
@@ -259,12 +245,8 @@ async def gerar_lote_final(request: Request):
 
 @app.get("/carregar-lote-final")
 async def carregar_lote_final(pasta: str):
-    """Lê o lote final em 'pasta' e retorna os pacotes com suas peças."""
-    try:
-        pasta_path = resolve_saidadir_path(pasta)
-    except ValueError:
-        return {"erro": "Caminho inválido"}
-    ensure_pasta_local(pasta_path)
+    """Lê o lote final identificado pela chave de objeto ``pasta``."""
+    pasta_path = ensure_pasta_local(pasta)
     dxt_path = pasta_path / f"{pasta_path.name}.dxt"
     if not dxt_path.exists():
         return {"erro": "DXT nao encontrado"}
@@ -287,11 +269,7 @@ async def executar_nesting(request: Request):
     config_layers = dados.get('config_layers')
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    try:
-        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
-    except ValueError:
-        return {"erro": "Caminho inválido"}
-    ensure_pasta_local(pasta_lote_resolved)
+    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
     try:
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
@@ -322,11 +300,7 @@ async def nesting_preview(request: Request):
     config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    try:
-        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
-    except ValueError:
-        return {"erro": "Caminho inválido"}
-    ensure_pasta_local(pasta_lote_resolved)
+    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
     try:
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
@@ -356,11 +330,7 @@ async def executar_nesting_final(request: Request):
     config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    try:
-        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
-    except ValueError:
-        return {"erro": "Caminho inválido"}
-    ensure_pasta_local(pasta_lote_resolved)
+    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
     try:
         pasta_resultado = gerar_nesting(
             str(pasta_lote_resolved),
@@ -381,10 +351,24 @@ async def executar_nesting_final(request: Request):
         base_dir=pasta_resultado_path.name,
     )
 
-    upload_file(zip_path, f"nestings/{pasta_resultado_path.parent.name}.zip")
+    obj_key = f"nestings/{pasta_resultado_path.parent.name}.zip"
+    upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
-    return {"status": "ok", "pasta_resultado": pasta_resultado}
+    try:
+        with get_db_connection() as conn:
+            conn.exec_driver_sql(
+                f"INSERT INTO nestings (lote, obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
+                (
+                    pasta_lote,
+                    obj_key,
+                    datetime.now().isoformat(),
+                ),
+            )
+            conn.commit()
+    except Exception:
+        pass
+    return {"status": "ok", "pasta_resultado": obj_key}
 
 
 @app.post("/coletar-layers")
@@ -394,11 +378,7 @@ async def api_coletar_layers(request: Request):
     pasta_lote = dados.get("pasta_lote")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
-    try:
-        pasta_lote_resolved = resolve_saidadir_path(pasta_lote)
-    except ValueError:
-        return {"erro": "Caminho inválido"}
-    ensure_pasta_local(pasta_lote_resolved)
+    pasta_lote_resolved = ensure_pasta_local(pasta_lote)
     try:
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
@@ -420,20 +400,22 @@ async def listar_lotes():
     try:
         with get_db_connection() as conn:
             rows = conn.exec_driver_sql(
-                "SELECT id, pasta FROM lotes ORDER BY id"
+                "SELECT id, obj_key FROM lotes ORDER BY id"
             ).fetchall()
             dados = [dict(r) for r in rows]
 
+            novos: list[str] = []
             for d in dados:
-                pasta = Path(d["pasta"])
-                if pasta.is_dir() or object_exists(f"lotes/{pasta.name}.zip"):
-                    lotes_validos.append(str(pasta))
+                key = d["obj_key"]
+                if object_exists(key):
+                    novos.append(key)
                 else:
                     conn.exec_driver_sql(
                         f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
                         (d["id"],),
                     )
             conn.commit()
+            lotes_validos = novos
     except Exception:
         lotes_validos = []
 
@@ -452,14 +434,14 @@ async def listar_nestings():
     try:
         with get_db_connection() as conn:
             rows = conn.exec_driver_sql(
-                "SELECT id, lote, pasta_resultado, criado_em FROM nestings ORDER BY id DESC"
+                "SELECT id, lote, obj_key, criado_em FROM nestings ORDER BY id DESC"
             ).fetchall()
             dados = [dict(r) for r in rows]
 
             novos: list[dict] = []
             for d in dados:
-                pasta_nest = Path(d["pasta_resultado"])
-                if pasta_nest.is_dir() or object_exists(f"nestings/{pasta_nest.parent.name}.zip"):
+                key = d["obj_key"]
+                if object_exists(key):
                     novos.append(d)
                 else:
                     conn.exec_driver_sql(
@@ -469,7 +451,7 @@ async def listar_nestings():
             conn.commit()
             dados = novos
     except Exception:
-        pass
+        dados = []
     dados.sort(key=lambda d: d.get("id") or 0, reverse=True)
     return {"nestings": dados}
 
@@ -477,8 +459,19 @@ async def listar_nestings():
 @app.get("/download-lote/{lote}")
 async def download_lote(lote: str, background_tasks: BackgroundTasks):
     """Compacta e faz o download do lote especificado."""
+    try:
+        with get_db_connection() as conn:
+            row = conn.exec_driver_sql(
+                "SELECT obj_key FROM lotes WHERE obj_key=%s",
+                (f"lotes/Lote_{lote}.zip",),
+            ).fetchone()
+            object_name = row["obj_key"] if row else None
+    except Exception:
+        object_name = None
+
     pasta = SAIDA_DIR / f"Lote_{lote}"
-    object_name = f"lotes/Lote_{lote}.zip"
+    if not object_name:
+        object_name = f"lotes/Lote_{lote}.zip"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
@@ -507,18 +500,17 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     try:
         with get_db_connection() as conn:
             row = conn.exec_driver_sql(
-                f"SELECT pasta_resultado FROM nestings WHERE id={PLACEHOLDER}",
+                f"SELECT obj_key FROM nestings WHERE id={PLACEHOLDER}",
                 (nid,),
             ).fetchone()
-            pasta_str = row["pasta_resultado"] if row else None
+            object_name = row["obj_key"] if row else None
     except Exception:
-        pasta_str = None
+        object_name = None
 
-    if not pasta_str:
+    if not object_name:
         return {"erro": "Nesting não encontrado"}
 
-    pasta = Path(pasta_str)
-    object_name = f"nestings/{pasta.parent.name}.zip"
+    pasta = ensure_pasta_local(object_name)
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
@@ -533,7 +525,7 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     elif not object_exists(object_name):
         os.remove(zip_path)
         return {"erro": "Pasta não encontrada"}
-    filename = f"{pasta.parent.name}.zip"
+    filename = Path(object_name).name
     background_tasks.add_task(os.remove, zip_path)
     return StreamingResponse(
         download_stream(object_name, zip_path),
@@ -547,35 +539,32 @@ async def remover_nesting(request: Request):
     """Exclui uma otimização de nesting e remove seus arquivos."""
     dados = await request.json()
     nid = dados.get("id")
-    pasta_resultado = dados.get("pasta_resultado")
+    obj_key = dados.get("obj_key")
     try:
         with get_db_connection() as conn:
             if nid:
                 row = conn.exec_driver_sql(
-                    f"SELECT pasta_resultado FROM nestings WHERE id={PLACEHOLDER}",
+                    f"SELECT obj_key FROM nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 ).fetchone()
                 if row:
-                    pasta_resultado = pasta_resultado or row["pasta_resultado"]
+                    obj_key = obj_key or row["obj_key"]
                 conn.exec_driver_sql(
                     f"DELETE FROM nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 )
-            elif pasta_resultado:
+            elif obj_key:
                 conn.exec_driver_sql(
-                    f"DELETE FROM nestings WHERE pasta_resultado={PLACEHOLDER}",
-                    (pasta_resultado,),
+                    f"DELETE FROM nestings WHERE obj_key={PLACEHOLDER}",
+                    (obj_key,),
                 )
             conn.commit()
     except Exception as e:
         return {"erro": str(e)}
-    if pasta_resultado:
-        try:
-            pasta_resultado_resolved = resolve_saidadir_path(pasta_resultado)
-        except ValueError:
-            return {"erro": "Caminho inválido"}
-        shutil.rmtree(pasta_resultado_resolved, ignore_errors=True)
-        delete_file(f"nestings/{pasta_resultado_resolved.parent.name}.zip")
+    if obj_key:
+        pasta_local = ensure_pasta_local(obj_key)
+        shutil.rmtree(pasta_local, ignore_errors=True)
+        delete_file(obj_key)
     return {"status": "ok"}
 
 
@@ -589,17 +578,18 @@ async def excluir_lote(request: Request):
     pasta = SAIDA_DIR / f"Lote_{numero_lote}"
     if pasta.is_dir():
         shutil.rmtree(pasta, ignore_errors=True)
-    delete_file(f"lotes/Lote_{numero_lote}.zip")
+    key = f"lotes/Lote_{numero_lote}.zip"
+    delete_file(key)
     try:
         with get_db_connection() as conn:
             conn.exec_driver_sql(
-                f"DELETE FROM lotes WHERE pasta = {PLACEHOLDER}",
-                (str(pasta),),
+                f"DELETE FROM lotes WHERE obj_key = {PLACEHOLDER}",
+                (key,),
             )
             conn.commit()
     except Exception:
         pass
-    if pasta.is_dir() or object_exists(f"lotes/Lote_{numero_lote}.zip"):
+    if pasta.is_dir() or object_exists(key):
         return {"status": "ok", "mensagem": f"Lote {numero_lote} removido"}
     return {"status": "ok", "mensagem": "Lote não encontrado"}
 
@@ -810,14 +800,15 @@ async def listar_lotes_ocorrencias():
     try:
         with get_db_connection() as conn:
             rows = conn.execute(
-                "SELECT id, lote, pacote, oc_numero, pasta, criado_em FROM lotes_ocorrencias ORDER BY id"
+                "SELECT id, lote, pacote, oc_numero, obj_key, criado_em FROM lotes_ocorrencias ORDER BY id"
             ).fetchall()
             dados = [dict(row) for row in rows]
 
             novos: list[dict] = []
             for d in dados:
-                pasta_oc = Path(d["pasta"])
-                if pasta_oc.is_dir() or object_exists(f"ocorrencias/{pasta_oc.name}.zip"):
+                key = d["obj_key"]
+                pasta_oc = Path(SAIDA_DIR / Path(key).stem)
+                if pasta_oc.is_dir() or object_exists(key):
                     novos.append(d)
                 else:
                     conn.exec_driver_sql(
@@ -934,11 +925,11 @@ async def gerar_lote_ocorrencia(request: Request):
 
     try:
         with get_db_connection() as conn:
-            sql_lote = f"INSERT INTO lotes (pasta, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
-            exec_ignore(conn, sql_lote, (str(pasta_saida), datetime.now().isoformat()))
+            sql_lote = f"INSERT INTO lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
+            exec_ignore(conn, sql_lote, (f"lotes/{pasta_saida.name}.zip", datetime.now().isoformat()))
 
             sql_oc = (
-                f"INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, pasta, criado_em) "
+                f"INSERT INTO lotes_ocorrencias (lote, pacote, oc_numero, obj_key, criado_em) "
                 f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
             )
             oc_id = insert_with_id(
@@ -948,7 +939,7 @@ async def gerar_lote_ocorrencia(request: Request):
                     lote,
                     pacote,
                     numero_oc,
-                    str(pasta_saida),
+                    f"ocorrencias/{pasta_saida.name}.zip",
                     datetime.now().isoformat(),
                 ),
             )
@@ -986,17 +977,15 @@ async def excluir_lote_ocorrencia(oc_id: int):
     try:
         with get_db_connection() as conn:
             row = conn.exec_driver_sql(
-                f"SELECT pasta FROM lotes_ocorrencias WHERE id={PLACEHOLDER}",
+                f"SELECT obj_key FROM lotes_ocorrencias WHERE id={PLACEHOLDER}",
                 (oc_id,),
             ).fetchone()
             if row:
-                try:
-                    pasta = resolve_saidadir_path(row["pasta"])
-                except ValueError:
-                    return {"erro": "Caminho inválido"}
+                key = row["obj_key"]
+                pasta = ensure_pasta_local(key)
                 if pasta.is_dir():
                     shutil.rmtree(pasta, ignore_errors=True)
-                delete_file(f"ocorrencias/{pasta.name}.zip")
+                delete_file(key)
                 conn.exec_driver_sql(
                     f"DELETE FROM lotes_ocorrencias WHERE id={PLACEHOLDER}",
                     (oc_id,),
