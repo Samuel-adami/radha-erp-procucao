@@ -53,7 +53,8 @@ curl -X POST https://erp.radhadigital.com.br/producao/importar-xml \
 - `POST /gerar-lote-final` – gera lote e salva `lotes/{nome}.zip` (campo `lotes.obj_key`).
 - `GET /carregar-lote-final?pasta=...`
 - `POST /executar-nesting`, `POST /nesting-preview`, `POST /executar-nesting-final` – gera `nestings/{lote}.zip` (tabela `nestings.obj_key`).
-- `GET /listar-lotes` e `GET /nestings` – listagens.
+- `GET /listar-lotes` – retorna `{ "lotes": ["producao/lotes/Lote_001.zip", ...] }`.
+- `GET /nestings` – listagens de otimizações.
 - `GET /download-lote/{lote}` e `GET /download-nesting/{id}` – downloads via streaming.
 - `POST /remover-nesting` e `POST /excluir-lote` – remoções.
 - Cadastros auxiliares: `GET/POST /config-maquina`, `/config-ferramentas`, `/config-cortes`, `/config-layers`.

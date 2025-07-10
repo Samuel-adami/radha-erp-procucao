@@ -429,7 +429,7 @@ async def listar_lotes():
     Ocorrência quando a gravação inicial falha por algum motivo.
     """
 
-    lotes_validos: list[dict] = []
+    lotes_validos: list[str] = []
     try:
         with get_db_connection() as conn:
             rows = conn.exec_driver_sql(
@@ -437,12 +437,11 @@ async def listar_lotes():
             ).fetchall()
             dados = [dict(r) for r in rows]
 
-            novos: list[dict] = []
+            novos: list[str] = []
             for d in dados:
                 key = d["obj_key"]
                 if object_exists(key):
-                    d["arquivo_url"] = get_public_url(key)
-                    novos.append(d)
+                    novos.append(key)
                 else:
                     conn.exec_driver_sql(
                         f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
@@ -453,7 +452,7 @@ async def listar_lotes():
     except Exception:
         lotes_validos = []
 
-    lotes_validos.sort(key=lambda d: d.get("id"))
+    lotes_validos.sort()
     return {"lotes": lotes_validos}
 
 
