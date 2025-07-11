@@ -39,3 +39,34 @@ def init_db():
     """Create all tables defined in models.py."""
     Base.metadata.create_all(engine)
 
+
+def validate_schema() -> str | None:
+    """Return error message if configured schema or table is invalid."""
+    if not schema:
+        return "DATABASE_SCHEMA nao configurado"
+
+    query_schema = (
+        "SELECT schema_name FROM information_schema.schemata WHERE schema_name=%s"
+    )
+    query_table = (
+        "SELECT column_name FROM information_schema.columns "
+        "WHERE table_schema=%s AND table_name='lotes'"
+    )
+    try:
+        with get_db_connection() as conn:
+            row = conn.exec_driver_sql(query_schema, (schema,)).fetchone()
+            if not row:
+                return f"Schema '{schema}' inexistente"
+
+            rows = conn.exec_driver_sql(query_table, (schema,)).fetchall()
+            if not rows:
+                return f"Tabela '{schema}.lotes' inexistente"
+
+            cols = {r[0] for r in rows}
+            if "obj_key" not in cols:
+                return f"Tabela '{schema}.lotes' sem coluna 'obj_key'"
+    except Exception as e:
+        return str(e)
+
+    return None
+
