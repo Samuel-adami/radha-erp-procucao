@@ -1,6 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from storage import _full_key
 from storage import (
     upload_file,
     download_stream,
@@ -164,7 +163,7 @@ async def gerar_lote_final(request: Request):
         print(f"❌ {msg}")
         return {"erro": msg}
     
-    rel_path = _full_key(obj_key) 
+    rel_path = obj_key 
 
     try:
         with get_db_connection() as conn:
@@ -173,7 +172,7 @@ async def gerar_lote_final(request: Request):
                 f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}) "
                 f"ON CONFLICT (obj_key) DO UPDATE SET criado_em = EXCLUDED.criado_em, pasta = EXCLUDED.pasta"
             )
-            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat(), rel_path))
+            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat(), obj_key))
             conn.commit()
 
     except Exception as e:
