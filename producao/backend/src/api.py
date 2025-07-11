@@ -163,7 +163,7 @@ async def gerar_lote_final(request: Request):
         print(f"❌ {msg}")
         return {"erro": msg}
     
-    rel_path = obj_key.split(OBJECT_PREFIX)[-1]  
+    rel_path = _full_key(obj_key) 
 
     try:
         with get_db_connection() as conn:
