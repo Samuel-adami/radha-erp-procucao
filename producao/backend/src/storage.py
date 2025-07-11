@@ -65,7 +65,8 @@ def object_exists(object_name: str) -> bool:
     try:
         client.head_object(Bucket=BUCKET, Key=_full_key(object_name))
         return True
-    except Exception:
+    except Exception as e:
+        print(f"[DEBUG] Erro em object_exists: {_full_key(object_name)} → {e}")
         return False
 
 
