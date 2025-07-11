@@ -84,7 +84,6 @@ const Nesting = () => {
         setLotes(d?.lotes || []);
       })
       .catch((e) => console.error("Falha ao carregar lotes", e));
-  }, []);
 
     fetchComAuth("/nestings")
       .then((d) => setNestings(d?.nestings || []))
