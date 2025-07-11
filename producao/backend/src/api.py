@@ -465,9 +465,10 @@ async def listar_lotes():
                 else:
                     print("   ✗ NÃO encontrado no bucket")              
                     conn.exec_driver_sql(
-                        f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
-                        (d["id"],),
+                        "DELETE FROM lotes WHERE id = :id",
+                        {"id": d["id"]},
                     )
+
             conn.commit()
             lotes_validos = novos
     except Exception:
