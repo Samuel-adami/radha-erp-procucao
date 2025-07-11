@@ -77,9 +77,15 @@ const Nesting = () => {
     if (cfg.pastaLote) setPastaLote(cfg.pastaLote);
     if (cfg.larguraChapa) setLarguraChapa(cfg.larguraChapa);
     if (cfg.alturaChapa) setAlturaChapa(cfg.alturaChapa);
+
     fetchComAuth("/listar-lotes")
-      .then((d) => setLotes(d?.lotes || []))
+      .then((d) => {
+        console.log("Lotes recebidos:", d);
+        setLotes(d?.lotes || []);
+      })
       .catch((e) => console.error("Falha ao carregar lotes", e));
+  }, []);
+
     fetchComAuth("/nestings")
       .then((d) => setNestings(d?.nestings || []))
       .catch((e) => console.error("Falha ao carregar nestings", e));
