@@ -31,7 +31,7 @@ def _full_key(name: str) -> str:
     # Garante que o prefixo 'lotes/' não seja duplicado
     if name.startswith(f"{PREFIXO}/"):
         return name
-    return f"{PREFIXO}/{name}"
+    return f"{PREFIX}/{name}"
 
 
 def upload_file(local_path: str, object_name: str) -> None:
