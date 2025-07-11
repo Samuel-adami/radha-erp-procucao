@@ -166,11 +166,11 @@ async def gerar_lote_final(request: Request):
     try:
         with get_db_connection() as conn:
             sql = (
-                f"INSERT INTO lotes (obj_key, criado_em) "
-                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}) "
-                f"ON CONFLICT (obj_key) DO UPDATE SET criado_em = EXCLUDED.criado_em"
+                f"INSERT INTO lotes (obj_key, criado_em, pasta) "
+                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}) "
+                f"ON CONFLICT (obj_key) DO UPDATE SET criado_em = EXCLUDED.criado_em, pasta = EXCLUDED.pasta"
             )
-            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat()))
+            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat(), rel_path))
             conn.commit()
 
     except Exception as e:
