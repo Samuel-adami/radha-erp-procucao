@@ -155,7 +155,8 @@ async def gerar_lote_final(request: Request):
     dados = await request.json()
     numero_lote = dados.get('lote', 'sem_nome')
     pasta_saida = SAIDA_DIR / f"Lote_{numero_lote}"
-    obj_key = f"{OBJECT_PREFIX}lotes/{pasta_saida.name}.zip"
+    obj_key = f"lotes/{pasta_saida.name}.zip"
+    
 
     if not schema:
         msg = "DATABASE_SCHEMA nao configurado"
