@@ -474,6 +474,7 @@ async def listar_lotes():
         lotes_validos = []
 
     lotes_validos.sort()
+    print("LOCAIS VÁLIDOS ENCONTRADOS:", lotes_validos)
     return {"lotes": lotes_validos}
 
 
