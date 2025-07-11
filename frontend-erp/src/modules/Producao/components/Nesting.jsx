@@ -50,6 +50,8 @@ const criaLayer = (nome) => {
 };
 
 const Nesting = () => {
+  console.log("Componente Nesting MONTADO");
+  
   const navigate = useNavigate();
   const [pastaLote, setPastaLote] = useState("");
   const [lotes, setLotes] = useState([]);
