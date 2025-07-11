@@ -645,14 +645,15 @@ async def excluir_lote(request: Request):
     pasta = SAIDA_DIR / f"Lote_{numero_lote}"
     if pasta.is_dir():
         shutil.rmtree(pasta, ignore_errors=True)
-    key = f"{OBJECT_PREFIX}lotes/Lote_{numero_lote}.zip"
+
+    key = f"lotes/Lote_{numero_lote}.zip"
     delete_file(key)
     try:
         with get_db_connection() as conn:
-            chave_sem_prefixo = key.split(OBJECT_PREFIX)[-1]
+            key_pref = f"{OBJECT_PREFIX}{key}"
             conn.exec_driver_sql(
                 f"DELETE FROM lotes WHERE obj_key IN ({PLACEHOLDER}, {PLACEHOLDER})",
-                (key, chave_sem_prefixo),
+                (key, key_pref),
             )
 
             conn.commit()
