@@ -8,6 +8,7 @@ from dotenv import load_dotenv, find_dotenv
 # inicializar o cliente S3. Sem isso, ``client`` ficaria ``None`` quando o
 # módulo fosse importado antes de ``database.py``.
 load_dotenv(find_dotenv())
+print("✅ OBJECT_STORAGE_PREFIX =", os.getenv("OBJECT_STORAGE_PREFIX"))
 
 ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT")
 ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
