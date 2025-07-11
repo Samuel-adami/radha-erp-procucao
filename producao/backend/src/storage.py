@@ -27,8 +27,11 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
     )
 
 
-def _full_key(key: str) -> str:
-    return key if key.startswith(PREFIX) else f"{PREFIX}{key}"
+def _full_key(name: str) -> str:
+    # Garante que o prefixo 'lotes/' não seja duplicado
+    if name.startswith(f"{PREFIXO}/"):
+        return name
+    return f"{PREFIXO}/{name}"
 
 
 def upload_file(local_path: str, object_name: str) -> None:
