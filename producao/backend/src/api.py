@@ -456,9 +456,14 @@ async def listar_lotes():
             dados = [dict(r) for r in rows]
 
             novos: list[str] = []
+            print("LISTANDO LOTES:")
             for d in dados:
                 key = d["obj_key"]
+                print(" - Verificando:", key)
                 if object_exists(key):
+                    print("   ✓ Existe no bucket")
+                else:
+                    print("   ✗ NÃO encontrado no bucket")
                     novos.append(key)
                 else:
                     conn.exec_driver_sql(
