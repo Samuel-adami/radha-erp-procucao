@@ -445,6 +445,7 @@ async def listar_lotes():
     comportamento evita que um lote fique invisível nas telas de Nesting e
     Ocorrência quando a gravação inicial falha por algum motivo.
     """
+print("[DEBUG] PREFIX utilizado:", PREFIX)
 
     lotes_validos: list[str] = []
     try:
