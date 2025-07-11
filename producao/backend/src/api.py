@@ -1,5 +1,6 @@
 from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse
+from storage import _full_key
 from storage import (
     upload_file,
     download_stream,
