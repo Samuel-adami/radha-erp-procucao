@@ -2,7 +2,8 @@ const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
 
 export async function fetchComAuth(url, options = {}) {
   const token = localStorage.getItem("token");
-
+  console.log("Requisição iniciada:", url, "com token:", token);
+  
   const headers = {
     ...(options.headers || {}),
   };
@@ -46,6 +47,7 @@ export async function fetchComAuth(url, options = {}) {
       ...options,
       headers,
     });
+    console.log("Resposta recebida:", finalUrl, "→ status:", response.status);
   } catch (networkError) {
     console.error('Erro de rede ao chamar', finalUrl, networkError);
     window.dispatchEvent(new CustomEvent('log', { detail: `Erro de rede: ${networkError.message}` }));
