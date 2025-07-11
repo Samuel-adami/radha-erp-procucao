@@ -7,7 +7,7 @@ from dotenv import load_dotenv, find_dotenv
 # Garantir que variáveis de ambiente do .env sejam carregadas antes de
 # inicializar o cliente S3. Sem isso, ``client`` ficaria ``None`` quando o
 # módulo fosse importado antes de ``database.py``.
-load_dotenv(find_dotenv())
+load_dotenv(dotenv_path="/home/samuel/radha-erp-producao/producao/backend/src/.env")
 print("✅ OBJECT_STORAGE_PREFIX =", os.getenv("OBJECT_STORAGE_PREFIX"))
 
 ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT")
