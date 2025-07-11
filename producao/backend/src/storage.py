@@ -29,7 +29,7 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
 
 def _full_key(name: str) -> str:
     # Garante que o prefixo 'lotes/' não seja duplicado
-    if name.startswith(f"{PREFIXO}/"):
+    if name.startswith(f"{PREFIX}/"):
         return name
     return f"{PREFIX}/{name}"
 
