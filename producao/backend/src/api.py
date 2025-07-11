@@ -23,6 +23,7 @@ from database import (
     exec_ignore,
     insert_with_id,
     PLACEHOLDER,
+    schema,
 )
 import tempfile
 import shutil
@@ -154,15 +155,23 @@ async def gerar_lote_final(request: Request):
     dados = await request.json()
     numero_lote = dados.get('lote', 'sem_nome')
     pasta_saida = SAIDA_DIR / f"Lote_{numero_lote}"
-    os.makedirs(pasta_saida, exist_ok=True)
     obj_key = f"{OBJECT_PREFIX}lotes/{pasta_saida.name}.zip"
+
+    if not schema:
+        msg = "DATABASE_SCHEMA nao configurado"
+        print(f"❌ {msg}")
+        return {"erro": msg}
+
     try:
         with get_db_connection() as conn:
             sql = f"INSERT INTO lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
             exec_ignore(conn, sql, (obj_key, datetime.now().isoformat()))
             conn.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"❌ Erro ao registrar lote no banco: {e}")
+        return {"erro": f"Erro ao registrar lote no banco: {e}"}
+
+    os.makedirs(pasta_saida, exist_ok=True)
     todas = []
     for p in dados.get("pecas", []):
         nome = f"{p['id']}.DXF"
