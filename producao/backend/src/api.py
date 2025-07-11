@@ -462,10 +462,9 @@ async def listar_lotes():
                 print(" - Verificando:", key)
                 if object_exists(key):
                     print("   ✓ Existe no bucket")
-                else:
-                    print("   ✗ NÃO encontrado no bucket")
                     novos.append(key)
                 else:
+                    print("   ✗ NÃO encontrado no bucket")              
                     conn.exec_driver_sql(
                         f"DELETE FROM lotes WHERE id={PLACEHOLDER}",
                         (d["id"],),
