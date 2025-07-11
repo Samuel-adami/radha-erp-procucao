@@ -162,6 +162,8 @@ async def gerar_lote_final(request: Request):
         msg = "DATABASE_SCHEMA nao configurado"
         print(f"❌ {msg}")
         return {"erro": msg}
+    
+    rel_path = obj_key.split(OBJECT_PREFIX)[-1]  
 
     try:
         with get_db_connection() as conn:
