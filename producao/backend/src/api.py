@@ -164,9 +164,14 @@ async def gerar_lote_final(request: Request):
 
     try:
         with get_db_connection() as conn:
-            sql = f"INSERT INTO lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
-            exec_ignore(conn, sql, (obj_key, datetime.now().isoformat()))
+            sql = (
+                f"INSERT INTO lotes (obj_key, criado_em) "
+                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}) "
+                f"ON CONFLICT (obj_key) DO UPDATE SET criado_em = EXCLUDED.criado_em"
+            )
+            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat()))
             conn.commit()
+
     except Exception as e:
         print(f"❌ Erro ao registrar lote no banco: {e}")
         return {"erro": f"Erro ao registrar lote no banco: {e}"}
