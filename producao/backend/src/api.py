@@ -642,10 +642,12 @@ async def excluir_lote(request: Request):
     delete_file(key)
     try:
         with get_db_connection() as conn:
+            chave_sem_prefixo = key.split(OBJECT_PREFIX)[-1]
             conn.exec_driver_sql(
-                f"DELETE FROM lotes WHERE obj_key = {PLACEHOLDER}",
-                (key,),
+                f"DELETE FROM lotes WHERE obj_key IN ({PLACEHOLDER}, {PLACEHOLDER})",
+                (key, chave_sem_prefixo),
             )
+
             conn.commit()
     except Exception:
         pass
