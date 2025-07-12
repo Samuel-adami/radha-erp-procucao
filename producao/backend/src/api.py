@@ -43,7 +43,10 @@ init_db()
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
 SAIDA_DIR = BASE_DIR / "saida"
-OBJECT_PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
+# Prefixo utilizado para armazenar arquivos no bucket S3. O valor era obtido
+# de variáveis de ambiente, mas agora é definido diretamente para evitar
+# problemas quando o .env não é carregado.
+OBJECT_PREFIX = "producao/"
 
 
 def ensure_pasta_local(key: str) -> Path:
@@ -398,7 +401,7 @@ async def executar_nesting_final(request: Request):
         base_dir=pasta_resultado_path.name,
     )
 
-    obj_key = f"{OBJECT_PREFIX}nestings/{pasta_resultado_path.parent.name}.zip"
+    obj_key = f"nestings/{pasta_resultado_path.parent.name}.zip"
     upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
@@ -521,8 +524,11 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     try:
         with get_db_connection() as conn:
             row = conn.exec_driver_sql(
-                f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key=%s",
-                (f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",),
+                f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key IN (%s, %s)",
+                (
+                    f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",
+                    f"lotes/Lote_{lote}.zip",
+                ),
             ).fetchone()
             object_name = row["obj_key"] if row else None
     except Exception:
@@ -530,7 +536,7 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
 
     pasta = SAIDA_DIR / f"Lote_{lote}"
     if not object_name:
-        object_name = f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip"
+        object_name = f"lotes/Lote_{lote}.zip"
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     base_name = tmp.name[:-4]
@@ -999,8 +1005,8 @@ async def gerar_lote_ocorrencia(request: Request):
             f.write("     </Part>\n")
         f.write("   </PartData>\n</ListInformation>\n")
 
-    key_lote = f"{OBJECT_PREFIX}lotes/{pasta_saida.name}.zip"
-    key_oc = f"{OBJECT_PREFIX}ocorrencias/{pasta_saida.name}.zip"
+    key_lote = f"lotes/{pasta_saida.name}.zip"
+    key_oc = f"ocorrencias/{pasta_saida.name}.zip"
     try:
         with get_db_connection() as conn:
             sql_lote = f"INSERT INTO {SCHEMA_PREFIX}lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"

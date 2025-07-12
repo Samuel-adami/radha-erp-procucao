@@ -2,19 +2,16 @@ import os
 import io
 import boto3
 from botocore.client import Config
-from dotenv import load_dotenv, find_dotenv
 
-# Garantir que variáveis de ambiente do .env sejam carregadas antes de
-# inicializar o cliente S3. Sem isso, ``client`` ficaria ``None`` quando o
-# módulo fosse importado antes de ``database.py``.
-load_dotenv(dotenv_path="/home/samuel/radha-erp-producao/producao/backend/src/.env")
-print("✅ OBJECT_STORAGE_PREFIX =", os.getenv("OBJECT_STORAGE_PREFIX"))
-
-ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT")
-ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
-SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
-BUCKET = os.getenv("OBJECT_STORAGE_BUCKET", "radha-arquivos")
-PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
+# Configurações fixas de acesso ao bucket S3. Estes valores eram lidos do
+# ``.env`` em tempo de execução, porém para evitar falhas devido ao
+# carregamento incorreto do arquivo agora ficam definidos diretamente no
+# código.
+ENDPOINT = "https://nyc3.digitaloceanspaces.com"
+ACCESS_KEY = "DO801RVLRYQAQ7ZBKxxx"
+SECRET_KEY = "0D4o8nUESJUP0X3WyUuaDiO9DNysuACxJKSOCL4dxxxx"
+BUCKET = "radha-arquivos"
+PREFIX = "producao/"
 PUBLIC_ENDPOINT = "https://radha-arquivos.nyc3.digitaloceanspaces.com"
 
 client = None
@@ -29,6 +26,13 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
 
 
 def _full_key(name: str) -> str:
+    """Retorna ``name`` acrescido do prefixo configurado.
+
+    Caso ``name`` já comece com ``PREFIX`` ele é retornado sem alterações
+    para evitar duplicação do prefixo.
+    """
+    if name.startswith(PREFIX):
+        return name
     return f"{PREFIX.rstrip('/')}/{name.lstrip('/')}"
 
 

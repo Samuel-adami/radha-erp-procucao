@@ -1,15 +1,10 @@
-import os
 from sqlalchemy import create_engine
-from dotenv import load_dotenv, find_dotenv
 from models import Base
 
-load_dotenv(find_dotenv())
-
-DATABASE_URL = os.environ.get("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL not configured")
-
-schema = os.environ.get("DATABASE_SCHEMA")
+# Configurações de conexão definidas diretamente no código para evitar
+# dependência de variáveis de ambiente externas.
+DATABASE_URL = "postgresql://radha_admin:84840105@localhost:5432/producao"
+schema = "producao"
 connect_args = {"options": f"-c search_path={schema}"} if schema else {}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
