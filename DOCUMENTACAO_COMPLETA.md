@@ -116,6 +116,7 @@ Relacionadas às rotas de produção descritas na seção anterior.
 - **Template** – tabela `templates` (tipo, título, campos).
 - **ProjetoItem** – tabela `projeto_itens` (itens de projeto dentro de tarefas).
 - **GabsterProjetoItem** – tabela `gabster_projeto_itens` para itens importados da API.
+  Os registros são gravados ao atualizar uma tarefa de projeto com `programa` igual a `Gabster`.
 
 Esses modelos aparecem nas rotas de `/atendimentos`, `/condicoes-pagamento` e `/templates`.
 

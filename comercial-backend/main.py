@@ -402,6 +402,11 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
         if "dados" in data and dados_json.get("projetos"):
 
             conn.exec_driver_sql("DELETE FROM projeto_itens WHERE tarefa_id=%s", (tarefa_id,))
+            if dados_json.get("programa") == "Gabster":
+                conn.exec_driver_sql(
+                    "DELETE FROM gabster_projeto_itens WHERE tarefa_id=%s",
+                    (tarefa_id,),
+                )
             for amb, info in dados_json["projetos"].items():
                 for it in info.get("itens", []):
                     conn.exec_driver_sql(
@@ -422,6 +427,23 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                             safe_float(it.get("total")),
                         ),
                     )
+                    if dados_json.get("programa") == "Gabster":
+                        # persist original Gabster item if available
+                        conn.exec_driver_sql(
+                            """
+                            INSERT INTO gabster_projeto_itens (
+                                atendimento_id, tarefa_id, referencia,
+                                quantidade, valor
+                            ) VALUES (%s, %s, %s, %s, %s)
+                            """,
+                            (
+                                atendimento_id,
+                                tarefa_id,
+                                it.get("descricao"),
+                                safe_int(it.get("quantidade")),
+                                safe_float(it.get("total")),
+                            ),
+                        )
         conn.commit()
     return {"ok": True}
 
