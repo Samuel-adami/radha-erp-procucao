@@ -5,9 +5,12 @@ from orcamento_promob import parse_promob_xml
 from gabster_api import list_orcamento_cliente_item, get_projeto
 from orcamento_gabster import parse_gabster_projeto
 from datetime import datetime
+import logging
 import re
 import json
 import requests
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 
 def safe_float(value):
@@ -294,6 +297,7 @@ async def atualizar_atendimento(atendimento_id: int, request: Request):
             tuple(valores),
         )
         conn.commit()
+        logging.info("Dados do projeto gravados com sucesso")
     return {"ok": True}
 
 
@@ -429,22 +433,33 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                     )
                     if dados_json.get("programa") == "Gabster":
                         # persist original Gabster item if available
-                        conn.exec_driver_sql(
-                            """
-                            INSERT INTO gabster_projeto_itens (
-                                atendimento_id, tarefa_id, referencia,
-                                quantidade, valor
-                            ) VALUES (%s, %s, %s, %s, %s)
-                            """,
-                            (
-                                atendimento_id,
-                                tarefa_id,
-                                it.get("descricao"),
-                                safe_int(it.get("quantidade")),
-                                safe_float(it.get("total")),
-                            ),
+                        params = (
+                            atendimento_id,
+                            tarefa_id,
+                            it.get("descricao"),
+                            safe_int(it.get("quantidade")),
+                            safe_float(it.get("total")),
                         )
+                        logging.info(
+                            "Inserindo gabster_projeto_itens: %s", params
+                        )
+                        try:
+                            conn.exec_driver_sql(
+                                """
+                                INSERT INTO gabster_projeto_itens (
+                                    atendimento_id, tarefa_id, referencia,
+                                    quantidade, valor
+                                ) VALUES (%s, %s, %s, %s, %s)
+                                """,
+                                params,
+                            )
+                        except Exception as exc:  # pragma: no cover - debug aid
+                            logging.error(
+                                "Erro ao inserir em gabster_projeto_itens: %s", exc
+                            )
+                            raise
         conn.commit()
+        logging.info("Dados do projeto gravados com sucesso")
     return {"ok": True}
 
 
