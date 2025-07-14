@@ -14,7 +14,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/producao/backend/src
-EnvironmentFile=/path/to/.env
+EnvironmentFile=/home/samuel/radha-erp-procucao/producao/backend/src/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn api:app --host 0.0.0.0 --port 8060
 Restart=always
 
@@ -33,7 +33,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/comercial-backend
-EnvironmentFile=/path/to/.env
+EnvironmentFile=/home/samuel/radha-erp-procucao/comercial-backend/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8070
 Restart=always
 
@@ -52,7 +52,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/marketing-digital-ia/backend
-EnvironmentFile=/path/to/.env
+EnvironmentFile=/home/samuel/radha-erp-procucao/marketing-digital-ia/backend/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8050
 Restart=always
 
@@ -71,7 +71,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/backend-gateway
-EnvironmentFile=/path/to/.env
+EnvironmentFile=/home/samuel/radha-erp-procucao/backend-gateway/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8040
 Restart=always
 
