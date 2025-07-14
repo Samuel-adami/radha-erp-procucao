@@ -464,15 +464,19 @@ async def listar_lotes():
             for d in dados:
                 key = d["obj_key"]
                 print(" - Verificando:", key)
-                if object_exists(key):
+                status = object_exists(key)
+                if status is True:
                     print("   ✓ Existe no bucket")
                     novos.append(key)
-                else:
-                    print("   ✗ NÃO encontrado no bucket")              
+                elif status is False:
+                    print("   ✗ NÃO encontrado no bucket")
                     conn.exec_driver_sql(
                         f"DELETE FROM {SCHEMA_PREFIX}lotes WHERE id = :id",
                         {"id": d["id"]},
                     )
+                else:
+                    print("   ⚠ Erro ao verificar no bucket")
+                    novos.append(key)
 
             conn.commit()
             lotes_validos = novos
@@ -502,14 +506,18 @@ async def listar_nestings():
             novos: list[dict] = []
             for d in dados:
                 key = d["obj_key"]
-                if object_exists(key):
+                status = object_exists(key)
+                if status is True:
                     d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
-                else:
+                elif status is False:
                     conn.exec_driver_sql(
                         f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
                         (d["id"],),
                     )
+                else:
+                    d["arquivo_url"] = get_public_url(key)
+                    novos.append(d)
             conn.commit()
             dados = novos
     except Exception:
@@ -548,7 +556,7 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
         )
 
         upload_file(zip_path, object_name)
-    elif not object_exists(object_name):
+    elif object_exists(object_name) is False:
         os.remove(zip_path)
         return {"erro": "Lote não encontrado"}
     background_tasks.add_task(os.remove, zip_path)
@@ -592,7 +600,7 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
         )
 
         upload_file(zip_path, object_name)
-    elif not object_exists(object_name):
+    elif object_exists(object_name) is False:
         os.remove(zip_path)
         return {"erro": "Pasta não encontrada"}
     filename = Path(object_name).name
@@ -668,7 +676,8 @@ async def excluir_lote(request: Request):
             conn.commit()
     except Exception:
         pass
-    if pasta.is_dir() or object_exists(key):
+    status = object_exists(key)
+    if pasta.is_dir() or status is True:
         return {"status": "ok", "mensagem": f"Lote {numero_lote} removido"}
     return {"status": "ok", "mensagem": "Lote não encontrado"}
 
@@ -889,14 +898,18 @@ async def listar_lotes_ocorrencias():
             for d in dados:
                 key = d["obj_key"]
                 pasta_oc = Path(SAIDA_DIR / Path(key).stem)
-                if pasta_oc.is_dir() or object_exists(key):
+                status = object_exists(key) if not pasta_oc.is_dir() else True
+                if status is True:
                     d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
-                else:
+                elif status is False:
                     conn.exec_driver_sql(
                         f"DELETE FROM {SCHEMA_PREFIX}lotes_ocorrencias WHERE id={PLACEHOLDER}",
                         (d["id"],),
                     )
+                else:
+                    d["arquivo_url"] = get_public_url(key)
+                    novos.append(d)
             conn.commit()
             dados = novos
     except Exception as e:
