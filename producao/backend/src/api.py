@@ -133,9 +133,6 @@ def coletar_layers(pasta_lote: str) -> list[str]:
     return sorted(layers)
 
 
-app = FastAPI()
-
-
 @app.post("/importar-xml")
 async def importar_xml(files: list[UploadFile] = File(...)):
     print("🚀 Iniciando importação de arquivos...")
