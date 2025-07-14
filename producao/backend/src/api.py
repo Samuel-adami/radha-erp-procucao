@@ -96,6 +96,7 @@ def proximo_oc_numero() -> int:
             max_val = 0
         return max_val + 1
 
+
 def coletar_layers(pasta_lote: str) -> list[str]:
     """Percorre os arquivos DXF do lote e coleta todos os nomes de layers."""
     pasta = Path(pasta_lote)
@@ -122,6 +123,7 @@ def coletar_layers(pasta_lote: str) -> list[str]:
 
     return sorted(layers)
 
+
 app = FastAPI()
 
 
@@ -132,14 +134,20 @@ async def importar_xml(files: list[UploadFile] = File(...)):
         for f in files:
             (Path(tmpdirname) / f.filename).write_bytes(await f.read())
 
-        arquivo_dxt = next((f for f in files if f.filename.lower().endswith((".dxt", ".txt"))), None)
-        arquivo_xml = next((f for f in files if f.filename.lower().endswith(".xml")), None)
+        arquivo_dxt = next(
+            (f for f in files if f.filename.lower().endswith((".dxt", ".txt"))), None
+        )
+        arquivo_xml = next(
+            (f for f in files if f.filename.lower().endswith(".xml")), None
+        )
 
         if arquivo_dxt:
             print(f"📄 Fluxo DXT de Produção iniciado com '{arquivo_dxt.filename}'.")
             caminho_dxt = Path(tmpdirname) / arquivo_dxt.filename
             try:
-                root = ET.fromstring(caminho_dxt.read_text(encoding='utf-8', errors='ignore'))
+                root = ET.fromstring(
+                    caminho_dxt.read_text(encoding="utf-8", errors="ignore")
+                )
                 return {"pacotes": parse_dxt_producao(root, caminho_dxt)}
             except Exception as e:
                 return {"erro": f"Erro crítico no arquivo DXT: {e}"}
@@ -148,9 +156,19 @@ async def importar_xml(files: list[UploadFile] = File(...)):
             print(f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'.")
             caminho_xml = Path(tmpdirname) / arquivo_xml.filename
             root = ET.fromstring(caminho_xml.read_bytes())
-            tipo_xml = "orcamento" if root.find(".//DATA[@ID='nomecliente']") is not None else "producao"
+            tipo_xml = (
+                "orcamento"
+                if root.find(".//DATA[@ID='nomecliente']") is not None
+                else "producao"
+            )
             print(f"    - Tipo de XML detectado: {tipo_xml}")
-            return {"pacotes": parse_xml_orcamento(root) if tipo_xml == "orcamento" else parse_xml_producao(root, caminho_xml)}
+            return {
+                "pacotes": (
+                    parse_xml_orcamento(root)
+                    if tipo_xml == "orcamento"
+                    else parse_xml_producao(root, caminho_xml)
+                )
+            }
 
         return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml) foi enviado."}
 
@@ -158,45 +176,28 @@ async def importar_xml(files: list[UploadFile] = File(...)):
 @app.post("/gerar-lote-final")
 async def gerar_lote_final(request: Request):
     dados = await request.json()
-    numero_lote = dados.get('lote', 'sem_nome')
+    numero_lote = dados.get("lote", "sem_nome")
     pasta_saida = SAIDA_DIR / f"Lote_{numero_lote}"
     obj_key = f"lotes/{pasta_saida.name}.zip"
-    
 
     if not schema:
         msg = "DATABASE_SCHEMA nao configurado"
         print(f"❌ {msg}")
         return {"erro": msg}
-    
-    rel_path = obj_key 
-
-    try:
-        with get_db_connection() as conn:
-            sql = (
-                f"INSERT INTO {SCHEMA_PREFIX}lotes (obj_key, criado_em) "
-                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}) "
-                f"ON CONFLICT (obj_key) DO UPDATE SET criado_em = EXCLUDED.criado_em"
-            )
-            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat()))
-            conn.commit()
-
-    except Exception as e:
-        print(f"❌ Erro ao registrar lote no banco: {e}")
-        return {"erro": f"Erro ao registrar lote no banco: {e}"}
 
     os.makedirs(pasta_saida, exist_ok=True)
     todas = []
     for p in dados.get("pecas", []):
         nome = f"{p['id']}.DXF"
-        comprimento = float(p['comprimento'])
-        largura = float(p['largura'])
+        comprimento = float(p["comprimento"])
+        largura = float(p["largura"])
         obs = p.get("observacoes", "")
         cliente = p.get("cliente", "")
         ambiente = p.get("ambiente", "")
         material = p.get("material", "")
 
-        codigo_original = p.get('codigo_peca', '')
-        codigo_numerico = re.sub(r'\D', '', codigo_original)
+        codigo_original = p.get("codigo_peca", "")
+        codigo_numerico = re.sub(r"\D", "", codigo_original)
 
         caminho_saida = pasta_saida / nome
 
@@ -236,40 +237,58 @@ async def gerar_lote_final(request: Request):
                 continue
             aplicar_usinagem_retangular(str(caminho_saida), str(caminho_saida), op, p)
 
-        todas.append({
-            "Filename": nome,
-            "PartName": p['nome'],
-            "Length": comprimento,
-            "Width": largura,
-            "Thickness": 18,
-            "Material": material,
-            "Client": cliente,
-            "Project": ambiente,
-            "Program1": codigo_numerico,
-            "Comment": obs,
-        })
+        todas.append(
+            {
+                "Filename": nome,
+                "PartName": p["nome"],
+                "Length": comprimento,
+                "Width": largura,
+                "Thickness": 18,
+                "Material": material,
+                "Client": cliente,
+                "Project": ambiente,
+                "Program1": codigo_numerico,
+                "Comment": obs,
+            }
+        )
 
     caminho_dxt_final = pasta_saida / f"Lote_{numero_lote}.dxt"
-    with open(caminho_dxt_final, 'w', encoding='utf-8') as f:
+    with open(caminho_dxt_final, "w", encoding="utf-8") as f:
         f.write('<?xml version="1.0"?>\n<ListInformation>\n   <ApplicationData>\n')
-        f.write('     <Name />\n     <Version>1.0</Version>\n')
+        f.write("     <Name />\n     <Version>1.0</Version>\n")
         f.write(f'     <Date>{datetime.now().strftime("%d/%m/%Y %H:%M:%S")}</Date>\n')
-        f.write('   </ApplicationData>\n   <PartData>\n')
+        f.write("   </ApplicationData>\n   <PartData>\n")
         for p in todas:
-            f.write('     <Part>\n')
+            f.write("     <Part>\n")
             for k, v in p.items():
-                tipo = 'Text' if isinstance(v, str) else 'Real'
-                f.write(f"       <Field><Name>{k}</Name><Type>{tipo}</Type><Value>{v}</Value></Field>\n")
-            f.write('     </Part>\n')
-        f.write('   </PartData>\n</ListInformation>\n')
+                tipo = "Text" if isinstance(v, str) else "Real"
+                f.write(
+                    f"       <Field><Name>{k}</Name><Type>{tipo}</Type><Value>{v}</Value></Field>\n"
+                )
+            f.write("     </Part>\n")
+        f.write("   </PartData>\n</ListInformation>\n")
 
     zip_path = shutil.make_archive(
         str(pasta_saida), "zip", root_dir=pasta_saida.parent, base_dir=pasta_saida.name
     )
 
-    upload_file(zip_path, obj_key)
-    os.remove(zip_path)
-    shutil.rmtree(pasta_saida, ignore_errors=True)
+    try:
+        upload_file(zip_path, obj_key)
+        with get_db_connection() as conn:
+            sql = (
+                f"INSERT INTO {SCHEMA_PREFIX}lotes (obj_key, criado_em) "
+                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}) "
+                f"ON CONFLICT (obj_key) DO UPDATE SET criado_em = EXCLUDED.criado_em"
+            )
+            conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat()))
+            conn.commit()
+    except Exception as e:
+        print(f"❌ Erro ao salvar lote: {e}")
+        return {"erro": f"Erro ao salvar lote: {e}"}
+    finally:
+        os.remove(zip_path)
+        shutil.rmtree(pasta_saida, ignore_errors=True)
+
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
 
 
@@ -296,12 +315,12 @@ async def carregar_lote_final(pasta: str):
 @app.post("/executar-nesting")
 async def executar_nesting(request: Request):
     dados = await request.json()
-    pasta_lote = dados.get('pasta_lote')
-    largura_chapa = float(dados.get('largura_chapa', 2750))
-    altura_chapa = float(dados.get('altura_chapa', 1850))
-    ferramentas = dados.get('ferramentas', [])
-    config_maquina = dados.get('config_maquina')
-    config_layers = dados.get('config_layers')
+    pasta_lote = dados.get("pasta_lote")
+    largura_chapa = float(dados.get("largura_chapa", 2750))
+    altura_chapa = float(dados.get("altura_chapa", 1850))
+    ferramentas = dados.get("ferramentas", [])
+    config_maquina = dados.get("config_maquina")
+    config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
 
@@ -583,7 +602,6 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     if not object_name:
         return {"erro": "Nesting não encontrado"}
 
-
     try:
         pasta = ensure_pasta_local(object_name)
     except FileNotFoundError as e:
@@ -829,9 +847,7 @@ async def salvar_chapa(request: Request):
     try:
         with get_db_connection() as conn:
             if dados.get("id"):
-                sql_up = (
-                    f"UPDATE {SCHEMA_PREFIX}chapas SET possui_veio={PLACEHOLDER}, propriedade={PLACEHOLDER}, espessura={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER} WHERE id={PLACEHOLDER}"
-                )
+                sql_up = f"UPDATE {SCHEMA_PREFIX}chapas SET possui_veio={PLACEHOLDER}, propriedade={PLACEHOLDER}, espessura={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER} WHERE id={PLACEHOLDER}"
                 conn.exec_driver_sql(
                     sql_up,
                     (
@@ -942,8 +958,8 @@ async def gerar_lote_ocorrencia(request: Request):
     todas = []
     for p in pecas:
         nome = f"{p['id']}.DXF"
-        comprimento = float(p['comprimento'])
-        largura = float(p['largura'])
+        comprimento = float(p["comprimento"])
+        largura = float(p["largura"])
         obs = p.get("observacoes", "")
         cliente = p.get("cliente", "")
         ambiente = p.get("ambiente", "")
@@ -987,26 +1003,26 @@ async def gerar_lote_ocorrencia(request: Request):
             if op.get("face") in ["Topo (L1)", "Topo (L3)"]:
                 continue
             aplicar_usinagem_retangular(str(caminho_saida), str(caminho_saida), op, p)
-        todas.append({
-            "Filename": nome,
-            "PartName": p.get("nome", ""),
-            "Length": comprimento,
-            "Width": largura,
-            "Thickness": 18,
-            "Material": material,
-            "Client": cliente,
-            "Project": ambiente,
-            "Program1": codigo_numerico,
-            "Comment": obs,
-        })
+        todas.append(
+            {
+                "Filename": nome,
+                "PartName": p.get("nome", ""),
+                "Length": comprimento,
+                "Width": largura,
+                "Thickness": 18,
+                "Material": material,
+                "Client": cliente,
+                "Project": ambiente,
+                "Program1": codigo_numerico,
+                "Comment": obs,
+            }
+        )
 
     caminho_dxt_final = pasta_saida / f"{lote_nome}_OC{numero_oc}.dxt"
     with open(caminho_dxt_final, "w", encoding="utf-8") as f:
-        f.write("<?xml version=\"1.0\"?>\n<ListInformation>\n   <ApplicationData>\n")
+        f.write('<?xml version="1.0"?>\n<ListInformation>\n   <ApplicationData>\n')
         f.write("     <Name />\n     <Version>1.0</Version>\n")
-        f.write(
-            f"     <Date>{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</Date>\n"
-        )
+        f.write(f"     <Date>{datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</Date>\n")
         f.write("   </ApplicationData>\n   <PartData>\n")
         for p in todas:
             f.write("     <Part>\n")
@@ -1049,9 +1065,9 @@ async def gerar_lote_ocorrencia(request: Request):
                     sql_op,
                     (
                         oc_id,
-                        p.get('id'),
-                        p.get('nome', ''),
-                        p.get('motivo_codigo'),
+                        p.get("id"),
+                        p.get("nome", ""),
+                        p.get("motivo_codigo"),
                     ),
                 )
             conn.commit()
