@@ -101,7 +101,7 @@ def object_exists(object_name: str) -> bool | None:
             full_key,
             ", ".join(missing_vars) if missing_vars else "nenhuma",
         )
-        return False
+        return None
 
     try:
         client.head_object(Bucket=BUCKET, Key=full_key)
