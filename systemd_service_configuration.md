@@ -1,6 +1,8 @@
 ## Systemd Service Configuration
 On the production server each module runs as a systemd unit. The examples below assume the repository lives in `/home/samuel/radha-erp-procucao` and that the virtual environment is located at `venv`.
 
+Each backend service reads a `.env` file located in the same directory as the service. This file must provide all `OBJECT_STORAGE_*` variables required by the applications.
+
 ### Produção Backend
 ```
 /etc/systemd/system/radha-producao-backend.service
@@ -12,6 +14,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/producao/backend/src
+EnvironmentFile=/path/to/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn api:app --host 0.0.0.0 --port 8060
 Restart=always
 
@@ -30,6 +33,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/comercial-backend
+EnvironmentFile=/path/to/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8070
 Restart=always
 
@@ -48,6 +52,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/marketing-digital-ia/backend
+EnvironmentFile=/path/to/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8050
 Restart=always
 
@@ -66,6 +71,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/backend-gateway
+EnvironmentFile=/path/to/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8040
 Restart=always
 
