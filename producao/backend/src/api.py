@@ -38,7 +38,16 @@ from nesting import gerar_nesting, gerar_nesting_preview
 import ezdxf
 from typing import Union
 
-init_db()
+app = FastAPI()
+
+
+@app.on_event("startup")
+async def _startup() -> None:
+    """Initialize database tables on application startup."""
+    try:
+        init_db()
+    except Exception as e:  # pragma: no cover - init failures only logged
+        print(f"Falha ao inicializar o banco: {e}")
 
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
