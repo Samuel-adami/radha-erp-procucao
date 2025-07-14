@@ -39,6 +39,22 @@ from nesting import gerar_nesting, gerar_nesting_preview
 import ezdxf
 from typing import Union
 
+
+def _age_seconds(value) -> float | None:
+    """Return the age in seconds since ``value`` or ``None`` on failure."""
+    if value is None:
+        return None
+    try:
+        dt = (
+            datetime.fromisoformat(value)
+            if isinstance(value, str)
+            else datetime.fromisoformat(str(value))
+        )
+        now = datetime.now(dt.tzinfo) if dt.tzinfo else datetime.now()
+        return (now - dt).total_seconds()
+    except Exception:
+        return None
+
 app = FastAPI()
 
 
@@ -503,12 +519,7 @@ async def listar_lotes():
                     print("   ✓ Existe no bucket")
                     novos.append(key)
                 elif status is False:
-                    criado_em = d.get("criado_em")
-                    try:
-                        criado_dt = datetime.fromisoformat(criado_em)
-                        age = (datetime.now() - criado_dt).total_seconds()
-                    except Exception:
-                        age = None
+                    age = _age_seconds(d.get("criado_em"))
                     if age is not None and age < LOT_CHECK_GRACE:
                         print(
                             f"   ⚠ Lote recente ({age:.0f}s), aguardando upload"
@@ -557,12 +568,7 @@ async def listar_nestings():
                     d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
                 elif status is False:
-                    criado_em = d.get("criado_em")
-                    try:
-                        criado_dt = datetime.fromisoformat(criado_em)
-                        age = (datetime.now() - criado_dt).total_seconds()
-                    except Exception:
-                        age = None
+                    age = _age_seconds(d.get("criado_em"))
                     if age is not None and age < LOT_CHECK_GRACE:
                         d["arquivo_url"] = get_public_url(key)
                         novos.append(d)
