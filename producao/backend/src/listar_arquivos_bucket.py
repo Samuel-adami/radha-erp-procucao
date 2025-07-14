@@ -1,13 +1,15 @@
+import os
 import boto3
+from dotenv import load_dotenv
 
-# Parâmetros de acesso ao bucket S3. Antes eram obtidos do ambiente,
-# agora ficam definidos diretamente aqui para evitar falhas em ambientes
-# sem variáveis configuradas.
-ENDPOINT = "https://nyc3.digitaloceanspaces.com"
-ACCESS_KEY = "DO801RVLRYQAQ7ZBKxxx"
-SECRET_KEY = "0D4o8nUESJUP0X3WyUuaDiO9DNysuACxJKSOCL4dxxxx"
-BUCKET = "radha-arquivos"
-PREFIX = "producao/"
+load_dotenv()
+
+# Parâmetros de acesso ao bucket S3 obtidos das variáveis de ambiente
+ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
+ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
+SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
+BUCKET = os.getenv("OBJECT_STORAGE_BUCKET", "radha-arquivos")
+PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
 
 session = boto3.session.Session()
 s3 = session.client(

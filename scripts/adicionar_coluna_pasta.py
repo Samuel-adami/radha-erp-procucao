@@ -1,6 +1,11 @@
+import os
 import psycopg2
+from dotenv import load_dotenv
 
-DATABASE_URL = "postgresql://radha_admin:minhasenha@localhost:5432/producao"
+load_dotenv()
+
+# Required environment variable: DATABASE_URL with the connection string
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 comandos_sql = [
     # Comercial
