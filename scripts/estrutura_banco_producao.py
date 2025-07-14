@@ -1,7 +1,12 @@
+import os
 import psycopg2
 import json
+from dotenv import load_dotenv
 
-DATABASE_URL = "postgresql://radha_admin:minhasenha@localhost:5432/producao"
+load_dotenv()
+# This script expects a DATABASE_URL environment variable with the PostgreSQL
+# connection string.
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 estrutura = {}
 

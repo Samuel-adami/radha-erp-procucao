@@ -1,14 +1,18 @@
+import os
 import psycopg2
 import boto3
 import json
-import os
 from dotenv import load_dotenv
 
 # Carregar variáveis do .env
 load_dotenv()
 
 # Configurações de conexão
-DATABASE_URL = "postgresql://radha_admin:minhasenha@localhost:5432/producao"
+# Requires the following environment variables:
+#   DATABASE_URL - PostgreSQL connection string
+#   OBJECT_STORAGE_ACCESS_KEY - access key for the bucket
+#   OBJECT_STORAGE_SECRET_KEY - secret key for the bucket
+DATABASE_URL = os.getenv("DATABASE_URL")
 SCHEMAS = ["gateway", "comercial", "marketing", "producao"]
 PREFIXOS_BUCKET = ["gateway/", "comercial/", "marketing/", "producao/"]
 BUCKET_NAME = "radha-arquivos"
