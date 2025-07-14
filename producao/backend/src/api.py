@@ -11,6 +11,7 @@ from storage import (
 import xml.etree.ElementTree as ET
 import os
 import re
+import time
 from datetime import datetime
 from leitor_dxf import aplicar_usinagem_retangular
 from gerador_dxf import gerar_dxf_base
@@ -294,6 +295,8 @@ async def gerar_lote_final(request: Request):
     finally:
         os.remove(zip_path)
         shutil.rmtree(pasta_saida, ignore_errors=True)
+        
+        time.sleep(2)
 
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
 
