@@ -58,6 +58,12 @@ SAIDA_DIR = BASE_DIR / "saida"
 # problemas quando o .env não é carregado.
 OBJECT_PREFIX = "producao/"
 
+# Intervalo em segundos antes de considerar que um lote ausente no bucket
+# pode ser removido do banco de dados. Isso evita que lotes recém-criados
+# sejam apagados caso a propagação para o armazenamento ainda não tenha
+# ocorrido completamente.
+LOT_CHECK_GRACE = int(os.getenv("LOT_CHECK_GRACE", "60"))
+
 
 def ensure_pasta_local(key: str) -> Path:
     """Garantir que ``key`` esteja extraído localmente em ``SAIDA_DIR``.
@@ -497,11 +503,23 @@ async def listar_lotes():
                     print("   ✓ Existe no bucket")
                     novos.append(key)
                 elif status is False:
-                    print("   ✗ NÃO encontrado no bucket")
-                    conn.exec_driver_sql(
-                        f"DELETE FROM {SCHEMA_PREFIX}lotes WHERE id = :id",
-                        {"id": d["id"]},
-                    )
+                    criado_em = d.get("criado_em")
+                    try:
+                        criado_dt = datetime.fromisoformat(criado_em)
+                        age = (datetime.now() - criado_dt).total_seconds()
+                    except Exception:
+                        age = None
+                    if age is not None and age < LOT_CHECK_GRACE:
+                        print(
+                            f"   ⚠ Lote recente ({age:.0f}s), aguardando upload"
+                        )
+                        novos.append(key)
+                    else:
+                        print("   ✗ NÃO encontrado no bucket")
+                        conn.exec_driver_sql(
+                            f"DELETE FROM {SCHEMA_PREFIX}lotes WHERE id = :id",
+                            {"id": d["id"]},
+                        )
                 else:
                     print("   ⚠ Erro ao verificar no bucket")
                     novos.append(key)
@@ -539,10 +557,20 @@ async def listar_nestings():
                     d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
                 elif status is False:
-                    conn.exec_driver_sql(
-                        f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
-                        (d["id"],),
-                    )
+                    criado_em = d.get("criado_em")
+                    try:
+                        criado_dt = datetime.fromisoformat(criado_em)
+                        age = (datetime.now() - criado_dt).total_seconds()
+                    except Exception:
+                        age = None
+                    if age is not None and age < LOT_CHECK_GRACE:
+                        d["arquivo_url"] = get_public_url(key)
+                        novos.append(d)
+                    else:
+                        conn.exec_driver_sql(
+                            f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
+                            (d["id"],),
+                        )
                 else:
                     d["arquivo_url"] = get_public_url(key)
                     novos.append(d)
