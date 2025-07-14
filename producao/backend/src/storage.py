@@ -3,17 +3,23 @@ import io
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
+from dotenv import load_dotenv, find_dotenv
 
-# Configurações fixas de acesso ao bucket S3. Estes valores eram lidos do
-# ``.env`` em tempo de execução, porém para evitar falhas devido ao
-# carregamento incorreto do arquivo agora ficam definidos diretamente no
-# código.
-ENDPOINT = "https://nyc3.digitaloceanspaces.com"
-ACCESS_KEY = "DO801RVLRYQAQ7ZBKxxx"
-SECRET_KEY = "0D4o8nUESJUP0X3WyUuaDiO9DNysuACxJKSOCL4dxxxx"
-BUCKET = "radha-arquivos"
-PREFIX = "producao/"
-PUBLIC_ENDPOINT = "https://radha-arquivos.nyc3.digitaloceanspaces.com"
+# Carrega variáveis de ambiente do arquivo .env, se disponível. Dessa forma,
+# usuários podem personalizar as credenciais sem alterar o código-fonte. Caso
+# alguma variável não esteja definida, usa-se valores padrão compatíveis com o
+# ambiente de desenvolvimento.
+load_dotenv(find_dotenv())
+
+ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
+ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
+SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
+BUCKET = os.getenv("OBJECT_STORAGE_BUCKET", "radha-arquivos")
+PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
+PUBLIC_ENDPOINT = os.getenv(
+    "OBJECT_STORAGE_PUBLIC_ENDPOINT",
+    "https://radha-arquivos.nyc3.digitaloceanspaces.com",
+)
 
 client = None
 if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:

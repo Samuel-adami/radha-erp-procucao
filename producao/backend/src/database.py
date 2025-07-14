@@ -1,10 +1,17 @@
 from sqlalchemy import create_engine
 from models import Base
+from dotenv import load_dotenv, find_dotenv
+import os
 
-# Configurações de conexão definidas diretamente no código para evitar
-# dependência de variáveis de ambiente externas.
-DATABASE_URL = "postgresql://radha_admin:84840105@localhost:5432/producao"
-schema = "producao"
+# Permite que a URL de conexão e o schema sejam definidos via variáveis de
+# ambiente. Caso não estejam configurados, valores padrão são utilizados para
+# facilitar o desenvolvimento local.
+load_dotenv(find_dotenv())
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://radha_admin:84840105@localhost:5432/producao"
+)
+schema = os.getenv("DATABASE_SCHEMA", "producao")
 connect_args = {"options": f"-c search_path={schema}"} if schema else {}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
