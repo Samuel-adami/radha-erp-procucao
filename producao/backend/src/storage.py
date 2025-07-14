@@ -83,12 +83,23 @@ def object_exists(object_name: str) -> bool | None:
     prefix_info = f"prefix='{PREFIX}'" if PREFIX else "prefix=''"
 
     if not client:
+        missing_vars = [
+            name
+            for name in (
+                "OBJECT_STORAGE_ENDPOINT",
+                "OBJECT_STORAGE_ACCESS_KEY",
+                "OBJECT_STORAGE_SECRET_KEY",
+                "OBJECT_STORAGE_BUCKET",
+            )
+            if not os.getenv(name)
+        ]
         logging.debug(
-            "S3 client não inicializado ao checar '%s' (bucket='%s', %s, key='%s')",
+            "S3 client não inicializado ao checar '%s' (bucket='%s', %s, key='%s'). Variáveis indefinidas: %s",
             object_name,
             BUCKET,
             prefix_info,
             full_key,
+            ", ".join(missing_vars) if missing_vars else "nenhuma",
         )
         return False
 
