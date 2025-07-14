@@ -8,6 +8,7 @@ from storage import (
     object_exists,
     get_public_url,
 )
+import logging
 import xml.etree.ElementTree as ET
 import os
 import re
@@ -61,10 +62,14 @@ app = FastAPI()
 @app.on_event("startup")
 async def _startup() -> None:
     """Initialize database tables on application startup."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
     try:
         init_db()
     except Exception as e:  # pragma: no cover - init failures only logged
-        print(f"Falha ao inicializar o banco: {e}")
+        logging.error(f"Falha ao inicializar o banco: {e}")
 
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
@@ -158,7 +163,7 @@ def coletar_layers(pasta_lote: str) -> list[str]:
 
 @app.post("/importar-xml")
 async def importar_xml(files: list[UploadFile] = File(...)):
-    print("🚀 Iniciando importação de arquivos...")
+    logging.info("🚀 Iniciando importação de arquivos...")
     with tempfile.TemporaryDirectory() as tmpdirname:
         for f in files:
             (Path(tmpdirname) / f.filename).write_bytes(await f.read())
@@ -171,7 +176,9 @@ async def importar_xml(files: list[UploadFile] = File(...)):
         )
 
         if arquivo_dxt:
-            print(f"📄 Fluxo DXT de Produção iniciado com '{arquivo_dxt.filename}'.")
+            logging.info(
+                f"📄 Fluxo DXT de Produção iniciado com '{arquivo_dxt.filename}'."
+            )
             caminho_dxt = Path(tmpdirname) / arquivo_dxt.filename
             try:
                 root = ET.fromstring(
@@ -182,7 +189,9 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 return {"erro": f"Erro crítico no arquivo DXT: {e}"}
 
         if arquivo_xml:
-            print(f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'.")
+            logging.info(
+                f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'."
+            )
             caminho_xml = Path(tmpdirname) / arquivo_xml.filename
             root = ET.fromstring(caminho_xml.read_bytes())
             tipo_xml = (
@@ -190,7 +199,7 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 if root.find(".//DATA[@ID='nomecliente']") is not None
                 else "producao"
             )
-            print(f"    - Tipo de XML detectado: {tipo_xml}")
+            logging.info(f"    - Tipo de XML detectado: {tipo_xml}")
             return {
                 "pacotes": (
                     parse_xml_orcamento(root)
@@ -211,7 +220,7 @@ async def gerar_lote_final(request: Request):
 
     if not schema:
         msg = "DATABASE_SCHEMA nao configurado"
-        print(f"❌ {msg}")
+        logging.error(msg)
         return {"erro": msg}
 
     os.makedirs(pasta_saida, exist_ok=True)
@@ -312,7 +321,7 @@ async def gerar_lote_final(request: Request):
             conn.exec_driver_sql(sql, (obj_key, datetime.now().isoformat()))
             conn.commit()
     except Exception as e:
-        print(f"❌ Erro ao salvar lote: {e}")
+        logging.error(f"Erro ao salvar lote: {e}")
         return {"erro": f"Erro ao salvar lote: {e}"}
     finally:
         os.remove(zip_path)
@@ -510,29 +519,30 @@ async def listar_lotes():
             dados = [dict(r) for r in rows]
 
             novos: list[str] = []
-            print("LISTANDO LOTES:")
+            logging.info("LISTANDO LOTES:")
             for d in dados:
                 key = d["obj_key"]
-                print(" - Verificando:", key)
+                logging.info(" - Verificando: %s", key)
                 status = object_exists(key)
                 if status is True:
-                    print("   ✓ Existe no bucket")
+                    logging.info("   ✓ Existe no bucket")
                     novos.append(key)
                 elif status is False:
                     age = _age_seconds(d.get("criado_em"))
                     if age is not None and age < LOT_CHECK_GRACE:
-                        print(
-                            f"   ⚠ Lote recente ({age:.0f}s), aguardando upload"
+                        logging.info(
+                            "   ⚠ Lote recente (%ds), aguardando upload",
+                            int(age)
                         )
                         novos.append(key)
                     else:
-                        print("   ✗ NÃO encontrado no bucket")
+                        logging.info("   ✗ NÃO encontrado no bucket")
                         conn.exec_driver_sql(
                             f"DELETE FROM {SCHEMA_PREFIX}lotes WHERE id = :id",
                             {"id": d["id"]},
                         )
                 else:
-                    print("   ⚠ Erro ao verificar no bucket")
+                    logging.info("   ⚠ Erro ao verificar no bucket")
                     novos.append(key)
 
             conn.commit()
@@ -541,7 +551,7 @@ async def listar_lotes():
         lotes_validos = []
 
     lotes_validos.sort()
-    print("LOCAIS VÁLIDOS ENCONTRADOS:", lotes_validos)
+    logging.info("LOCAIS VÁLIDOS ENCONTRADOS: %s", lotes_validos)
     return {"lotes": lotes_validos}
 
 
