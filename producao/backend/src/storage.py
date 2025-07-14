@@ -79,24 +79,36 @@ def object_exists(object_name: str) -> bool | None:
     and ``None`` for other errors (network issues or permission problems).
     """
     full_key = _full_key(object_name)
+    prefix_info = f"prefix='{PREFIX}'" if PREFIX else "prefix=''"
 
     if not client:
-        print(f"[DEBUG] S3 client não inicializado ao checar {full_key}")
+        print(
+            f"[DEBUG] S3 client não inicializado ao checar '{object_name}' "
+            f"(bucket='{BUCKET}', {prefix_info}, key='{full_key}')"
+        )
         return False
 
     try:
         client.head_object(Bucket=BUCKET, Key=full_key)
-        print(f"[DEBUG] Objeto encontrado no bucket: {full_key}")
+        print(
+            f"[DEBUG] Objeto encontrado: bucket='{BUCKET}', "
+            f"{prefix_info}, key='{full_key}'"
+        )
         return True
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code")
+        print(
+            f"[DEBUG] head_object falhou: bucket='{BUCKET}', "
+            f"{prefix_info}, key='{full_key}', codigo='{code}'"
+        )
         if code in {"404", "NoSuchKey"}:
-            print(f"[DEBUG] Objeto NÃO encontrado: {full_key}")
             return False
-        print(f"[DEBUG] Erro em object_exists: {full_key} → {code}")
         return None
     except Exception as e:
-        print(f"[DEBUG] Erro inesperado em object_exists: {full_key} → {e}")
+        print(
+            f"[DEBUG] Erro inesperado em object_exists: bucket='{BUCKET}', "
+            f"{prefix_info}, key='{full_key}' → {e}"
+        )
         return None
 
 
