@@ -75,23 +75,30 @@ def object_exists(object_name: str) -> bool | None:
     """Check if ``object_name`` exists in the bucket.
 
     Returns ``True`` when the object is confirmed in the bucket,
-    ``False`` when the storage reports a 404/NoSuchKey, and ``None``
-    for other errors (network issues or permission problems).
+    ``False`` when the storage reports a 404/NoSuchKey,
+    and ``None`` for other errors (network issues or permission problems).
     """
+    full_key = _full_key(object_name)
+
     if not client:
+        print(f"[DEBUG] S3 client não inicializado ao checar {full_key}")
         return False
+
     try:
-        client.head_object(Bucket=BUCKET, Key=_full_key(object_name))
+        client.head_object(Bucket=BUCKET, Key=full_key)
+        print(f"[DEBUG] Objeto encontrado no bucket: {full_key}")
         return True
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code")
         if code in {"404", "NoSuchKey"}:
+            print(f"[DEBUG] Objeto NÃO encontrado: {full_key}")
             return False
-        print(f"[DEBUG] Erro em object_exists: {_full_key(object_name)} → {code}")
+        print(f"[DEBUG] Erro em object_exists: {full_key} → {code}")
         return None
     except Exception as e:
-        print(f"[DEBUG] Erro inesperado em object_exists: {_full_key(object_name)} → {e}")
+        print(f"[DEBUG] Erro inesperado em object_exists: {full_key} → {e}")
         return None
+
 
 
 def get_public_url(object_name: str) -> str:
