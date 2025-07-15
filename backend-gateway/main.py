@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request
 from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import httpx
 from typing import List
 import os
@@ -470,3 +472,19 @@ async def excluir_fornecedor(fornecedor_id: int):
         return {"ok": True}
     finally:
         session.close()
+# -----------------------------------------------------
+# Fallback for React SPA routes
+# -----------------------------------------------------
+FRONTEND_DIST_DIR = os.getenv(
+    "FRONTEND_DIST_DIR",
+    os.path.join(os.path.dirname(__file__), "..", "frontend-erp", "dist"),
+)
+INDEX_FILE = os.path.join(FRONTEND_DIST_DIR, "index.html")
+
+if os.path.exists(INDEX_FILE):
+    app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def frontend_catchall(full_path: str):
+        """Return index.html for all unmatched frontend routes."""
+        return FileResponse(INDEX_FILE)
