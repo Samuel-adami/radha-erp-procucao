@@ -67,3 +67,17 @@ class Fornecedor(Base):
     id = Column(Integer, primary_key=True)
     nome = Column(String)
     contato = Column(String)
+
+
+class User(Base):
+    """Tabela de usuários para autenticação."""
+
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True)
+    password = Column(String)
+    email = Column(String)
+    nome = Column(String)
+    cargo = Column(String)
+    permissoes = Column(String)
