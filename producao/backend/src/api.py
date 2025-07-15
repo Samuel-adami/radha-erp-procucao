@@ -70,6 +70,11 @@ async def _startup() -> None:
         init_db()
     except Exception as e:  # pragma: no cover - init failures only logged
         logging.error(f"Falha ao inicializar o banco: {e}")
+    from storage import storage_config_summary, client
+    if client:
+        logging.info("Storage configurado: %s", storage_config_summary())
+    else:
+        logging.warning("Storage NÃO configurado corretamente: %s", storage_config_summary())
 
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
@@ -108,7 +113,12 @@ def ensure_pasta_local(key: str) -> Path:
     if pasta.is_dir():
         return pasta
 
-    if not object_exists(key):
+    status = object_exists(key)
+    if status is False:
+        logging.error("Objeto %s não encontrado no bucket", key)
+        raise FileNotFoundError(f"Objeto {key} nao encontrado")
+    if status is None:
+        logging.error("Falha ao verificar existência do objeto %s", key)
         raise FileNotFoundError(f"Objeto {key} nao encontrado")
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
@@ -117,6 +127,7 @@ def ensure_pasta_local(key: str) -> Path:
         shutil.unpack_archive(tmp.name, extract_to)
     finally:
         os.remove(tmp.name)
+    logging.info("Pasta %s extraída para %s", key, extract_to)
 
     return pasta
 
@@ -517,6 +528,7 @@ async def listar_lotes():
                 f"SELECT id, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes ORDER BY id"
             ).fetchall()
             dados = [dict(r) for r in rows]
+            logging.info("%d lotes encontrados no banco", len(dados))
 
             novos: list[str] = []
             logging.info("LISTANDO LOTES:")
@@ -547,7 +559,8 @@ async def listar_lotes():
 
             conn.commit()
             lotes_validos = novos
-    except Exception:
+    except Exception as e:
+        logging.error("Erro ao listar lotes: %s", e)
         lotes_validos = []
 
     lotes_validos.sort()
@@ -569,6 +582,7 @@ async def listar_nestings():
                 f"SELECT id, lote, obj_key, criado_em FROM {SCHEMA_PREFIX}nestings ORDER BY id DESC"
             ).fetchall()
             dados = [dict(r) for r in rows]
+            logging.info("%d nestings encontrados no banco", len(dados))
 
             novos: list[dict] = []
             for d in dados:
@@ -592,7 +606,8 @@ async def listar_nestings():
                     novos.append(d)
             conn.commit()
             dados = novos
-    except Exception:
+    except Exception as e:
+        logging.error("Erro ao listar nestings: %s", e)
         dados = []
     dados.sort(key=lambda d: d.get("id") or 0, reverse=True)
     return {"nestings": dados}
@@ -962,6 +977,7 @@ async def listar_lotes_ocorrencias():
                 )
             ).fetchall()
             dados = [dict(row) for row in rows]
+            logging.info("%d lotes de ocorrências encontrados", len(dados))
 
             novos: list[dict] = []
             for d in dados:
@@ -982,6 +998,7 @@ async def listar_lotes_ocorrencias():
             conn.commit()
             dados = novos
     except Exception as e:
+        logging.error("Erro ao listar lotes de ocorrências: %s", e)
         return {"erro": str(e)}
     dados.sort(key=lambda d: d.get("id") or 0, reverse=True)
     return {"lotes": dados}

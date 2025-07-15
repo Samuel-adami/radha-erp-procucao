@@ -36,6 +36,16 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
     )
 
 
+def storage_config_summary() -> str:
+    """Return a short string describing the configured storage."""
+    ak = "set" if ACCESS_KEY else "missing"
+    sk = "set" if SECRET_KEY else "missing"
+    return (
+        f"endpoint='{ENDPOINT}', bucket='{BUCKET}', prefix='{PREFIX}', "
+        f"access_key={ak}, secret_key={sk}"
+    )
+
+
 def _full_key(name: str) -> str:
     if name.startswith(PREFIX):
         return name  # já tem o prefixo, não adiciona novamente
@@ -95,7 +105,7 @@ def object_exists(object_name: str) -> bool | None:
             )
             if not os.getenv(name)
         ]
-        logging.debug(
+        logging.warning(
             "S3 client não inicializado ao checar '%s' (bucket='%s', %s, key='%s'). Variáveis indefinidas: %s",
             object_name,
             BUCKET,
@@ -116,7 +126,7 @@ def object_exists(object_name: str) -> bool | None:
         return True
     except ClientError as e:
         code = e.response.get("Error", {}).get("Code")
-        logging.debug(
+        logging.warning(
             "head_object falhou: bucket='%s', %s, key='%s', codigo='%s'",
             BUCKET,
             prefix_info,
@@ -127,7 +137,7 @@ def object_exists(object_name: str) -> bool | None:
             return False
         return None
     except Exception as e:
-        logging.debug(
+        logging.warning(
             "Erro inesperado em object_exists: bucket='%s', %s, key='%s' → %s",
             BUCKET,
             prefix_info,
