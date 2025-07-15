@@ -84,6 +84,9 @@ function NovaCampanha() {
         {publicosAlvo.map((publico) => (
           <option key={publico.id} value={publico.nome}>
             {publico.nome}
+            {publico.idade_min &&
+              ` - ${publico.idade_min}-${publico.idade_max || '∞'} anos`}
+            {publico.genero && ` - ${publico.genero}`}
           </option>
         ))}
       </select>
