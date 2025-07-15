@@ -1,7 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+
 from starlette.responses import JSONResponse, Response, FileResponse
+
 import httpx
 from typing import List
 import os
@@ -473,6 +475,7 @@ async def excluir_fornecedor(fornecedor_id: int):
 # -----------------------------------------------------
 # Fallback for React SPA routes
 # -----------------------------------------------------
+
 front_root = os.getenv(
     "FRONTEND_DIST_DIR",
     os.path.join(os.path.dirname(__file__), "..", "frontend-erp", "dist"),
@@ -492,3 +495,4 @@ if os.path.exists(index_file):
         if os.path.isfile(candidate):
             return FileResponse(candidate)
         return FileResponse(index_file)
+

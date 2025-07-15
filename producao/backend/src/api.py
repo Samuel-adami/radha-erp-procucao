@@ -138,10 +138,14 @@ def proximo_oc_numero() -> int:
         row = conn.execute(
             text(f"SELECT MAX(oc_numero) as m FROM {SCHEMA_PREFIX}lotes_ocorrencias")
         ).fetchone()
-        try:
-            max_val = int(row["m"]) if row["m"] is not None else 0
-        except (ValueError, TypeError):
+        if row is None:
             max_val = 0
+        else:
+            m_val = row[0] if not hasattr(row, "_mapping") else row._mapping.get("m")
+            try:
+                max_val = int(m_val) if m_val is not None else 0
+            except (ValueError, TypeError):
+                max_val = 0
         return max_val + 1
 
 
@@ -625,7 +629,10 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
                     f"lotes/Lote_{lote}.zip",
                 ),
             ).fetchone()
-            object_name = row["obj_key"] if row else None
+            if row:
+                object_name = row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key")
+            else:
+                object_name = None
     except Exception:
         object_name = None
 
@@ -663,7 +670,10 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
                 f"SELECT obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
                 (nid,),
             ).fetchone()
-            object_name = row["obj_key"] if row else None
+            if row:
+                object_name = row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key")
+            else:
+                object_name = None
     except Exception:
         object_name = None
 
@@ -712,7 +722,7 @@ async def remover_nesting(request: Request):
                     (nid,),
                 ).fetchone()
                 if row:
-                    obj_key = obj_key or row["obj_key"]
+                    obj_key = obj_key or (row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key"))
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
                     (nid,),
@@ -777,7 +787,9 @@ async def obter_config_maquina():
                 "SELECT dados FROM config_maquina WHERE id=1"
             ).fetchone()
             if row:
-                return json.loads(row["dados"])
+                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                if dados_str is not None:
+                    return json.loads(dados_str)
     except Exception as e:
         return {"erro": str(e)}
     return {}
@@ -811,7 +823,9 @@ async def obter_ferramentas():
                 "SELECT dados FROM config_ferramentas WHERE id=1"
             ).fetchone()
             if row:
-                return json.loads(row["dados"])
+                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                if dados_str is not None:
+                    return json.loads(dados_str)
     except Exception as e:
         return {"erro": str(e)}
     return []
@@ -842,7 +856,9 @@ async def obter_cortes():
                 "SELECT dados FROM config_cortes WHERE id=1"
             ).fetchone()
             if row:
-                return json.loads(row["dados"])
+                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                if dados_str is not None:
+                    return json.loads(dados_str)
     except Exception as e:
         return {"erro": str(e)}
     return []
@@ -873,7 +889,9 @@ async def obter_layers():
                 "SELECT dados FROM config_layers WHERE id=1"
             ).fetchone()
             if row:
-                return json.loads(row["dados"])
+                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                if dados_str is not None:
+                    return json.loads(dados_str)
     except Exception as e:
         return {"erro": str(e)}
     return []
@@ -1164,7 +1182,7 @@ async def excluir_lote_ocorrencia(oc_id: int):
                 (oc_id,),
             ).fetchone()
             if row:
-                key = row["obj_key"]
+                key = row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key")
 
                 try:
                     pasta = ensure_pasta_local(key)
