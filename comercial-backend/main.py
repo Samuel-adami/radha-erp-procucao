@@ -212,7 +212,7 @@ async def listar_atendimentos():
             .mappings()
             .all()
         )
-        itens = [dict(row._mapping) for row in rows]
+        itens = [dict(row) for row in rows]
     return {"atendimentos": itens}
 
 
@@ -231,7 +231,7 @@ async def obter_atendimento(atendimento_id: int):
         if not row:
             return JSONResponse({"detail": "Atendimento não encontrado"}, status_code=404)
 
-        item = dict(row._mapping)
+        item = dict(row)
         if item.get("arquivos_json"):
             try:
                 keys = json.loads(item["arquivos_json"])
@@ -255,7 +255,7 @@ async def obter_atendimento(atendimento_id: int):
 
         tarefas = []
         for row in tarefas_rows:
-            t = dict(row._mapping)
+            t = dict(row)
             dados_json = {}
             if t.get("dados"):
                 try:
@@ -349,7 +349,7 @@ async def listar_tarefas(atendimento_id: int):
 
         tarefas = []
         for row in rows:
-            item = dict(row._mapping)
+            item = dict(row)
             dados = {}
             if item.get("dados"):
                 try:
@@ -543,7 +543,7 @@ async def listar_condicoes():
         )
         itens = []
         for row in rows:
-            item = dict(row._mapping)
+            item = dict(row)
             if item.get("parcelas_json"):
                 try:
                     item["parcelas"] = json.loads(item["parcelas_json"])
@@ -592,7 +592,7 @@ async def obter_condicao(condicao_id: int):
         )
         if not row:
             return JSONResponse({"detail": "Condição não encontrada"}, status_code=404)
-        item = dict(row._mapping)
+        item = dict(row)
         if item.get("parcelas_json"):
             try:
                 item["parcelas"] = json.loads(item["parcelas_json"])
@@ -657,7 +657,7 @@ async def listar_templates(tipo: str | None = None):
                 .mappings()
                 .all()
             )
-        itens = [dict(row._mapping) for row in rows]
+        itens = [dict(row) for row in rows]
         for it in itens:
             if it.get("campos_json"):
                 try:
@@ -693,7 +693,7 @@ async def obter_template(template_id: int):
         )
         if not row:
             return JSONResponse({"detail": "Template não encontrado"}, status_code=404)
-        item = dict(row._mapping)
+        item = dict(row)
         if item.get("campos_json"):
             try:
                 item["campos"] = json.loads(item["campos_json"])
