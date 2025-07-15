@@ -1240,7 +1240,7 @@ def gerar_nesting_preview(
                 )
             ).fetchall()
             for r in rows:
-                chapas_cfg[r["propriedade"]] = dict(r)
+                chapas_cfg[r["propriedade"]] = dict(r._mapping)
     except Exception:
         pass
 
@@ -1461,7 +1461,7 @@ def gerar_nesting(
                 )
             ).fetchall()
             for r in rows:
-                chapas_cfg[r["propriedade"]] = dict(r)
+                chapas_cfg[r["propriedade"]] = dict(r._mapping)
     except Exception:
         pass
 
