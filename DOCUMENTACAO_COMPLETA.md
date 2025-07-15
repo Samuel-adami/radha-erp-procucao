@@ -100,6 +100,10 @@ Manipulado em `/usuarios` e autenticação (`/auth/login`, `/auth/validate`).
 - **LoteOcorrencia** – tabela `lotes_ocorrencias` (`lote`, `pacote`, `oc_numero`, `obj_key`).
 - **OcorrenciaPeca** – tabela `ocorrencias_pecas` (`oc_id`, `peca_id`, `descricao_peca`, `motivo_id`).
 - **MotivoOcorrencia** – tabela `motivos_ocorrencia` (`codigo`, `descricao`, `tipo`, `setor`).
+- **ConfigMaquina** – tabela `config_maquina` (`id`, `dados`).
+- **ConfigFerramentas** – tabela `config_ferramentas` (`id`, `dados`).
+- **ConfigCortes** – tabela `config_cortes` (`id`, `dados`).
+- **ConfigLayers** – tabela `config_layers` (`id`, `dados`).
 
 Relacionadas às rotas de produção descritas na seção anterior.
 
