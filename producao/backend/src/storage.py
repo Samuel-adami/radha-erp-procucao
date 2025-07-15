@@ -37,14 +37,13 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
 
 
 def _full_key(name: str) -> str:
-    """Retorna ``name`` acrescido do prefixo configurado.
-
-    Caso ``name`` já comece com ``PREFIX`` ele é retornado sem alterações
-    para evitar duplicação do prefixo.
-    """
     if name.startswith(PREFIX):
-        return name
+        return name  # já tem o prefixo, não adiciona novamente
+    if name.startswith(f"/{PREFIX}"):
+        return name.lstrip("/")
+    # Garante que não duplica prefixo nem barra
     return f"{PREFIX.rstrip('/')}/{name.lstrip('/')}"
+
 
 
 def upload_file(local_path: str, object_name: str) -> None:
