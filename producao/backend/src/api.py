@@ -527,7 +527,7 @@ async def listar_lotes():
             rows = conn.exec_driver_sql(
                 f"SELECT id, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes ORDER BY id"
             ).fetchall()
-            dados = [dict(r) for r in rows]
+            dados = [dict(r._mapping) for r in rows]
             logging.info("%d lotes encontrados no banco", len(dados))
 
             novos: list[str] = []
@@ -581,7 +581,7 @@ async def listar_nestings():
             rows = conn.exec_driver_sql(
                 f"SELECT id, lote, obj_key, criado_em FROM {SCHEMA_PREFIX}nestings ORDER BY id DESC"
             ).fetchall()
-            dados = [dict(r) for r in rows]
+            dados = [dict(r._mapping) for r in rows]
             logging.info("%d nestings encontrados no banco", len(dados))
 
             novos: list[dict] = []
@@ -903,7 +903,7 @@ async def listar_chapas():
             rows = conn.exec_driver_sql(
                 f"SELECT id, possui_veio, propriedade, espessura, comprimento, largura FROM {SCHEMA_PREFIX}chapas"
             ).fetchall()
-            return [dict(row) for row in rows]
+            return [dict(row._mapping) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
 
@@ -976,7 +976,7 @@ async def listar_lotes_ocorrencias():
                     f"SELECT id, lote, pacote, oc_numero, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes_ocorrencias ORDER BY id"
                 )
             ).fetchall()
-            dados = [dict(row) for row in rows]
+            dados = [dict(row._mapping) for row in rows]
             logging.info("%d lotes de ocorrências encontrados", len(dados))
 
             novos: list[dict] = []
@@ -1192,7 +1192,7 @@ async def listar_motivos():
             rows = conn.exec_driver_sql(
                 f"SELECT codigo, descricao, tipo, setor FROM {SCHEMA_PREFIX}motivos_ocorrencia ORDER BY codigo"
             ).fetchall()
-            return [dict(row) for row in rows]
+            return [dict(row._mapping) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
 
@@ -1268,6 +1268,6 @@ async def relatorio_ocorrencias(request: Request):
     try:
         with get_db_connection() as conn:
             rows = conn.exec_driver_sql(query, tuple(params_list)).fetchall()
-            return [dict(row) for row in rows]
+            return [dict(row._mapping) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
