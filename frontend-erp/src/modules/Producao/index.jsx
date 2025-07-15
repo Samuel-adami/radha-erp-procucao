@@ -3,8 +3,8 @@ import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 import { useUsuario } from '../../UserContext';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia } from './AppProducao';
-import CadastroChapas from './components/CadastroChapas';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, CadastroChapas as CC, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia } from './AppProducao';
+const CadastroChapas = CC;
 
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
@@ -15,6 +15,7 @@ function ProducaoLayout() {
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
   const matchNesting = useMatch({ path: `${resolved.pathname}/nesting`, end: true });
   const matchChapas = useMatch({ path: `${resolved.pathname}/chapas`, end: true });
+  const matchEstoque = useMatch({ path: `${resolved.pathname}/chapas/estoque`, end: true });
   const matchOcorr = useMatch({ path: `${resolved.pathname}/ocorrencias`, end: false });
   const matchRelatorio = useMatch({ path: `${resolved.pathname}/relatorios/ocorrencias`, end: false });
   const usuario = useUsuario();
@@ -64,6 +65,14 @@ function ProducaoLayout() {
             Chapas
           </Link>
         )}
+        {possuiPermissao('producao/chapas') && (
+          <Link
+            to="chapas/estoque"
+            className={`px-3 py-1 rounded ${matchEstoque ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Estoque
+          </Link>
+        )}
         {possuiPermissao('producao/ocorrencias') && (
           <Link
             to="ocorrencias"
@@ -102,6 +111,7 @@ function Producao() {
         <Route path="nesting/visualizacao" element={<VisualizacaoNesting />} />
         <Route path="nesting/config-maquina" element={<ConfigMaquina />} />
         <Route path="chapas" element={<CadastroChapas />} />
+        <Route path="chapas/estoque" element={<EstoqueChapas />} />
         <Route path="ocorrencias" element={<LotesOcorrencia />} />
         <Route path="ocorrencias/editar/:id" element={<EditarLoteOcorrencia />} />
         <Route path="ocorrencias/pacote/:id" element={<PacoteOcorrencia />} />

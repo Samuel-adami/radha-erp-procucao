@@ -11,6 +11,7 @@ import EditarFerragem from "./components/EditarFerragem";
 import Nesting from "./components/Nesting";
 import ConfigMaquina from "./components/ConfigMaquina";
 import CadastroChapas from "./components/CadastroChapas";
+import EstoqueChapas from "./components/EstoqueChapas";
 import LotesOcorrencia from "./components/LotesOcorrencia";
 import CadastroMotivos from "./components/CadastroMotivos";
 import RelatorioOcorrencias from "./components/RelatorioOcorrencias";
@@ -705,4 +706,4 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, VisualizacaoNesting, ConfigMaquina, CadastroChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, Nesting, VisualizacaoNesting, ConfigMaquina, CadastroChapas, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };

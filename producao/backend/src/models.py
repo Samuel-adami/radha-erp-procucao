@@ -99,3 +99,18 @@ class ConfigLayers(Base):
 
     id = Column(Integer, primary_key=True)
     dados = Column(String)
+
+
+class ChapaEstoque(Base):
+    """Controle de estoque de chapas e sobras."""
+
+    __tablename__ = "chapas_estoque"
+
+    id = Column(Integer, primary_key=True)
+    chapa_id = Column(Integer)
+    descricao = Column(String)
+    comprimento = Column(Float)
+    largura = Column(Float)
+    m2 = Column(Float)
+    custo_m2 = Column(Float)
+    custo_total = Column(Float)

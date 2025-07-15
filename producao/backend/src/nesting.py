@@ -1550,4 +1550,4 @@ def gerar_nesting(
         config_maquina,
         sobras,
     )
-    return str(pasta_saida)
+    return str(pasta_saida), sobras
