@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -9,12 +9,15 @@ from typing import List
 import os
 from database import get_session, init_db
 from models import Empresa, Cliente, Fornecedor
+from services import auth_service
+from security import verificar_autenticacao
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
 
 # Initialize gateway database tables on startup
 init_db()
+auth_service.ensure_default_admin()
 
 # Configuração de CORS - ATENÇÃO: SUBSTITUA SEU_IP_DO_VPS PELO IP REAL DO SEU VPS
 app.add_middleware(
@@ -125,24 +128,21 @@ async def call_comercial_backend(path: str, request: Request):
         except httpx.RequestError as e:
             return JSONResponse({"detail": f"Erro de conexão com o backend Comercial: {e}"}, status_code=503)
 
-# Rotas de Autenticação (do assistente-radha)
+# Rotas de Autenticação agora processadas localmente
 @app.post("/auth/login")
 async def login(request: Request):
-    async with httpx.AsyncClient() as client:
-        url = f"{MARKETING_IA_BACKEND_URL}/auth/login"
-        try:
-            headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
-            response = await client.post(
-                url,
-                content=await request.body(),
-                headers=headers,
-            )
-            response.raise_for_status()
-            return create_response(response)
-        except httpx.HTTPStatusError as e:
-            return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
-        except httpx.RequestError as e:
-            return JSONResponse({"detail": f"Erro de conexão com o backend de autenticação: {e}"}, status_code=503)
+    body = await request.json()
+    username = body.get("username")
+    password = body.get("password")
+
+    if not username or not password:
+        return JSONResponse({"detail": "Usuário e senha são obrigatórios"}, status_code=400)
+
+    user = auth_service.autenticar(username, password)
+    if not user:
+        return JSONResponse({"detail": "Credenciais inválidas"}, status_code=401)
+
+    return auth_service.criar_token(user)
 
 
 # -------------------------
@@ -288,18 +288,8 @@ async def atualizar_empresa(empresa_id: int, request: Request):
         session.close()
 
 @app.get("/auth/validate")
-async def validate_token(request: Request):
-    async with httpx.AsyncClient() as client:
-        url = f"{MARKETING_IA_BACKEND_URL}/auth/validate"
-        try:
-            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
-            response = await client.get(url, headers=headers)
-            response.raise_for_status()
-            return JSONResponse(response.json(), status_code=response.status_code)
-        except httpx.HTTPStatusError as e:
-            return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
-        except httpx.RequestError as e:
-            return JSONResponse({"detail": f"Erro de conexão com o backend de autenticação: {e}"}, status_code=503)
+async def validate_token(usuario=Depends(verificar_autenticacao())):
+    return {"status": "validado", "usuario": usuario}
 
 # -------------------------
 # Cadastros - Usuarios
