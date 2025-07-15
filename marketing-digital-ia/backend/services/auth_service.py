@@ -170,14 +170,20 @@ def atualizar_usuario(user_id: int, data: dict) -> bool:
         permissoes = DEFAULT_ADMIN_PERMISSIONS
 
     conn = get_db_connection()
+
+    hashed_pwd = (
+        bcrypt.hash(data.get("password")) if data.get("password") else None
+    )
+
     cur = conn.execute(
         text(
-            "UPDATE users SET username=:username, password=:password, email=:email, "
+            "UPDATE users SET username=:username, "
+            "password=COALESCE(:password, password), email=:email, "
             "nome=:nome, cargo=:cargo, permissoes=:permissoes WHERE id=:id"
         ),
         {
             "username": data.get("username"),
-            "password": bcrypt.hash(data.get("password")) if data.get("password") else None,
+            "password": hashed_pwd,
             "email": data.get("email"),
             "nome": data.get("nome"),
             "cargo": data.get("cargo"),

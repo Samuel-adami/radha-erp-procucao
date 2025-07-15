@@ -5,8 +5,8 @@ from security import verificar_autenticacao
 
 router = APIRouter(prefix="/nova-campanha", tags=["Campanhas"])
 
-# ✅ Apenas marketing e diretores podem criar campanhas
-autorizacao = verificar_autenticacao(["Marketing", "Diretoria"])
+# ✅ Apenas marketing, diretores e administradores podem criar campanhas
+autorizacao = verificar_autenticacao(["Marketing", "Diretoria", "admin"])
 
 class CampanhaInput(BaseModel):
     tema: str
