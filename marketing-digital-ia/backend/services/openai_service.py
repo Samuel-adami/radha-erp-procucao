@@ -3,12 +3,18 @@ import asyncio
 import logging
 import time
 from dotenv import load_dotenv
-try:
+import openai
+
+# Detecta se a nova interface assíncrona da biblioteca OpenAI está
+# disponível. Em ambientes com versões mais antigas do pacote, a
+# importação abaixo falhará e usaremos a API síncrona como fallback.
+try:  # pragma: no cover - compatibilidade dinâmica
     from openai import AsyncOpenAI, OpenAIError
-except Exception:  # pragma: no cover
+    _use_async_client = True
+except Exception:  # Versões < 1.0 não possuem AsyncOpenAI
+    from openai.error import OpenAIError  # type: ignore
     AsyncOpenAI = None
-    class OpenAIError(Exception):
-        pass
+    _use_async_client = False
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import base64
@@ -19,15 +25,28 @@ load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 API_BASE = os.getenv("OPENAI_API_BASE", "https://api.openai.com/v1")
 
-# 🔧 Cliente OpenAI assíncrono
-client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE) if API_KEY and AsyncOpenAI else None
+# 🔧 Cliente OpenAI
+if _use_async_client and API_KEY:
+    client = AsyncOpenAI(api_key=API_KEY, base_url=API_BASE)
+else:
+    # Fallback para versões antigas da biblioteca
+    if API_KEY:
+        openai.api_key = API_KEY  # type: ignore
+        try:
+            openai.api_base = API_BASE  # type: ignore
+        except Exception:
+            pass
+    client = None
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # 🎯 Geração de resposta via Assistant com arquivos
 async def gerar_resposta(mensagem: str, id_assistant: str) -> str:
     if client is None:
-        logging.warning("OPENAI_API_KEY não configurada.")
+        if not API_KEY:
+            logging.warning("OPENAI_API_KEY não configurada.")
+        else:
+            logging.warning("Biblioteca OpenAI não suporta recursos assíncronos.")
         return "Serviço de IA indisponível no momento."
 
     try:
@@ -64,18 +83,26 @@ async def gerar_resposta(mensagem: str, id_assistant: str) -> str:
 
 # 🖼️ Geração de imagem DALL·E 3
 async def gerar_imagem(prompt: str) -> str:
-    if client is None:
+    if not API_KEY:
         logging.warning("OPENAI_API_KEY não configurada. Impossível gerar imagem.")
         return ""
+
     try:
-        resposta = await client.images.generate(
-            model="dall-e-3",
-            prompt=prompt,
-            size="1024x1024",
-            quality="standard",
-            n=1
-        )
-        return resposta.data[0].url
+        if _use_async_client and client is not None:
+            resposta = await client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            return resposta.data[0].url
+        else:
+            def _sync_call():
+                resp = openai.Image.create(prompt=prompt, n=1, size="1024x1024")  # type: ignore
+                return resp["data"][0]["url"]
+
+            return await asyncio.to_thread(_sync_call)
     except OpenAIError as e:
         logging.error(f"Erro ao gerar imagem com DALL·E: {e}")
         return ""
