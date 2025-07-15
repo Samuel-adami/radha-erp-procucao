@@ -12,11 +12,15 @@ Description=Radha ERP - Backend Produção
 After=network.target
 
 [Service]
+Type=simple
 User=samuel
-WorkingDirectory=/home/samuel/radha-erp-procucao/producao/backend/src
-EnvironmentFile=/home/samuel/radha-erp-procucao/producao/backend/src/.env
-ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn api:app --host 0.0.0.0 --port 8060
+WorkingDirectory=/home/samuel/radha-erp-producao/producao/backend/src
+EnvironmentFile=/home/samuel/radha-erp-producao/producao/backend/src/.env
+ExecStart=/home/samuel/radha-erp-producao/venv/bin/uvicorn api:app --host 0.0.0.0 --port 8060
 Restart=always
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
