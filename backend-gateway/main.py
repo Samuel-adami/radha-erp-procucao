@@ -1,9 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse, Response
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+
+from starlette.responses import JSONResponse, Response, FileResponse
+
 import httpx
 from typing import List
 import os
@@ -475,16 +475,24 @@ async def excluir_fornecedor(fornecedor_id: int):
 # -----------------------------------------------------
 # Fallback for React SPA routes
 # -----------------------------------------------------
-FRONTEND_DIST_DIR = os.getenv(
+
+front_root = os.getenv(
     "FRONTEND_DIST_DIR",
     os.path.join(os.path.dirname(__file__), "..", "frontend-erp", "dist"),
 )
-INDEX_FILE = os.path.join(FRONTEND_DIST_DIR, "index.html")
+index_file = os.path.join(front_root, "index.html")
 
-if os.path.exists(INDEX_FILE):
-    app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="frontend")
+if not os.path.exists(index_file):
+    # Allow serving directly from the source directory when not built
+    front_root = os.path.join(os.path.dirname(__file__), "..", "frontend-erp")
+    index_file = os.path.join(front_root, "index.html")
 
+if os.path.exists(index_file):
     @app.get("/{full_path:path}", include_in_schema=False)
-    async def frontend_catchall(full_path: str):
-        """Return index.html for all unmatched frontend routes."""
-        return FileResponse(INDEX_FILE)
+    async def spa_fallback(full_path: str):
+        """Serve static files or the React entry point for unknown routes."""
+        candidate = os.path.join(front_root, full_path)
+        if os.path.isfile(candidate):
+            return FileResponse(candidate)
+        return FileResponse(index_file)
+
