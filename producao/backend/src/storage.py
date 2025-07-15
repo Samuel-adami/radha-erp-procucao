@@ -22,10 +22,13 @@ PUBLIC_ENDPOINT = os.getenv(
     "https://radha-arquivos.nyc3.digitaloceanspaces.com",
 )
 
+REGION = os.getenv("OBJECT_STORAGE_REGION", "nyc3")
+
 client = None
 if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
     client = boto3.client(
         "s3",
+        region_name=REGION,
         endpoint_url=ENDPOINT,
         aws_access_key_id=ACCESS_KEY,
         aws_secret_access_key=SECRET_KEY,
