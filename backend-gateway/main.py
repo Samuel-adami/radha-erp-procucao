@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse, Response
+from starlette.responses import JSONResponse, Response, FileResponse
 import httpx
 from typing import List
 import os
@@ -470,3 +470,25 @@ async def excluir_fornecedor(fornecedor_id: int):
         return {"ok": True}
     finally:
         session.close()
+# -----------------------------------------------------
+# Fallback for React SPA routes
+# -----------------------------------------------------
+front_root = os.getenv(
+    "FRONTEND_DIST_DIR",
+    os.path.join(os.path.dirname(__file__), "..", "frontend-erp", "dist"),
+)
+index_file = os.path.join(front_root, "index.html")
+
+if not os.path.exists(index_file):
+    # Allow serving directly from the source directory when not built
+    front_root = os.path.join(os.path.dirname(__file__), "..", "frontend-erp")
+    index_file = os.path.join(front_root, "index.html")
+
+if os.path.exists(index_file):
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_fallback(full_path: str):
+        """Serve static files or the React entry point for unknown routes."""
+        candidate = os.path.join(front_root, full_path)
+        if os.path.isfile(candidate):
+            return FileResponse(candidate)
+        return FileResponse(index_file)
