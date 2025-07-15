@@ -4,11 +4,20 @@ from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
 from gabster_api import list_orcamento_cliente_item, get_projeto
 from orcamento_gabster import parse_gabster_projeto
+from storage import (
+    upload_file,
+    delete_file,
+    get_public_url,
+    object_exists,
+)
 from datetime import datetime
 import logging
 import re
 import json
 import requests
+import base64
+import tempfile
+import os
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -127,6 +136,25 @@ async def criar_atendimento(request: Request):
         entrega = data.get("entrega_diferente")
         entrega = 1 if str(entrega).lower() in ("sim", "1", "true") else 0
 
+        arquivos_input = data.get("arquivos", [])
+        arquivos_keys: list[str] = []
+        for arq in arquivos_input:
+            if isinstance(arq, dict) and arq.get("nome") and arq.get("conteudo"):
+                nome = arq["nome"]
+                conteudo = arq["conteudo"]
+                _, b64 = conteudo.split(",", 1) if "," in conteudo else ("", conteudo)
+                tmp = tempfile.NamedTemporaryFile(delete=False)
+                tmp.write(base64.b64decode(b64))
+                tmp.close()
+                key = f"atendimentos/{codigo}/{nome}"
+                try:
+                    upload_file(tmp.name, key)
+                    arquivos_keys.append(key)
+                finally:
+                    os.remove(tmp.name)
+            elif isinstance(arq, str):
+                arquivos_keys.append(arq)
+
         fields = (
             data.get("cliente"),
             codigo,
@@ -138,7 +166,7 @@ async def criar_atendimento(request: Request):
             rt_percent,
             entrega,
             data.get("historico"),
-            json.dumps(data.get("arquivos", [])),
+            json.dumps(arquivos_keys),
             data.get("procedencia"),
             data.get("vendedor"),
             data.get("telefone"),
@@ -184,7 +212,7 @@ async def listar_atendimentos():
             .mappings()
             .all()
         )
-        itens = [dict(row) for row in rows]
+        itens = [dict(row._mapping) for row in rows]
     return {"atendimentos": itens}
 
 
@@ -203,10 +231,15 @@ async def obter_atendimento(atendimento_id: int):
         if not row:
             return JSONResponse({"detail": "Atendimento não encontrado"}, status_code=404)
 
-        item = dict(row)
+        item = dict(row._mapping)
         if item.get("arquivos_json"):
             try:
-                item["arquivos"] = json.loads(item["arquivos_json"])
+                keys = json.loads(item["arquivos_json"])
+                arquivos = []
+                for k in keys:
+                    if object_exists(k) is not False:
+                        arquivos.append({"obj_key": k, "url": get_public_url(k)})
+                item["arquivos"] = arquivos
             except Exception:
                 item["arquivos"] = []
 
@@ -222,7 +255,7 @@ async def obter_atendimento(atendimento_id: int):
 
         tarefas = []
         for row in tarefas_rows:
-            t = dict(row)
+            t = dict(row._mapping)
             dados_json = {}
             if t.get("dados"):
                 try:
@@ -316,7 +349,7 @@ async def listar_tarefas(atendimento_id: int):
 
         tarefas = []
         for row in rows:
-            item = dict(row)
+            item = dict(row._mapping)
             dados = {}
             if item.get("dados"):
                 try:
@@ -466,6 +499,20 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
 @app.delete("/atendimentos/{atendimento_id}")
 async def excluir_atendimento(atendimento_id: int):
     with get_db_connection() as conn:
+        row = (
+            conn.exec_driver_sql(
+                "SELECT arquivos_json FROM atendimentos WHERE id=%s",
+                (atendimento_id,),
+            )
+            .mappings()
+            .fetchone()
+        )
+        if row and row.get("arquivos_json"):
+            try:
+                for key in json.loads(row["arquivos_json"]):
+                    delete_file(key)
+            except Exception:
+                pass
 
         conn.exec_driver_sql(
             "DELETE FROM projeto_itens WHERE atendimento_id=%s",
@@ -496,7 +543,7 @@ async def listar_condicoes():
         )
         itens = []
         for row in rows:
-            item = dict(row)
+            item = dict(row._mapping)
             if item.get("parcelas_json"):
                 try:
                     item["parcelas"] = json.loads(item["parcelas_json"])
@@ -545,7 +592,7 @@ async def obter_condicao(condicao_id: int):
         )
         if not row:
             return JSONResponse({"detail": "Condição não encontrada"}, status_code=404)
-        item = dict(row)
+        item = dict(row._mapping)
         if item.get("parcelas_json"):
             try:
                 item["parcelas"] = json.loads(item["parcelas_json"])
@@ -610,7 +657,7 @@ async def listar_templates(tipo: str | None = None):
                 .mappings()
                 .all()
             )
-        itens = [dict(row) for row in rows]
+        itens = [dict(row._mapping) for row in rows]
         for it in itens:
             if it.get("campos_json"):
                 try:
@@ -646,7 +693,7 @@ async def obter_template(template_id: int):
         )
         if not row:
             return JSONResponse({"detail": "Template não encontrado"}, status_code=404)
-        item = dict(row)
+        item = dict(row._mapping)
         if item.get("campos_json"):
             try:
                 item["campos"] = json.loads(item["campos_json"])
