@@ -763,12 +763,12 @@ const ConfigMaquina = () => {
                 <input type="number" className="input" value={form.anguloEntrada} onChange={handle('anguloEntrada')} />
               </label>
               <label className="block">
-                <span className="text-sm">Comando Extra</span>   
-                < área de texto
-                  className = "entrada"
-                  linhas = "3"
-                  valor = {form.comandoExtra}
-                  onChange = {handle( ' comandoExtra ')}
+                <span className="text-sm">Comando Extra</span>
+                <textarea
+                  className="input"
+                  rows="3"
+                  value={form.comandoExtra}
+                  onChange={handle('comandoExtra')}
                 />
               </label>
             </>
@@ -809,11 +809,11 @@ const ConfigMaquina = () => {
               </label>
               <label className="block">
                 <span className="text-sm">Comando Extra</span>
-                < área de texto
-                  className = "entrada"
-                  linhas = "3"
-                  valor = {form.comandoExtra}
-                  onChange = {handle( ' comandoExtra ')}
+                <textarea
+                  className="input"
+                  rows="3"
+                  value={form.comandoExtra}
+                  onChange={handle('comandoExtra')}
                 />
               </label>
             </>
