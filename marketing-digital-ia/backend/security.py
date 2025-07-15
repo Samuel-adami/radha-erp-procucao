@@ -6,7 +6,9 @@ from typing import List, Optional
 from services.auth_service import SECRET_KEY, ALGORITHM, decodificar_token
 
 def verificar_autenticacao(cargos_permitidos: Optional[List[str]] = None):
-    def verificar(authorization: str = Header(...)):
+    def verificar(authorization: str = Header(None)):
+        if not authorization:
+            raise HTTPException(status_code=401, detail="Token não fornecido")
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Formato inválido de token")
 
