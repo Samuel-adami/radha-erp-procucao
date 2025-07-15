@@ -47,12 +47,15 @@ def parse_gabster_projeto(data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
 
     def walk(obj: Any, ambiente: str | None = None):
         if isinstance(obj, dict):
+            # permite chaves com maiúsculas/minúsculas diferentes
+            lower = {k.lower(): v for k, v in obj.items()}
+
             amb = (
-                obj.get("ambiente")
-                or obj.get("ambiente_nome")
-                or obj.get("nm_ambiente")
-                or obj.get("nome_ambiente")
-                or obj.get("ds_ambiente")
+                lower.get("ambiente")
+                or lower.get("ambiente_nome")
+                or lower.get("nm_ambiente")
+                or lower.get("nome_ambiente")
+                or lower.get("ds_ambiente")
                 or ambiente
             )
 
@@ -76,47 +79,45 @@ def parse_gabster_projeto(data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
                 "vl_preco_total",
             }
 
-
-
-            if desc_keys.intersection(obj.keys()) and total_keys.intersection(obj.keys()):
+            if desc_keys.intersection(lower.keys()) and total_keys.intersection(lower.keys()):
                 desc = (
-                    obj.get("descricao")
-                    or obj.get("ds_produto")
-                    or obj.get("produto")
-                    or obj.get("nome")
-                    or obj.get("desc_item")
-                    or obj.get("descricao_item")
-                    or obj.get("ds_item")
+                    lower.get("descricao")
+                    or lower.get("ds_produto")
+                    or lower.get("produto")
+                    or lower.get("nome")
+                    or lower.get("desc_item")
+                    or lower.get("descricao_item")
+                    or lower.get("ds_item")
                 )
                 qtd = (
-                    obj.get("quantidade")
-                    or obj.get("qtde")
-                    or obj.get("qtd")
-                    or obj.get("quantidade_item")
-                    or obj.get("qt_item")
+                    lower.get("quantidade")
+                    or lower.get("qtde")
+                    or lower.get("qtd")
+                    or lower.get("quantidade_item")
+                    or lower.get("qt_item")
                 )
                 unit = (
-                    obj.get("unitario")
-                    or obj.get("vl_unitario")
-                    or obj.get("valor_unitario")
-                    or obj.get("valor_unit")
-                    or obj.get("vl_unit")
-                    or obj.get("vl_preco_unitario")
-                    or obj.get("preco_unitario")
+                    lower.get("unitario")
+                    or lower.get("vl_unitario")
+                    or lower.get("valor_unitario")
+                    or lower.get("valor_unit")
+                    or lower.get("vl_unit")
+                    or lower.get("vl_preco_unitario")
+                    or lower.get("preco_unitario")
                 )
                 tot = (
-                    obj.get("vl_total")
-                    or obj.get("valor_total")
-                    or obj.get("total")
-                    or obj.get("valor")
-                    or obj.get("vl_tot_item")
-                    or obj.get("preco_total")
-                    or obj.get("vl_preco_total")
+                    lower.get("vl_total")
+                    or lower.get("valor_total")
+                    or lower.get("total")
+                    or lower.get("valor")
+                    or lower.get("vl_tot_item")
+                    or lower.get("preco_total")
+                    or lower.get("vl_preco_total")
                 )
                 add_item(amb or "Projeto", desc, qtd, unit, tot)
                 return
 
-            for k, v in obj.items():
+            for v in obj.values():
                 walk(v, amb)
         elif isinstance(obj, list):
             for v in obj:
