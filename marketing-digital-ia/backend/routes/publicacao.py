@@ -86,9 +86,7 @@ async def criar_publicacao(input: PublicacaoInput, user=Depends(autorizacao)):
 
     resposta = await gerar_resposta(
         prompt,
-        input.id_assistant,
-        contexto='publicacao',
-        tema=input.tema
+        input.id_assistant
     )
 
     return {"publicacao": resposta}
