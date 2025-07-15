@@ -51,7 +51,7 @@ function Usuarios() {
       fetchComAuth('/usuarios')
         .then(d => {
           const u = (d?.usuarios || []).find(x => String(x.id) === String(id));
-          if (u) setForm(u);
+          if (u) setForm({ ...u, password: '' });
         })
         .catch(() => {});
     }
@@ -83,7 +83,11 @@ function Usuarios() {
   const salvar = async () => {
     const url = id ? `/usuarios/${id}` : '/usuarios';
     const metodo = id ? 'PUT' : 'POST';
-    await fetchComAuth(url, { method: metodo, body: JSON.stringify(form) });
+    const payload = { ...form };
+    if (id && !payload.password) {
+      delete payload.password; // não altera senha se campo estiver vazio
+    }
+    await fetchComAuth(url, { method: metodo, body: JSON.stringify(payload) });
     if (id) {
       navigate('../lista');
     } else {
@@ -116,7 +120,7 @@ function Usuarios() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="block"><span className="text-sm">Usuário</span><input className="input" value={form.username} onChange={handle('username')} /></label>
-        <label className="block"><span className="text-sm">Senha</span><input type="text" className="input" value={form.password} onChange={handle('password')} /></label>
+        <label className="block"><span className="text-sm">Senha</span><input type="password" className="input" value={form.password} onChange={handle('password')} /></label>
         <label className="block"><span className="text-sm">Email</span><input className="input" value={form.email} onChange={handle('email')} /></label>
         <label className="block"><span className="text-sm">Nome</span><input className="input" value={form.nome} onChange={handle('nome')} /></label>
         <label className="block"><span className="text-sm">Cargo</span><input className="input" value={form.cargo} onChange={handle('cargo')} /></label>
