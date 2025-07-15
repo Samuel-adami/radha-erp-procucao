@@ -31,9 +31,7 @@ async def criar_campanha(input: CampanhaInput, user=Depends(autorizacao)):
 
     resposta = await gerar_resposta(
         prompt,
-        input.id_assistant,
-        contexto='campanha',
-        tema=input.tema
+        input.id_assistant
     )
 
     return {"campanha": resposta}
