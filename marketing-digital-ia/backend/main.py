@@ -25,9 +25,13 @@ ensure_default_admin()
 
 # Incluir routers
 app.include_router(chat.router, prefix="/chat")
-app.include_router(campanha.router, prefix="/nova-campanha")
-app.include_router(publicacao.router, prefix="/nova-publicacao")
-app.include_router(publicos.router, prefix="/publicos")
+# Os routers abaixo já definem seus próprios prefixos. Incluir novamente
+# resultava em caminhos duplicados, ex.: ``/nova-publicacao/nova-publicacao``.
+# Isso gerava erros 404 ao acessar as rotas via gateway. Mantemos apenas o
+# include simples para que o caminho final corresponda à documentação.
+app.include_router(campanha.router)
+app.include_router(publicacao.router)
+app.include_router(publicos.router)
 app.include_router(conhecimento.router, prefix="/conhecimento")
 # A rota de usuarios ja define um prefixo, portanto nao precisamos
 # adicionar outro aqui. Mantendo apenas o include simples evita que a
