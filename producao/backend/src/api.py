@@ -456,7 +456,7 @@ async def executar_nesting_final(request: Request):
         return {"erro": str(e)}
 
     try:
-        pasta_resultado = gerar_nesting(
+        pasta_resultado, sobras = gerar_nesting(
             str(pasta_lote_resolved),
             largura_chapa,
             altura_chapa,
@@ -479,6 +479,35 @@ async def executar_nesting_final(request: Request):
     upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
+    try:
+        with get_db_connection() as conn:
+            for placa in sobras:
+                for s in placa:
+                    mat = s.get("Material")
+                    comp = float(s.get("Length", 0))
+                    larg = float(s.get("Width", 0))
+                    row = conn.execute(
+                        text(
+                            f"SELECT id FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1"
+                        ),
+                        (mat,),
+                    ).fetchone()
+                    chapa_id = row[0] if row else None
+                    m2 = comp * larg / 1000000.0
+                    conn.exec_driver_sql(
+                        f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total) "
+                        f"VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},0,0)",
+                        (
+                            chapa_id,
+                            mat,
+                            comp,
+                            larg,
+                            m2,
+                        ),
+                    )
+            conn.commit()
+    except Exception as e:
+        logging.error("Falha ao registrar sobras: %s", e)
     try:
         with get_db_connection() as conn:
             conn.exec_driver_sql(
@@ -973,6 +1002,77 @@ async def remover_chapa(chapa_id: int):
             conn.exec_driver_sql(
                 f"DELETE FROM {SCHEMA_PREFIX}chapas WHERE id={PLACEHOLDER}",
                 (chapa_id,),
+            )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.get("/chapas-estoque")
+async def listar_chapas_estoque():
+    """Lista o estoque de chapas e sobras."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.exec_driver_sql(
+                f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total FROM {SCHEMA_PREFIX}chapas_estoque"
+            ).fetchall()
+            return [dict(r._mapping) for r in rows]
+    except Exception as e:
+        return {"erro": str(e)}
+
+
+@app.post("/chapas-estoque")
+async def salvar_chapa_estoque(request: Request):
+    """Cria ou atualiza um item de estoque."""
+    dados = await request.json()
+    comp = float(dados.get("comprimento", 0))
+    larg = float(dados.get("largura", 0))
+    m2 = comp * larg / 1000000.0
+    custo_m2 = float(dados.get("custo_m2", 0))
+    total = m2 * custo_m2
+    try:
+        with get_db_connection() as conn:
+            if dados.get("id"):
+                conn.exec_driver_sql(
+                    f"UPDATE {SCHEMA_PREFIX}chapas_estoque SET chapa_id={PLACEHOLDER}, descricao={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER}, m2={PLACEHOLDER}, custo_m2={PLACEHOLDER}, custo_total={PLACEHOLDER} WHERE id={PLACEHOLDER}",
+                    (
+                        dados.get("chapa_id"),
+                        dados.get("descricao"),
+                        comp,
+                        larg,
+                        m2,
+                        custo_m2,
+                        total,
+                        dados["id"],
+                    ),
+                )
+            else:
+                conn.exec_driver_sql(
+                    f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
+                    (
+                        dados.get("chapa_id"),
+                        dados.get("descricao"),
+                        comp,
+                        larg,
+                        m2,
+                        custo_m2,
+                        total,
+                    ),
+                )
+            conn.commit()
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
+@app.delete("/chapas-estoque/{item_id}")
+async def remover_chapa_estoque(item_id: int):
+    try:
+        with get_db_connection() as conn:
+            conn.exec_driver_sql(
+                f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id={PLACEHOLDER}",
+                (item_id,),
             )
             conn.commit()
     except Exception as e:
