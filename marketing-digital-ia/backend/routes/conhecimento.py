@@ -9,7 +9,9 @@ router = APIRouter(tags=["Conhecimento"])
 @router.post("/perguntar-sara")
 async def perguntar_sara(
     request: Request,
-    usuario = Depends(verificar_autenticacao(cargos_permitidos=["Diretoria"]))
+    usuario=Depends(
+        verificar_autenticacao(permissoes=["marketing-ia/chat"])
+    ),
 ):
     dados = await request.json()
     pergunta = dados.get("pergunta")

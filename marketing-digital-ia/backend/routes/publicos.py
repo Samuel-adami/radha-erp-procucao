@@ -5,8 +5,10 @@ from security import verificar_autenticacao
 
 router = APIRouter(prefix="/publicos", tags=["Publicos"])
 
-# ✅ Apenas cargos autorizados podem interagir com essa rota
-autorizacao = Depends(verificar_autenticacao(["Marketing", "Diretoria", "admin"]))
+# ✅ Permissão controlada pelo cadastro de usuários
+autorizacao = Depends(
+    verificar_autenticacao(permissoes=["marketing-ia/publicos-alvo"])
+)
 
 
 @router.post("/", dependencies=[autorizacao])
