@@ -8,8 +8,8 @@ import os
 
 router = APIRouter(prefix="/nova-publicacao", tags=["Publicacoes"])
 
-# Allow administrators to utilizar esta rota também
-autorizacao = verificar_autenticacao(["Marketing", "Diretoria", "admin"])
+# ✅ Permissão controlada pelo cadastro de usuários
+autorizacao = verificar_autenticacao(permissoes=["marketing-ia/nova-publicacao"])
 
 class PublicacaoInput(BaseModel):
     tema: str

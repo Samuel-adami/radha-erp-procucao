@@ -273,10 +273,11 @@ As variáveis sem comentário são obrigatórias para execução de cada backend
 
 ## 9. Permissões por Rota
 
-| Módulo | Caminho | Cargos requeridos |
-|--------|---------|-------------------|
-| Marketing | `/chat/` | Diretoria, Marketing, Diretor, Comercial, Logística, admin |
-| Marketing | `/nova-campanha/` e `/nova-publicacao/` | Marketing, Diretoria |
-| Marketing | `/publicos/` | Marketing, Diretoria |
-| Marketing | `/conhecimento/perguntar-sara` | Diretoria |
+| Módulo | Caminho | Permissão requerida |
+|--------|---------|--------------------|
+| Marketing | `/chat/` | `marketing-ia/chat` |
+| Marketing | `/nova-campanha/` | `marketing-ia/nova-campanha` |
+| Marketing | `/nova-publicacao/` | `marketing-ia/nova-publicacao` |
+| Marketing | `/publicos/` | `marketing-ia/publicos-alvo` |
+| Marketing | `/conhecimento/perguntar-sara` | `marketing-ia/chat` |
 | Outros módulos | Demais rotas | Qualquer usuário autenticado |
