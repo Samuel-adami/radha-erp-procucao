@@ -473,6 +473,7 @@ async def executar_nesting_final(request: Request):
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
     config_layers = dados.get("config_layers")
+    sobras_ids = dados.get("sobras_ids", [])
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
 
@@ -558,17 +559,18 @@ async def executar_nesting_final(request: Request):
                     tuple(sobras_ids),
                 )
                 for r in rows_sel:
+                    rm = r._mapping if hasattr(r, "_mapping") else None
                     conn.exec_driver_sql(
                         f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
                         (
-                            r["chapa_id"],
-                            r["descricao"],
-                            r["comprimento"],
-                            r["largura"],
-                            r["m2"],
-                            r["custo_m2"],
-                            r["custo_total"],
-                            r["origem"],
+                            (rm.get("chapa_id") if rm else r[0]),
+                            (rm.get("descricao") if rm else r[1]),
+                            (rm.get("comprimento") if rm else r[2]),
+                            (rm.get("largura") if rm else r[3]),
+                            (rm.get("m2") if rm else r[4]),
+                            (rm.get("custo_m2") if rm else r[5]),
+                            (rm.get("custo_total") if rm else r[6]),
+                            (rm.get("origem") if rm else r[7]),
                             origem_lote,
                             datetime.now().isoformat(),
                         ),
@@ -1139,7 +1141,14 @@ async def listar_chapas_estoque(descricao: str | None = None):
             if descricao:
                 sql += " WHERE descricao ILIKE " + PLACEHOLDER
                 params = (f"%{descricao}%",)
-            rows = conn.exec_driver_sql(sql, params).fetchall()
+            try:
+                rows = conn.exec_driver_sql(sql, params).fetchall()
+            except Exception as e:
+                if "origem" in str(e):
+                    sql = sql.replace(", origem, reservada", "")
+                    rows = conn.exec_driver_sql(sql, params).fetchall()
+                    return [dict(r._mapping) for r in rows]
+                raise
             return [dict(r._mapping) for r in rows]
     except Exception as e:
         return {"erro": str(e)}
