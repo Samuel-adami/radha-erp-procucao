@@ -9,7 +9,8 @@ const PERMISSOES_DISPONIVEIS = {
     'marketing-ia/chat',
     'marketing-ia/nova-campanha',
     'marketing-ia/nova-publicacao',
-    'marketing-ia/publicos-alvo'
+    'marketing-ia/publicos-alvo',
+    'marketing-ia/gestao-leads'
   ],
   'Produção': [
     'producao',
