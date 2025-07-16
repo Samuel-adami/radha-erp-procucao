@@ -82,7 +82,8 @@ const CadastroChapas = () => {
         {chapas.map((c) => (
           <li key={c.id} className="flex justify-between items-center border rounded p-2">
             <span>
-              {c.propriedade} {c.espessura}mm ({c.comprimento} x {c.largura}) {c.possui_veio ? "- possui veio" : ""}
+              {c.propriedade} ({c.comprimento} x {c.largura}){" "}
+              {c.possui_veio ? "- possui veio" : ""}
             </span>
             <div className="space-x-2">
               <Button size="sm" variant="outline" onClick={() => editar(c)}>
