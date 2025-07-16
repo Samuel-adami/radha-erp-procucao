@@ -3,7 +3,11 @@ import tempfile
 import os
 from sqlalchemy import text
 from database import get_db_connection
-from ..storage import upload_file
+# `services` is loaded as a namespace package when running the backend
+# directly from the `backend` directory. Relative imports that traverse
+# above the top-level package (e.g. ``..storage``) fail in this
+# configuration, so we use an absolute import instead.
+from storage import upload_file
 
 
 def obter_info(rd_id: str) -> dict | None:
