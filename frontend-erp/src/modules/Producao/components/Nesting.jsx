@@ -71,6 +71,9 @@ const Nesting = () => {
   const [chapas, setChapas] = useState([]);
   const [filaChapas, setFilaChapas] = useState([]);
   const [chapaAtual, setChapaAtual] = useState(null);
+  const [sobrasDisp, setSobrasDisp] = useState({});
+  const [sobrasSel, setSobrasSel] = useState([]);
+  const [mostrarSobras, setMostrarSobras] = useState(false);
 
   useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
@@ -136,6 +139,12 @@ const Nesting = () => {
         return false;
       }
       const materiais = resp.materiais || [];
+      const estoque = {};
+      for (const m of materiais) {
+        const e = await fetchComAuth(`/chapas-estoque?descricao=${encodeURIComponent(m)}`);
+        if (Array.isArray(e)) estoque[m] = e;
+      }
+      setSobrasDisp(estoque);
       const faltantes = materiais.filter(
         (m) => !chapas.some((c) => normalizar(c.propriedade) === normalizar(m))
       );
@@ -144,12 +153,14 @@ const Nesting = () => {
         setFilaChapas(filaInicial);
         setChapaAtual(filaInicial[0]);
         setAguardarExecucao(true);
-        return false;
+        return { ok: false };
       }
-      return true;
+      const temSobras = Object.keys(estoque).length > 0;
+      setMostrarSobras(temSobras);
+      return { ok: true, temSobras };
     } catch (err) {
       alert('Erro ao verificar chapas');
-      return false;
+      return { ok: false };
     }
   };
 
@@ -226,8 +237,9 @@ const Nesting = () => {
       return;
     }
     
-    if (!(await verificarChapas())) return;
-    await executarBackend();
+    const respChapas = await verificarChapas();
+    if (!respChapas.ok) return;
+    if (!respChapas.temSobras) await executarBackend();
 
     localStorage.setItem(
       'ultimaExecucaoNesting',
@@ -237,6 +249,7 @@ const Nesting = () => {
         alturaChapa,
       })
     );
+    localStorage.setItem('sobrasSelecionadas', JSON.stringify(sobrasSel));
     navigate('visualizacao');
   };
 
@@ -313,6 +326,52 @@ const Nesting = () => {
       </div>
       {resultado && (
         <p className="text-sm">Arquivos gerados em: {resultado}</p>
+      )}
+      {mostrarSobras && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 space-y-2 rounded shadow max-w-sm w-full">
+            <h3 className="font-semibold">Selecione Sobras para Utilizar</h3>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={Object.values(sobrasDisp).flat().every((s) => sobrasSel.includes(s.id))}
+                onChange={(e) => {
+                  if (e.target.checked) setSobrasSel(Object.values(sobrasDisp).flat().map((s) => s.id));
+                  else setSobrasSel([]);
+                }}
+              />
+              <span>Marcar Todas</span>
+            </label>
+            <div className="max-h-60 overflow-y-auto text-sm">
+              {Object.entries(sobrasDisp).map(([m, lista]) => (
+                <div key={m} className="mt-2">
+                  <div className="font-semibold">{m}</div>
+                  {lista.map((s) => (
+                    <label key={s.id} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={sobrasSel.includes(s.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) setSobrasSel((prev) => [...prev, s.id]);
+                          else setSobrasSel((prev) => prev.filter((x) => x !== s.id));
+                        }}
+                      />
+                      <span>{s.descricao}</span>
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div className="space-x-2 pt-2">
+              <Button onClick={() => { setMostrarSobras(false); executarBackend(); }}>
+                Confirmar
+              </Button>
+              <Button variant="outline" onClick={() => { setSobrasSel([]); setMostrarSobras(false); executarBackend(); }}>
+                Ignorar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
       {nestings.length > 0 && (
         <div className="mt-4">

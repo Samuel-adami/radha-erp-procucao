@@ -101,8 +101,10 @@ const VisualizacaoNesting: React.FC = () => {
           ferramentas: JSON.parse(localStorage.getItem('ferramentasNesting') || '[]'),
           config_maquina: JSON.parse(localStorage.getItem('configMaquina') || 'null'),
           config_layers: JSON.parse(localStorage.getItem('configLayers') || '[]'),
+          sobras_ids: JSON.parse(localStorage.getItem('sobrasSelecionadas') || '[]'),
         }),
       });
+      localStorage.removeItem('sobrasSelecionadas');
       setConfirmado(true);
     } catch (e) {
       alert('Falha ao confirmar');

@@ -44,7 +44,7 @@ from nesting import (
     _sanitize_material_name,
 )
 import ezdxf
-from typing import Union
+from typing import Union, Dict, List
 
 
 def _age_seconds(value) -> float | None:
@@ -399,6 +399,7 @@ async def executar_nesting(request: Request):
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
     config_layers = dados.get("config_layers")
+    sobras_ids = dados.get("sobras_ids", [])
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
 
@@ -415,6 +416,7 @@ async def executar_nesting(request: Request):
             ferramentas,
             config_layers,
             config_maquina,
+            None,
         )
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
@@ -451,6 +453,7 @@ async def nesting_preview(request: Request):
             ferramentas,
             config_layers,
             config_maquina,
+            None,
         )
     except Exception as e:
         return {"erro": str(e)}
@@ -479,6 +482,18 @@ async def executar_nesting_final(request: Request):
         return {"erro": str(e)}
 
     try:
+        estoque_sel: Dict[str, List[Dict]] = {}
+        if sobras_ids:
+            with get_db_connection() as conn:
+                placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
+                rows = conn.exec_driver_sql(
+                    f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
+                    tuple(sobras_ids),
+                ).fetchall()
+                for r in rows:
+                    mat = (r._mapping.get("descricao") or "").split("(")[0].strip()
+                    estoque_sel.setdefault(mat, []).append(dict(r._mapping))
+
         pasta_resultado, sobras = gerar_nesting(
             str(pasta_lote_resolved),
             largura_chapa,
@@ -486,6 +501,7 @@ async def executar_nesting_final(request: Request):
             ferramentas,
             config_layers,
             config_maquina,
+            estoque_sel,
         )
     except Exception as e:
         return {"erro": str(e)}
@@ -504,6 +520,7 @@ async def executar_nesting_final(request: Request):
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
     try:
         with get_db_connection() as conn:
+            origem_lote = Path(pasta_lote).stem
             for placa in sobras:
                 for s in placa:
                     mat = s.get("Material")
@@ -517,15 +534,43 @@ async def executar_nesting_final(request: Request):
                     ).fetchone()
                     chapa_id = row[0] if row else None
                     m2 = comp * larg / 1000000.0
+                    desc = f"{mat} ({int(comp)} x {int(larg)})"
                     conn.exec_driver_sql(
-                        f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total) "
-                        f"VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},0,0)",
+                        f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, reservada) "
+                        f"VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},0,0,{PLACEHOLDER},0)",
                         (
                             chapa_id,
-                            mat,
+                            desc,
                             comp,
                             larg,
                             m2,
+                            origem_lote,
+                        ),
+                    )
+            if sobras_ids:
+                placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
+                rows_sel = conn.exec_driver_sql(
+                    f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
+                    tuple(sobras_ids),
+                ).fetchall()
+                conn.exec_driver_sql(
+                    f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
+                    tuple(sobras_ids),
+                )
+                for r in rows_sel:
+                    conn.exec_driver_sql(
+                        f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
+                        (
+                            r["chapa_id"],
+                            r["descricao"],
+                            r["comprimento"],
+                            r["largura"],
+                            r["m2"],
+                            r["custo_m2"],
+                            r["custo_total"],
+                            r["origem"],
+                            origem_lote,
+                            datetime.now().isoformat(),
                         ),
                     )
             conn.commit()
@@ -786,20 +831,28 @@ async def remover_nesting(request: Request):
     dados = await request.json()
     nid = dados.get("id")
     obj_key = dados.get("obj_key")
+    lote_nome = None
     try:
         with get_db_connection() as conn:
             if nid:
                 row = conn.exec_driver_sql(
-                    f"SELECT obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
+                    f"SELECT lote, obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 ).fetchone()
                 if row:
-                    obj_key = obj_key or (row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key"))
+                    lote_nome = row["lote"] if hasattr(row, "_mapping") else row[0]
+                    obj_key = obj_key or (row["obj_key"] if hasattr(row, "_mapping") else row[1])
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 )
             elif obj_key:
+                row = conn.exec_driver_sql(
+                    f"SELECT lote FROM {SCHEMA_PREFIX}nestings WHERE obj_key={PLACEHOLDER}",
+                    (obj_key,),
+                ).fetchone()
+                if row:
+                    lote_nome = row["lote"] if hasattr(row, "_mapping") else row[0]
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE obj_key={PLACEHOLDER}",
                     (obj_key,),
@@ -817,6 +870,17 @@ async def remover_nesting(request: Request):
             shutil.rmtree(pasta_local, ignore_errors=True)
 
         delete_file(obj_key)
+
+    if lote_nome:
+        try:
+            with get_db_connection() as conn:
+                conn.exec_driver_sql(
+                    f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE origem={PLACEHOLDER} AND COALESCE(reservada,0)=0",
+                    (Path(lote_nome).stem,),
+                )
+                conn.commit()
+        except Exception:
+            pass
     return {"status": "ok"}
 
 
@@ -881,6 +945,19 @@ async def salvar_config_maquina(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"status": "ok"}
+
+
+@app.get("/chapas-estoque-mov")
+async def listar_chapas_estoque_mov():
+    """Lista as movimentacoes de estoque registradas."""
+    try:
+        with get_db_connection() as conn:
+            rows = conn.exec_driver_sql(
+                f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em FROM {SCHEMA_PREFIX}chapas_estoque_mov ORDER BY id DESC"
+            ).fetchall()
+            return [dict(r._mapping) for r in rows]
+    except Exception as e:
+        return {"erro": str(e)}
 
 
 # Novos endpoints para persistir ferramentas, configuracoes de corte e layers
@@ -1053,13 +1130,16 @@ async def remover_chapa(chapa_id: int):
 
 
 @app.get("/chapas-estoque")
-async def listar_chapas_estoque():
+async def listar_chapas_estoque(descricao: str | None = None):
     """Lista o estoque de chapas e sobras."""
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(
-                f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total FROM {SCHEMA_PREFIX}chapas_estoque"
-            ).fetchall()
+            sql = f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, reservada FROM {SCHEMA_PREFIX}chapas_estoque"
+            params: tuple = ()
+            if descricao:
+                sql += " WHERE descricao ILIKE " + PLACEHOLDER
+                params = (f"%{descricao}%",)
+            rows = conn.exec_driver_sql(sql, params).fetchall()
             return [dict(r._mapping) for r in rows]
     except Exception as e:
         return {"erro": str(e)}
@@ -1078,7 +1158,7 @@ async def salvar_chapa_estoque(request: Request):
         with get_db_connection() as conn:
             if dados.get("id"):
                 conn.exec_driver_sql(
-                    f"UPDATE {SCHEMA_PREFIX}chapas_estoque SET chapa_id={PLACEHOLDER}, descricao={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER}, m2={PLACEHOLDER}, custo_m2={PLACEHOLDER}, custo_total={PLACEHOLDER} WHERE id={PLACEHOLDER}",
+                    f"UPDATE {SCHEMA_PREFIX}chapas_estoque SET chapa_id={PLACEHOLDER}, descricao={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER}, m2={PLACEHOLDER}, custo_m2={PLACEHOLDER}, custo_total={PLACEHOLDER}, origem={PLACEHOLDER}, reservada={PLACEHOLDER} WHERE id={PLACEHOLDER}",
                     (
                         dados.get("chapa_id"),
                         dados.get("descricao"),
@@ -1087,12 +1167,14 @@ async def salvar_chapa_estoque(request: Request):
                         m2,
                         custo_m2,
                         total,
+                        dados.get("origem"),
+                        int(dados.get("reservada", 0)),
                         dados["id"],
                     ),
                 )
             else:
                 conn.exec_driver_sql(
-                    f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
+                    f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, reservada) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
                     (
                         dados.get("chapa_id"),
                         dados.get("descricao"),
@@ -1101,6 +1183,8 @@ async def salvar_chapa_estoque(request: Request):
                         m2,
                         custo_m2,
                         total,
+                        dados.get("origem"),
+                        int(dados.get("reservada", 0)),
                     ),
                 )
             conn.commit()
@@ -1110,9 +1194,35 @@ async def salvar_chapa_estoque(request: Request):
 
 
 @app.delete("/chapas-estoque/{item_id}")
-async def remover_chapa_estoque(item_id: int):
+async def remover_chapa_estoque(item_id: int, request: Request):
+    dados = {}
+    try:
+        dados = await request.json()
+    except Exception:
+        pass
+    destino = dados.get("destino")
     try:
         with get_db_connection() as conn:
+            item = conn.exec_driver_sql(
+                f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id={PLACEHOLDER}",
+                (item_id,),
+            ).fetchone()
+            if item:
+                conn.exec_driver_sql(
+                    f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
+                    (
+                        item["chapa_id"],
+                        item["descricao"],
+                        item["comprimento"],
+                        item["largura"],
+                        item["m2"],
+                        item["custo_m2"],
+                        item["custo_total"],
+                        item["origem"],
+                        destino,
+                        datetime.now().isoformat(),
+                    ),
+                )
             conn.exec_driver_sql(
                 f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id={PLACEHOLDER}",
                 (item_id,),
