@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from services.openai_service import gerar_resposta, gerar_imagem, gerar_imagem_com_texto
+from services.openai_service import gerar_resposta, gerar_imagem
 from security import verificar_autenticacao
 import os
 
@@ -20,7 +20,6 @@ class PublicacaoInput(BaseModel):
 
 class ImagemInput(BaseModel):
     prompt: str
-    texto: str = None  # opcional
 
 @router.post("/")
 async def criar_publicacao(input: PublicacaoInput, user=Depends(autorizacao)):
@@ -95,9 +94,6 @@ async def criar_publicacao(input: PublicacaoInput, user=Depends(autorizacao)):
 async def gerar_imagem_ia(input: ImagemInput, user=Depends(autorizacao)):
     try:
         url = await gerar_imagem(input.prompt)
-        if input.texto:
-            imagem_base64 = gerar_imagem_com_texto(url, input.texto)
-            return {"imagem": imagem_base64}
         return {"imagem": url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
