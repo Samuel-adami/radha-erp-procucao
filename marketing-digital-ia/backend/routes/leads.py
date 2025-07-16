@@ -1,4 +1,10 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File, Form
+import json
+import httpx
+import os
+from services.leads_info_service import obter_info, salvar_info
+
+GATEWAY_URL = os.getenv("GATEWAY_URL", "http://127.0.0.1:8040")
 from datetime import datetime
 from services.rdstation_service import obter_leads
 from security import verificar_autenticacao
@@ -51,3 +57,44 @@ async def listar_leads(
     ]
 
     return {"leads": leads_filtrados}
+
+
+@router.get("/info/{rd_id}", dependencies=[autorizacao])
+async def detalhes_lead(rd_id: str):
+    info = obter_info(rd_id)
+    return info or {}
+
+
+@router.post("/info/{rd_id}", dependencies=[autorizacao])
+async def atualizar_lead(
+    rd_id: str,
+    estagio: str = Form(...),
+    descricao: str = Form(""),
+    vendedor_id: int | None = Form(None),
+    cliente: str | None = Form(None),
+    files: list[UploadFile] = File([]),
+):
+    arquivos = []
+    for f in files:
+        arquivos.append((f.filename, await f.read()))
+    dados = {"estagio": estagio, "descricao": descricao, "vendedor_id": vendedor_id}
+
+    info = obter_info(rd_id) or {}
+
+    if estagio.lower() == "convertido" and not info.get("cliente_id"):
+        cliente_data = json.loads(cliente) if cliente else {}
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(f"{GATEWAY_URL}/clientes", json=cliente_data)
+            resp.raise_for_status()
+            cid = resp.json().get("id")
+            at_resp = await client.post(
+                f"{GATEWAY_URL}/comercial/atendimentos",
+                json={"cliente": cliente_data.get("nome"), "vendedor": vendedor_id},
+            )
+            at_resp.raise_for_status()
+            aid = at_resp.json().get("id")
+        dados["cliente_id"] = cid
+        dados["atendimento_id"] = aid
+
+    nova_info = salvar_info(rd_id, dados, arquivos)
+    return nova_info
