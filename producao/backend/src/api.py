@@ -141,13 +141,17 @@ def ensure_pasta_local(key: str) -> Path:
 def proximo_oc_numero() -> int:
     """Retorna o próximo número sequencial de OC."""
     with get_db_connection() as conn:
-        row = conn.execute(
-            text(f"SELECT MAX(oc_numero) as m FROM {SCHEMA_PREFIX}lotes_ocorrencias")
-        ).fetchone()
+        row = (
+            conn.execute(
+                text(f"SELECT MAX(oc_numero) as m FROM {SCHEMA_PREFIX}lotes_ocorrencias")
+            )
+            .mappings()
+            .fetchone()
+        )
         if row is None:
             max_val = 0
         else:
-            m_val = row[0] if not hasattr(row, "_mapping") else row._mapping.get("m")
+            m_val = row.get("m")
             try:
                 max_val = int(m_val) if m_val is not None else 0
             except (ValueError, TypeError):
@@ -473,6 +477,7 @@ async def executar_nesting_final(request: Request):
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
     config_layers = dados.get("config_layers")
+    sobras_ids = dados.get("sobras_ids", [])
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
 
@@ -486,13 +491,17 @@ async def executar_nesting_final(request: Request):
         if sobras_ids:
             with get_db_connection() as conn:
                 placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
-                rows = conn.exec_driver_sql(
-                    f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
-                    tuple(sobras_ids),
-                ).fetchall()
+                rows = (
+                    conn.exec_driver_sql(
+                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
+                        tuple(sobras_ids),
+                    )
+                    .mappings()
+                    .all()
+                )
                 for r in rows:
-                    mat = (r._mapping.get("descricao") or "").split("(")[0].strip()
-                    estoque_sel.setdefault(mat, []).append(dict(r._mapping))
+                    desc = (r.get("descricao") or "").split("(")[0].strip()
+                    estoque_sel.setdefault(desc, []).append(dict(r))
 
         pasta_resultado, sobras = gerar_nesting(
             str(pasta_lote_resolved),
@@ -549,10 +558,14 @@ async def executar_nesting_final(request: Request):
                     )
             if sobras_ids:
                 placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
-                rows_sel = conn.exec_driver_sql(
-                    f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
-                    tuple(sobras_ids),
-                ).fetchall()
+                rows_sel = (
+                    conn.exec_driver_sql(
+                        f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
+                        tuple(sobras_ids),
+                    )
+                    .mappings()
+                    .all()
+                )
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
                     tuple(sobras_ids),
@@ -561,14 +574,14 @@ async def executar_nesting_final(request: Request):
                     conn.exec_driver_sql(
                         f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
                         (
-                            r["chapa_id"],
-                            r["descricao"],
-                            r["comprimento"],
-                            r["largura"],
-                            r["m2"],
-                            r["custo_m2"],
-                            r["custo_total"],
-                            r["origem"],
+                            r.get("chapa_id"),
+                            r.get("descricao"),
+                            r.get("comprimento"),
+                            r.get("largura"),
+                            r.get("m2"),
+                            r.get("custo_m2"),
+                            r.get("custo_total"),
+                            r.get("origem"),
                             origem_lote,
                             datetime.now().isoformat(),
                         ),
@@ -645,10 +658,14 @@ async def listar_lotes():
     lotes_validos: list[str] = []
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(
-                f"SELECT id, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes ORDER BY id"
-            ).fetchall()
-            dados = [dict(r._mapping) for r in rows]
+            rows = (
+                conn.exec_driver_sql(
+                    f"SELECT id, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes ORDER BY id"
+                )
+                .mappings()
+                .all()
+            )
+            dados = [dict(r) for r in rows]
             logging.info("%d lotes encontrados no banco", len(dados))
 
             novos: list[str] = []
@@ -699,10 +716,14 @@ async def listar_nestings():
     dados: list[dict] = []
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(
-                f"SELECT id, lote, obj_key, criado_em FROM {SCHEMA_PREFIX}nestings ORDER BY id DESC"
-            ).fetchall()
-            dados = [dict(r._mapping) for r in rows]
+            rows = (
+                conn.exec_driver_sql(
+                    f"SELECT id, lote, obj_key, criado_em FROM {SCHEMA_PREFIX}nestings ORDER BY id DESC"
+                )
+                .mappings()
+                .all()
+            )
+            dados = [dict(r) for r in rows]
             logging.info("%d nestings encontrados no banco", len(dados))
 
             novos: list[dict] = []
@@ -739,17 +760,18 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     """Compacta e faz o download do lote especificado."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key IN (%s, %s)",
-                (
-                    f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",
-                    f"lotes/Lote_{lote}.zip",
-                ),
-            ).fetchone()
-            if row:
-                object_name = row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key")
-            else:
-                object_name = None
+            row = (
+                conn.exec_driver_sql(
+                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key IN (%s, %s)",
+                    (
+                        f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",
+                        f"lotes/Lote_{lote}.zip",
+                    ),
+                )
+                .mappings()
+                .fetchone()
+            )
+            object_name = row.get("obj_key") if row else None
     except Exception:
         object_name = None
 
@@ -783,14 +805,15 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     """Compacta e faz o download dos arquivos de uma otimização."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                f"SELECT obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
-                (nid,),
-            ).fetchone()
-            if row:
-                object_name = row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key")
-            else:
-                object_name = None
+            row = (
+                conn.exec_driver_sql(
+                    f"SELECT obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
+                    (nid,),
+                )
+                .mappings()
+                .fetchone()
+            )
+            object_name = row.get("obj_key") if row else None
     except Exception:
         object_name = None
 
@@ -835,24 +858,32 @@ async def remover_nesting(request: Request):
     try:
         with get_db_connection() as conn:
             if nid:
-                row = conn.exec_driver_sql(
-                    f"SELECT lote, obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
-                    (nid,),
-                ).fetchone()
+                row = (
+                    conn.exec_driver_sql(
+                        f"SELECT lote, obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
+                        (nid,),
+                    )
+                    .mappings()
+                    .fetchone()
+                )
                 if row:
-                    lote_nome = row["lote"] if hasattr(row, "_mapping") else row[0]
-                    obj_key = obj_key or (row["obj_key"] if hasattr(row, "_mapping") else row[1])
+                    lote_nome = row.get("lote")
+                    obj_key = obj_key or row.get("obj_key")
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
                     (nid,),
                 )
             elif obj_key:
-                row = conn.exec_driver_sql(
-                    f"SELECT lote FROM {SCHEMA_PREFIX}nestings WHERE obj_key={PLACEHOLDER}",
-                    (obj_key,),
-                ).fetchone()
+                row = (
+                    conn.exec_driver_sql(
+                        f"SELECT lote FROM {SCHEMA_PREFIX}nestings WHERE obj_key={PLACEHOLDER}",
+                        (obj_key,),
+                    )
+                    .mappings()
+                    .fetchone()
+                )
                 if row:
-                    lote_nome = row["lote"] if hasattr(row, "_mapping") else row[0]
+                    lote_nome = row.get("lote")
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}nestings WHERE obj_key={PLACEHOLDER}",
                     (obj_key,),
@@ -919,11 +950,15 @@ async def obter_config_maquina():
     """Retorna a configuracao de maquina persistida."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                "SELECT dados FROM config_maquina WHERE id=1"
-            ).fetchone()
+            row = (
+                conn.exec_driver_sql(
+                    "SELECT dados FROM config_maquina WHERE id=1"
+                )
+                .mappings()
+                .fetchone()
+            )
             if row:
-                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                dados_str = row.get("dados")
                 if dados_str is not None:
                     return json.loads(dados_str)
     except Exception as e:
@@ -952,10 +987,14 @@ async def listar_chapas_estoque_mov():
     """Lista as movimentacoes de estoque registradas."""
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(
-                f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em FROM {SCHEMA_PREFIX}chapas_estoque_mov ORDER BY id DESC"
-            ).fetchall()
-            return [dict(r._mapping) for r in rows]
+            rows = (
+                conn.exec_driver_sql(
+                    f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em FROM {SCHEMA_PREFIX}chapas_estoque_mov ORDER BY id DESC"
+                )
+                .mappings()
+                .all()
+            )
+            return [dict(r) for r in rows]
     except Exception as e:
         return {"erro": str(e)}
 
@@ -968,11 +1007,15 @@ async def obter_ferramentas():
     """Retorna a lista de ferramentas salva."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                "SELECT dados FROM config_ferramentas WHERE id=1"
-            ).fetchone()
+            row = (
+                conn.exec_driver_sql(
+                    "SELECT dados FROM config_ferramentas WHERE id=1"
+                )
+                .mappings()
+                .fetchone()
+            )
             if row:
-                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                dados_str = row.get("dados")
                 if dados_str is not None:
                     return json.loads(dados_str)
     except Exception as e:
@@ -1001,11 +1044,15 @@ async def obter_cortes():
     """Retorna as configuracoes de corte salvas."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                "SELECT dados FROM config_cortes WHERE id=1"
-            ).fetchone()
+            row = (
+                conn.exec_driver_sql(
+                    "SELECT dados FROM config_cortes WHERE id=1"
+                )
+                .mappings()
+                .fetchone()
+            )
             if row:
-                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                dados_str = row.get("dados")
                 if dados_str is not None:
                     return json.loads(dados_str)
     except Exception as e:
@@ -1034,11 +1081,15 @@ async def obter_layers():
     """Retorna configuracoes de layers salvas."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                "SELECT dados FROM config_layers WHERE id=1"
-            ).fetchone()
+            row = (
+                conn.exec_driver_sql(
+                    "SELECT dados FROM config_layers WHERE id=1"
+                )
+                .mappings()
+                .fetchone()
+            )
             if row:
-                dados_str = row[0] if not hasattr(row, "_mapping") else row._mapping.get("dados")
+                dados_str = row.get("dados")
                 if dados_str is not None:
                     return json.loads(dados_str)
     except Exception as e:
@@ -1067,10 +1118,14 @@ async def listar_chapas():
     """Retorna todas as chapas cadastradas."""
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(
-                f"SELECT id, possui_veio, propriedade, espessura, comprimento, largura FROM {SCHEMA_PREFIX}chapas"
-            ).fetchall()
-            return [dict(row._mapping) for row in rows]
+            rows = (
+                conn.exec_driver_sql(
+                    f"SELECT id, possui_veio, propriedade, espessura, comprimento, largura FROM {SCHEMA_PREFIX}chapas"
+                )
+                .mappings()
+                .all()
+            )
+            return [dict(row) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
 
@@ -1139,8 +1194,15 @@ async def listar_chapas_estoque(descricao: str | None = None):
             if descricao:
                 sql += " WHERE descricao ILIKE " + PLACEHOLDER
                 params = (f"%{descricao}%",)
-            rows = conn.exec_driver_sql(sql, params).fetchall()
-            return [dict(r._mapping) for r in rows]
+            try:
+                rows = conn.exec_driver_sql(sql, params).mappings().all()
+            except Exception as e:
+                if "origem" in str(e):
+                    sql = sql.replace(", origem, reservada", "")
+                    rows = conn.exec_driver_sql(sql, params).mappings().all()
+                    return [dict(r) for r in rows]
+                raise
+            return [dict(r) for r in rows]
     except Exception as e:
         return {"erro": str(e)}
 
@@ -1203,22 +1265,26 @@ async def remover_chapa_estoque(item_id: int, request: Request):
     destino = dados.get("destino")
     try:
         with get_db_connection() as conn:
-            item = conn.exec_driver_sql(
-                f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id={PLACEHOLDER}",
-                (item_id,),
-            ).fetchone()
+            item = (
+                conn.exec_driver_sql(
+                    f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id={PLACEHOLDER}",
+                    (item_id,),
+                )
+                .mappings()
+                .fetchone()
+            )
             if item:
                 conn.exec_driver_sql(
                     f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
                     (
-                        item["chapa_id"],
-                        item["descricao"],
-                        item["comprimento"],
-                        item["largura"],
-                        item["m2"],
-                        item["custo_m2"],
-                        item["custo_total"],
-                        item["origem"],
+                        item.get("chapa_id"),
+                        item.get("descricao"),
+                        item.get("comprimento"),
+                        item.get("largura"),
+                        item.get("m2"),
+                        item.get("custo_m2"),
+                        item.get("custo_total"),
+                        item.get("origem"),
                         destino,
                         datetime.now().isoformat(),
                     ),
@@ -1242,12 +1308,16 @@ async def listar_lotes_ocorrencias():
     dados: list[dict] = []
     try:
         with get_db_connection() as conn:
-            rows = conn.execute(
-                text(
-                    f"SELECT id, lote, pacote, oc_numero, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes_ocorrencias ORDER BY id"
+            rows = (
+                conn.execute(
+                    text(
+                        f"SELECT id, lote, pacote, oc_numero, obj_key, criado_em FROM {SCHEMA_PREFIX}lotes_ocorrencias ORDER BY id"
+                    )
                 )
-            ).fetchall()
-            dados = [dict(row._mapping) for row in rows]
+                .mappings()
+                .all()
+            )
+            dados = [dict(row) for row in rows]
             logging.info("%d lotes de ocorrências encontrados", len(dados))
 
             novos: list[dict] = []
@@ -1430,12 +1500,16 @@ async def excluir_lote_ocorrencia(oc_id: int):
     """Remove um lote de ocorrência."""
     try:
         with get_db_connection() as conn:
-            row = conn.exec_driver_sql(
-                f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes_ocorrencias WHERE id={PLACEHOLDER}",
-                (oc_id,),
-            ).fetchone()
+            row = (
+                conn.exec_driver_sql(
+                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes_ocorrencias WHERE id={PLACEHOLDER}",
+                    (oc_id,),
+                )
+                .mappings()
+                .fetchone()
+            )
             if row:
-                key = row[0] if not hasattr(row, "_mapping") else row._mapping.get("obj_key")
+                key = row.get("obj_key")
 
                 try:
                     pasta = ensure_pasta_local(key)
@@ -1460,10 +1534,14 @@ async def excluir_lote_ocorrencia(oc_id: int):
 async def listar_motivos():
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(
-                f"SELECT codigo, descricao, tipo, setor FROM {SCHEMA_PREFIX}motivos_ocorrencia ORDER BY codigo"
-            ).fetchall()
-            return [dict(row._mapping) for row in rows]
+            rows = (
+                conn.exec_driver_sql(
+                    f"SELECT codigo, descricao, tipo, setor FROM {SCHEMA_PREFIX}motivos_ocorrencia ORDER BY codigo"
+                )
+                .mappings()
+                .all()
+            )
+            return [dict(row) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
 
@@ -1538,7 +1616,11 @@ async def relatorio_ocorrencias(request: Request):
     query += " ORDER BY o.oc_numero, p.peca_id"
     try:
         with get_db_connection() as conn:
-            rows = conn.exec_driver_sql(query, tuple(params_list)).fetchall()
-            return [dict(row._mapping) for row in rows]
+            rows = (
+                conn.exec_driver_sql(query, tuple(params_list))
+                .mappings()
+                .all()
+            )
+            return [dict(row) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
