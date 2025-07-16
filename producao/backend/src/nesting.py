@@ -1418,6 +1418,7 @@ def gerar_nesting_preview(
 
             if operacoes:
                 desc_chapa = cfg.get("propriedade", material)
+                desc_chapa = f"{desc_chapa} ({int(largura)} x {int(altura)})"
                 chapas.append(
                     {
                         "id": idx,
