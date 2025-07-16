@@ -65,7 +65,7 @@ function ProducaoLayout() {
             Chapas
           </Link>
         )}
-        {possuiPermissao('producao/chapas') && (
+        {possuiPermissao('producao/chapas/estoque') && (
           <Link
             to="chapas/estoque"
             className={`px-3 py-1 rounded ${matchEstoque ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}

@@ -38,6 +38,7 @@ DEFAULT_ADMIN_PERMISSIONS = [
     "producao/apontamento",
     "producao/apontamento-volume",
     "producao/chapas",
+    "producao/chapas/estoque",
     "producao/lote",
     "producao/nesting",
     "producao/ocorrencias",
