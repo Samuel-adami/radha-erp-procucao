@@ -18,6 +18,7 @@ const PERMISSOES_DISPONIVEIS = {
     'producao/apontamento-volume',
     'producao/nesting',
     'producao/chapas',
+    'producao/chapas/estoque',
     'producao/ocorrencias',
     'producao/relatorios/ocorrencias'
   ],
