@@ -306,7 +306,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 
       const novasOps = [];
       if (pos === "C1") {
-        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: 0, y: 0, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: -6, y: 0, largura: 55, comprimento: originalComprimento + 12, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C2" ? originalLargura - 1 : 0;
         novasOps.push({ tipo: "Linha", prefixo: prefixLin, x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) {
@@ -314,7 +314,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
           novasOps.push({ tipo: "Raio", pos: posLinha, raio: 51, subPos });
         }
       } else if (pos === "C2") {
-        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: 0, y: originalLargura - 55, largura: 55, comprimento: originalComprimento, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: -6, y: originalLargura - 55, largura: 55, comprimento: originalComprimento + 12, profundidade: 6.5, estrategia: "Desbaste" });
         const yLinha = posLinha === "C1" ? 0 : originalLargura - 1;
         novasOps.push({ tipo: "Linha", prefixo: prefixLin, x: 0, y: yLinha, largura: 1, comprimento: originalComprimento - descontoLinha, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) {
@@ -324,7 +324,7 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
       } else {
         let x_rect1 = pos === 'L3' ? novoComprimento - 55 : 0;
         const xLinha = posLinha === 'L3' ? novoComprimento - 1 : 0;
-        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: x_rect1, y: 0, largura: originalLargura, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
+        novasOps.push({ tipo: "Retângulo", prefixo: prefixRet, x: x_rect1, y: -6, largura: originalLargura + 12, comprimento: 55, profundidade: 6.5, estrategia: "Desbaste" });
         novasOps.push({ tipo: "Linha", prefixo: prefixLin, x: xLinha, y: 0, largura: originalLargura - descontoLinha, comprimento: 1, profundidade: 18.2, estrategia: "Linha" });
         if (isCurvo) {
           const subPos = espelhar ? "inferior" : "superior";
