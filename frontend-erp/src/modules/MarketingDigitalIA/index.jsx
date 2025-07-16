@@ -7,6 +7,7 @@ import NovaCampanha from './pages/NovaCampanha';
 import NovaPublicacao from './pages/NovaPublicacao';
 import PublicosAlvo from './pages/PublicosAlvo';
 import GestaoLeads from './pages/GestaoLeads';
+import LeadConversao from './pages/LeadConversao';
 
 // Componente de layout para o módulo de Marketing Digital IA
 function MarketingDigitalIALayout() {
@@ -79,6 +80,7 @@ function MarketingDigitalIA() {
         <Route path="nova-publicacao" element={<NovaPublicacao />} />
         <Route path="publicos-alvo" element={<PublicosAlvo />} />
         <Route path="gestao-leads" element={<GestaoLeads />} />
+        <Route path="gestao-leads/converter/:id" element={<LeadConversao />} />
       </Route>
     </Routes>
   );

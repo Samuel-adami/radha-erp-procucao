@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
+import { useNavigate } from 'react-router-dom';
 
 function formatarData(dt) {
   if (!dt) return '';
@@ -15,6 +16,7 @@ function GestaoLeads() {
   const [campanha, setCampanha] = useState('');
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
+  const navigate = useNavigate();
 
   const carregar = async () => {
     setCarregando(true);
@@ -71,9 +73,18 @@ function GestaoLeads() {
                 <td className="p-2 border whitespace-nowrap">{l.estagio}</td>
                 <td className="p-2 border">
                   {l.id && (
-                    <a href={`https://app.rdstation.com.br/contacts/${l.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                      Abrir
-                    </a>
+                    <>
+                      <a href={`https://app.rdstation.com.br/contacts/${l.id}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                        Abrir
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`converter/${l.id}`, { state: l })}
+                        className="ml-2 text-blue-600 underline"
+                      >
+                        Converter
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

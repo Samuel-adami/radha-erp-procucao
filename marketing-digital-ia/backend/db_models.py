@@ -26,3 +26,18 @@ class PublicoAlvoDB(Base):
     genero = Column(String)
     interesses = Column(String)
     localizacao = Column(String)
+
+
+class LeadInfoDB(Base):
+    """Informações adicionais sobre os leads importados."""
+
+    __tablename__ = "leads_info"
+
+    id = Column(Integer, primary_key=True)
+    rd_id = Column(String, unique=True, nullable=False)
+    estagio = Column(String, default="Lead Novo")
+    descricao = Column(String)
+    arquivos_json = Column(String)
+    vendedor_id = Column(Integer)
+    cliente_id = Column(Integer)
+    atendimento_id = Column(Integer)
