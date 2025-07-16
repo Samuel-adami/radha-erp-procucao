@@ -19,6 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 import base64
 import requests
+import re
 
 # 🔄 Variáveis de ambiente
 load_dotenv()
@@ -39,6 +40,10 @@ else:
     client = None
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+# Remove referências de arquivos (ex.: [4:0+identidade.md]) das respostas
+def remover_referencias(texto: str) -> str:
+    return re.sub(r"\[\d+:\d+\+[^\]]+\]", "", texto).strip()
 
 # 🎯 Geração de resposta via Assistant com arquivos
 async def gerar_resposta(mensagem: str, id_assistant: str) -> str:
@@ -69,9 +74,10 @@ async def gerar_resposta(mensagem: str, id_assistant: str) -> str:
 
         messages = await client.beta.threads.messages.list(thread_id=thread.id)
         respostas = [
-            msg.content[0].text.value.strip()
+            remover_referencias(msg.content[0].text.value)
             for msg in messages.data if msg.role == "assistant"
         ]
+        respostas = [r for r in map(str.strip, respostas) if r]
         return "\n\n".join(respostas) if respostas else "O assistente não retornou uma resposta."
 
     except OpenAIError as e:
