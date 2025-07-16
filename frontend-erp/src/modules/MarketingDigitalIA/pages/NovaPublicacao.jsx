@@ -1,6 +1,23 @@
 import React, { useState } from 'react';
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 
+function baixarTexto(conteudo, nomeArquivo) {
+  const blob = new Blob([conteudo], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function baixarImagem(src, nome) {
+  const a = document.createElement('a');
+  a.href = src;
+  a.download = nome;
+  a.click();
+}
+
 function NovaPublicacao() {
   const [tema, setTema] = useState('');
   const [objetivo, setObjetivo] = useState('');
@@ -34,25 +51,25 @@ function NovaPublicacao() {
       setResposta(resultado.publicacao);
 
       if (gerarImagem) {
-        const slides = resultado.publicacao.split(/#### Slide \d+/g).slice(1); // Remove o trecho anterior ao primeiro slide
-        const imagensGeradas = [];
-
-        for (const slide of slides) {
-          const textoMatch = slide.match(/\*\*Texto:\*\*\s*"(.*?)"/);
-          const promptMatch = slide.match(/\*\*Prompt para imagem:\*\*\s*(.*)/);
-
-          const texto = textoMatch ? textoMatch[1] : '';
-          const prompt = promptMatch ? promptMatch[1] : texto;
-
-          const imagem = await fetchComAuth('/nova-publicacao/gerar-imagem', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, texto })
-          });
-
-          imagensGeradas.push(imagem.imagem);
+        const prompts = [];
+        const regex = /\*\*Prompt para imagem:\*\*\s*(.*)/g;
+        let match;
+        while ((match = regex.exec(resultado.publicacao)) !== null) {
+          if (match[1]) prompts.push(match[1].trim());
+        }
+        if (prompts.length === 0) {
+          prompts.push(resultado.publicacao);
         }
 
+        const imagensGeradas = [];
+        for (let i = 0; i < prompts.length; i++) {
+          const resp = await fetchComAuth('/nova-publicacao/gerar-imagem', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompts[i] })
+          });
+          imagensGeradas.push(resp.imagem);
+        }
         setImagens(imagensGeradas);
       }
     } catch (err) {
@@ -126,14 +143,32 @@ function NovaPublicacao() {
 
       {resposta && (
         <div className="mt-6 p-4 bg-green-100 text-green-900 whitespace-pre-line rounded">
-          <strong>Resposta:</strong><br />{resposta}
+          <div className="flex justify-between items-start">
+            <div>
+              <strong>Resposta:</strong><br />{resposta}
+            </div>
+            <button
+              onClick={() => baixarTexto(resposta, 'publicacao.txt')}
+              className="ml-4 text-sm text-blue-700 underline"
+            >
+              Baixar texto
+            </button>
+          </div>
         </div>
       )}
 
       {imagens.length > 0 && (
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {imagens.map((img, idx) => (
-            <img key={idx} src={img} alt={`Imagem ${idx + 1}`} className="w-full rounded" />
+            <div key={idx} className="flex flex-col items-center">
+              <img src={img} alt={`Imagem ${idx + 1}`} className="w-full rounded" />
+              <button
+                onClick={() => baixarImagem(img, `imagem_${idx + 1}.png`)}
+                className="mt-1 text-sm text-blue-700 underline"
+              >
+                Baixar imagem
+              </button>
+            </div>
           ))}
         </div>
       )}

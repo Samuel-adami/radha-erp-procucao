@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComAuth } from "../../../utils/fetchComAuth";
 
+function baixarTexto(conteudo, nomeArquivo) {
+  const blob = new Blob([conteudo], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomeArquivo;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function NovaCampanha() {
   const [tema, setTema] = useState('');
   const [objetivo, setObjetivo] = useState('');
@@ -116,7 +126,17 @@ function NovaCampanha() {
 
       {resposta && (
         <div className="mt-4 p-4 bg-green-100 text-green-900 rounded whitespace-pre-wrap">
-          <strong>Resposta:</strong><br />{resposta}
+          <div className="flex justify-between items-start">
+            <div>
+              <strong>Resposta:</strong><br />{resposta}
+            </div>
+            <button
+              onClick={() => baixarTexto(resposta, 'campanha.txt')}
+              className="ml-4 text-sm text-blue-700 underline"
+            >
+              Baixar texto
+            </button>
+          </div>
         </div>
       )}
 
