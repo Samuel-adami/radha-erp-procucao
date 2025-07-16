@@ -33,6 +33,7 @@ DEFAULT_ADMIN_PERMISSIONS = [
     "marketing-ia/nova-campanha",
     "marketing-ia/nova-publicacao",
     "marketing-ia/publicos-alvo",
+    "marketing-ia/gestao-leads",
     "producao",
     "producao/apontamento",
     "producao/apontamento-volume",
