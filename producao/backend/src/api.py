@@ -1202,6 +1202,7 @@ async def listar_chapas_estoque(descricao: str | None = None):
                 rows = conn.exec_driver_sql(sql, params).mappings().all()
             except Exception as e:
                 if "origem" in str(e):
+                    conn.rollback()
                     sql = sql.replace(", origem, reservada", "")
                     rows = conn.exec_driver_sql(sql, params).mappings().all()
                     return [dict(r) for r in rows]
