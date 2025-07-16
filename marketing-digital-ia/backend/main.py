@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from routes import usuarios
-from routes import chat, campanha, publicacao, publicos, conhecimento
+from routes import chat, campanha, publicacao, publicos, conhecimento, leads
 import os
 import uvicorn
 from database import init_db
@@ -38,6 +38,7 @@ app.include_router(conhecimento.router, prefix="/conhecimento")
 # rota final fique "/usuarios/usuarios" e resolvemos erros 404 ao
 # acessar via gateway.
 app.include_router(usuarios.router)
+app.include_router(leads.router)
 
 
 @app.get("/")
