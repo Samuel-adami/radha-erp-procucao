@@ -1,11 +1,9 @@
 from fastapi import FastAPI, Request, Depends
-from fastapi import UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from starlette.responses import JSONResponse, Response, FileResponse
 
 import httpx
-from typing import List
 import os
 from database import get_session, init_db
 from models import Empresa, Cliente, Fornecedor
@@ -295,31 +293,35 @@ async def validate_token(usuario=Depends(verificar_autenticacao())):
 # Cadastros - Usuarios
 # -------------------------
 
-@app.api_route("/usuarios", methods=["GET", "POST", "PUT", "DELETE"])
-async def usuarios_proxy_root(request: Request):
-    """Repasse para o backend de usuarios na raiz do endpoint."""
-    return await usuarios_proxy("", request)
+@app.get("/usuarios")
+async def listar_usuarios():
+    """Retorna a lista de usuários cadastrados."""
+    return {"usuarios": auth_service.listar_usuarios()}
 
 
-@app.api_route("/usuarios/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
-async def usuarios_proxy(path: str = "", request: Request = None):
-    async with httpx.AsyncClient() as client:
-        url = f"{MARKETING_IA_BACKEND_URL}/usuarios/{path}"
-        try:
-            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
-            response = await client.request(
-                method=request.method,
-                url=url,
-                headers=headers,
-                params=request.query_params,
-                content=await request.body(),
-            )
-            response.raise_for_status()
-            return JSONResponse(response.json(), status_code=response.status_code)
-        except httpx.HTTPStatusError as e:
-            return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
-        except httpx.RequestError as e:
-            return JSONResponse({"detail": f"Erro de conexão com backend de usuários: {e}"}, status_code=503)
+@app.post("/usuarios")
+async def criar_usuario(request: Request):
+    """Cria um novo usuário no banco local."""
+    data = await request.json()
+    new_id = auth_service.criar_usuario(data)
+    return {"id": new_id}
+
+
+@app.put("/usuarios/{user_id}")
+async def atualizar_usuario(user_id: int, request: Request):
+    """Atualiza um usuário existente."""
+    data = await request.json()
+    if not auth_service.atualizar_usuario(user_id, data):
+        return JSONResponse({"detail": "Usuário não encontrado"}, status_code=404)
+    return {"ok": True}
+
+
+@app.delete("/usuarios/{user_id}")
+async def excluir_usuario(user_id: int):
+    """Remove um usuário."""
+    if not auth_service.excluir_usuario(user_id):
+        return JSONResponse({"detail": "Usuário não encontrado"}, status_code=404)
+    return {"ok": True}
 
 
 # -------------------------
