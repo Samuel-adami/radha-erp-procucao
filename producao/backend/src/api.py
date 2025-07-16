@@ -36,7 +36,13 @@ from operacoes import (
     parse_xml_producao,
     parse_dxt_producao,
 )
-from nesting import gerar_nesting, gerar_nesting_preview
+from nesting import (
+    gerar_nesting,
+    gerar_nesting_preview,
+    _ler_dxt,
+    _encontrar_dxt,
+    _sanitize_material_name,
+)
 import ezdxf
 from typing import Union
 
@@ -174,6 +180,23 @@ def coletar_layers(pasta_lote: str) -> list[str]:
                     layers.add(nome)
 
     return sorted(layers)
+
+
+def coletar_chapas(pasta_lote: str) -> list[str]:
+    """Retorna os materiais das pecas descritos no DXT do lote."""
+    pasta = Path(pasta_lote)
+    dxt = _encontrar_dxt(pasta)
+    if not dxt:
+        raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
+
+    pecas = _ler_dxt(dxt)
+    materiais: set[str] = set()
+    for p in pecas:
+        nome = p.get("Material")
+        if nome:
+            materiais.add(_sanitize_material_name(nome))
+
+    return sorted(materiais)
 
 
 @app.post("/importar-xml")
@@ -542,6 +565,26 @@ async def api_coletar_layers(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"layers": layers}
+
+
+@app.post("/coletar-chapas")
+async def api_coletar_chapas(request: Request):
+    """Retorna a lista de materiais usados no lote informado."""
+    dados = await request.json()
+    pasta_lote = dados.get("pasta_lote")
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+
+    try:
+        pasta_lote_resolved = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
+    try:
+        materiais = coletar_chapas(str(pasta_lote_resolved))
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"materiais": materiais}
 
 
 @app.get("/listar-lotes")
