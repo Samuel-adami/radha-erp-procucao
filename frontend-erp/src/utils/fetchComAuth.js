@@ -20,7 +20,7 @@ export async function fetchComAuth(url, options = {}) {
   // --- LÓGICA DE PREFIXO DE URL RESTAURADA E AJUSTADA ---
   let finalUrl = url;
   if (url.startsWith('/')) { // Se for uma rota relativa
-      if (url.startsWith('/publicos') || url.startsWith('/nova-campanha') || url.startsWith('/nova-publicacao') || url.startsWith('/chat') || url.startsWith('/conhecimento')) {
+      if (url.startsWith('/publicos') || url.startsWith('/nova-campanha') || url.startsWith('/nova-publicacao') || url.startsWith('/chat') || url.startsWith('/conhecimento') || url.startsWith('/leads')) {
           finalUrl = `${GATEWAY_URL}/marketing-ia${url}`; // Rotas do Marketing Digital IA via Gateway
         } else if (url.startsWith('/importar-xml') || url.startsWith('/gerar-lote-final') || url.startsWith('/carregar-lote-final') || url.startsWith('/executar-nesting') || url.startsWith('/executar-nesting-final') || url.startsWith('/nesting-preview') || url.startsWith('/listar-lotes') || url.startsWith('/excluir-lote') || url.startsWith('/config-maquina') || url.startsWith('/config-ferramentas') || url.startsWith('/config-cortes') || url.startsWith('/config-layers') || url.startsWith('/chapas') || url.startsWith('/coletar-layers') || url.startsWith('/coletar-chapas') || url.startsWith('/lotes-ocorrencias') || url.startsWith('/motivos-ocorrencias') || url.startsWith('/relatorio-ocorrencias') || url.startsWith('/nestings') || url.startsWith('/remover-nesting')) {
             finalUrl = `${GATEWAY_URL}/producao${url}`; // Rotas de Produção via Gateway

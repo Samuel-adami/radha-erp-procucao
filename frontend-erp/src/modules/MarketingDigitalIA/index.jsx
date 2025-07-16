@@ -6,6 +6,7 @@ import Chat from './pages/Chat';
 import NovaCampanha from './pages/NovaCampanha';
 import NovaPublicacao from './pages/NovaPublicacao';
 import PublicosAlvo from './pages/PublicosAlvo';
+import GestaoLeads from './pages/GestaoLeads';
 
 // Componente de layout para o módulo de Marketing Digital IA
 function MarketingDigitalIALayout() {
@@ -15,6 +16,7 @@ function MarketingDigitalIALayout() {
   const matchCampanha = useMatch(`${resolved.pathname}/nova-campanha`);
   const matchPublicacao = useMatch(`${resolved.pathname}/nova-publicacao`);
   const matchPublicos = useMatch(`${resolved.pathname}/publicos-alvo`);
+  const matchLeads = useMatch(`${resolved.pathname}/gestao-leads`);
   const usuario = useUsuario();
   const possuiPermissao = p => usuario?.permissoes?.includes(p);
 
@@ -54,6 +56,14 @@ function MarketingDigitalIALayout() {
             Públicos Alvo
           </Link>
         )}
+        {possuiPermissao('marketing-ia/gestao-leads') && (
+          <Link
+            to="gestao-leads"
+            className={`px-3 py-1 rounded ${matchLeads ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Gestão de Leads
+          </Link>
+        )}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}
     </div>
@@ -68,6 +78,7 @@ function MarketingDigitalIA() {
         <Route path="nova-campanha" element={<NovaCampanha />} />
         <Route path="nova-publicacao" element={<NovaPublicacao />} />
         <Route path="publicos-alvo" element={<PublicosAlvo />} />
+        <Route path="gestao-leads" element={<GestaoLeads />} />
       </Route>
     </Routes>
   );
