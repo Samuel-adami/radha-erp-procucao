@@ -571,9 +571,11 @@ async def executar_nesting_final(request: Request):
                     tuple(sobras_ids),
                 )
                 for r in rows_sel:
+                    rm = r._mapping if hasattr(r, "_mapping") else None
                     conn.exec_driver_sql(
                         f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
                         (
+
                             r.get("chapa_id"),
                             r.get("descricao"),
                             r.get("comprimento"),
@@ -582,6 +584,7 @@ async def executar_nesting_final(request: Request):
                             r.get("custo_m2"),
                             r.get("custo_total"),
                             r.get("origem"),
+
                             origem_lote,
                             datetime.now().isoformat(),
                         ),
@@ -1195,6 +1198,7 @@ async def listar_chapas_estoque(descricao: str | None = None):
                 sql += " WHERE descricao ILIKE " + PLACEHOLDER
                 params = (f"%{descricao}%",)
             try:
+
                 rows = conn.exec_driver_sql(sql, params).mappings().all()
             except Exception as e:
                 if "origem" in str(e):
@@ -1203,6 +1207,7 @@ async def listar_chapas_estoque(descricao: str | None = None):
                     return [dict(r) for r in rows]
                 raise
             return [dict(r) for r in rows]
+
     except Exception as e:
         return {"erro": str(e)}
 
