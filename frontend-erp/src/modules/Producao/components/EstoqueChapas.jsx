@@ -9,6 +9,7 @@ const modelo = {
   comprimento: "",
   largura: "",
   custo_m2: "",
+  origem: "",
 };
 
 const EstoqueChapas = () => {
@@ -35,10 +36,26 @@ const EstoqueChapas = () => {
       comprimento: item.comprimento || "",
       largura: item.largura || "",
       custo_m2: item.custo_m2 || "",
+      origem: item.origem || "",
     });
   };
 
   const salvar = async () => {
+    if (form.id) {
+      const senha = window.prompt('Digite sua senha para salvar');
+      if (!senha) return;
+      const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+      try {
+        const auth = await fetchComAuth('/auth/login', { method: 'POST', body: JSON.stringify({ username: usuario.username, password: senha }) });
+        if (!['Diretor','Coordenador','Supervisor','Gerente'].includes(auth.usuario?.cargo)) {
+          alert('Usuário sem permissão');
+          return;
+        }
+      } catch (err) {
+        alert('Senha incorreta');
+        return;
+      }
+    }
     await fetchComAuth("/chapas-estoque", { method: "POST", body: JSON.stringify(form) });
     setForm(modelo);
     carregar();
@@ -46,8 +63,20 @@ const EstoqueChapas = () => {
 
   const remover = async id => {
     if (!window.confirm("Excluir item de estoque?")) return;
-    await fetchComAuth(`/chapas-estoque/${id}`, { method: "DELETE" });
-    carregar();
+    const senha = window.prompt('Digite sua senha para excluir');
+    if (!senha) return;
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    try {
+      const auth = await fetchComAuth('/auth/login', { method: 'POST', body: JSON.stringify({ username: usuario.username, password: senha }) });
+      if (!['Diretor','Coordenador','Supervisor','Gerente'].includes(auth.usuario?.cargo)) {
+        alert('Usuário sem permissão');
+        return;
+      }
+      await fetchComAuth(`/chapas-estoque/${id}`, { method: 'DELETE', body: JSON.stringify({ destino: usuario.username }) });
+      carregar();
+    } catch (err) {
+      alert('Senha incorreta ou erro');
+    }
   };
 
   const m2 = ((parseFloat(form.comprimento) || 0) * (parseFloat(form.largura) || 0)) / 1000000;
@@ -82,6 +111,10 @@ const EstoqueChapas = () => {
           <span className="text-sm">Custo m²</span>
           <input type="number" className="input w-full" value={form.custo_m2} onChange={handle("custo_m2")} />
         </label>
+        <label className="block">
+          <span className="text-sm">Origem</span>
+          <input className="input w-full" value={form.origem} onChange={handle("origem")} />
+        </label>
         <div className="text-sm">m²: {m2.toFixed(3)} | Custo Total: {total.toFixed(2)}</div>
         <Button onClick={salvar}>Salvar</Button>
       </div>
@@ -89,6 +122,7 @@ const EstoqueChapas = () => {
         <thead>
           <tr>
             <th className="border px-2">Descrição</th>
+            <th className="border px-2">Origem</th>
             <th className="border px-2">Comp</th>
             <th className="border px-2">Larg</th>
             <th className="border px-2">m²</th>
@@ -101,6 +135,7 @@ const EstoqueChapas = () => {
           {itens.map(it => (
             <tr key={it.id}>
               <td className="border px-2">{it.descricao}</td>
+              <td className="border px-2">{it.origem}</td>
               <td className="border px-2">{it.comprimento}</td>
               <td className="border px-2">{it.largura}</td>
               <td className="border px-2">{(it.m2 || 0).toFixed(3)}</td>

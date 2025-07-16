@@ -1218,6 +1218,7 @@ def gerar_nesting_preview(
     ferramentas: Optional[List[Dict]] = None,
     config_layers: Optional[List[Dict]] = None,
     config_maquina: Optional[Dict] = None,
+    estoque: Optional[Dict[str, List[Dict]]] = None,
 ) -> List[Dict]:
     """Gera apenas a disposição das chapas sem criar arquivos."""
 
@@ -1268,6 +1269,19 @@ def gerar_nesting_preview(
         packer = newPacker(rotation=rot)
         for p in lista:
             packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
+        estoque_material = estoque.get(material) if estoque else []
+        if estoque_material:
+            min_l = min(float(p["Length"]) for p in lista)
+            min_w = min(float(p["Width"]) for p in lista)
+            for s in estoque_material:
+                c = float(s.get("comprimento", 0))
+                l = float(s.get("largura", 0))
+                fits = (
+                    (c >= min_l and l >= min_w)
+                    or (rot and c >= min_w and l >= min_l)
+                )
+                if fits:
+                    packer.add_bin(int(c), int(l))
         for _ in range(len(lista)):
             packer.add_bin(int(largura), int(altura))
         packer.pack()
@@ -1442,7 +1456,8 @@ def gerar_nesting(
     ferramentas: Optional[List] = None,
     config_layers: Optional[List[Dict]] = None,
     config_maquina: Optional[Dict] = None,
-) -> str:
+    estoque: Optional[Dict[str, List[Dict]]] = None,
+) -> tuple[str, List[List[Dict]]]:
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
         raise FileNotFoundError(f"Pasta '{pasta_lote}' não encontrada")
@@ -1488,6 +1503,19 @@ def gerar_nesting(
         packer = newPacker(rotation=rot)
         for p in lista:
             packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
+        estoque_material = estoque.get(material) if estoque else []
+        if estoque_material:
+            min_l = min(float(p["Length"]) for p in lista)
+            min_w = min(float(p["Width"]) for p in lista)
+            for s in estoque_material:
+                c = float(s.get("comprimento", 0))
+                l = float(s.get("largura", 0))
+                fits = (
+                    (c >= min_l and l >= min_w)
+                    or (rot and c >= min_w and l >= min_l)
+                )
+                if fits:
+                    packer.add_bin(int(c), int(l))
         for _ in range(len(lista)):
             packer.add_bin(int(largura), int(altura))
         packer.pack()

@@ -114,3 +114,23 @@ class ChapaEstoque(Base):
     m2 = Column(Float)
     custo_m2 = Column(Float)
     custo_total = Column(Float)
+    origem = Column(String)
+    reservada = Column(Integer, default=0)
+
+
+class ChapaEstoqueMov(Base):
+    """Historico de movimentacao de chapas e sobras."""
+
+    __tablename__ = "chapas_estoque_mov"
+
+    id = Column(Integer, primary_key=True)
+    chapa_id = Column(Integer)
+    descricao = Column(String)
+    comprimento = Column(Float)
+    largura = Column(Float)
+    m2 = Column(Float)
+    custo_m2 = Column(Float)
+    custo_total = Column(Float)
+    origem = Column(String)
+    destino = Column(String)
+    criado_em = Column(String)
