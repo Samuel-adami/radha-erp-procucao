@@ -3,6 +3,7 @@ from sqlalchemy import Column, Integer, String, Float
 
 Base = declarative_base()
 
+
 class Chapa(Base):
     __tablename__ = "chapas"
 
@@ -12,6 +13,8 @@ class Chapa(Base):
     espessura = Column(Float)
     comprimento = Column(Float)
     largura = Column(Float)
+    custo_m2 = Column(Float)
+
 
 class Lote(Base):
     __tablename__ = "lotes"
@@ -19,6 +22,7 @@ class Lote(Base):
     id = Column(Integer, primary_key=True)
     obj_key = Column(String)
     criado_em = Column(String)
+
 
 class Nesting(Base):
     __tablename__ = "nestings"

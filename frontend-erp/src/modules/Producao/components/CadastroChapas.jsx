@@ -9,6 +9,7 @@ const modelo = {
   espessura: "",
   comprimento: "",
   largura: "",
+  custo_m2: "",
 };
 
 const CadastroChapas = () => {
@@ -37,6 +38,7 @@ const CadastroChapas = () => {
       espessura: c.espessura,
       comprimento: c.comprimento,
       largura: c.largura,
+      custo_m2: c.custo_m2 || "",
     });
   };
 
@@ -76,14 +78,17 @@ const CadastroChapas = () => {
           <span className="text-sm">Largura</span>
           <input type="number" className="input w-full" value={form.largura} onChange={handle("largura")} />
         </label>
+        <label className="block">
+          <span className="text-sm">Custo m²</span>
+          <input type="number" className="input w-full" value={form.custo_m2} onChange={handle("custo_m2")} />
+        </label>
         <Button onClick={salvar}>Salvar</Button>
       </div>
       <ul className="space-y-1">
         {chapas.map((c) => (
           <li key={c.id} className="flex justify-between items-center border rounded p-2">
             <span>
-              {c.propriedade} ({c.comprimento} x {c.largura}){" "}
-              {c.possui_veio ? "- possui veio" : ""}
+              {c.propriedade} ({c.comprimento} x {c.largura}) - R$ {c.custo_m2 || 0}/m² {c.possui_veio ? "- possui veio" : ""}
             </span>
             <div className="space-x-2">
               <Button size="sm" variant="outline" onClick={() => editar(c)}>
