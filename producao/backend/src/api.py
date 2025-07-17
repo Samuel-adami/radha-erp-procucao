@@ -552,6 +552,7 @@ async def executar_nesting_final(request: Request):
     upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
+    shutil.rmtree(pasta_lote_resolved, ignore_errors=True)
     try:
         with get_db_connection() as conn:
             origem_lote = Path(pasta_lote).stem
