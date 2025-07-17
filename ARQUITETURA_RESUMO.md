@@ -11,8 +11,9 @@
    - Serviço FastAPI com rotas de IA (chat, geração de campanhas e publicações) e gestão de usuários.  
    - Depende de OpenAI (chave `OPENAI_API_KEY`) e armazena permissões/grupos de usuários. Variáveis de exemplo em `.env.example`.  
    - Rotas definidas em `routes/` (ex.: `/chat/`, `/nova-campanha/`, `/nova-publicacao/`, `/publicos/`, `/auth/login`, `/usuarios`).  
-   - Modelo principal `User` em `db_models.py`.  
+   - Modelo principal `User` em `db_models.py`.
    - Autenticação JWT implementada em `security.py` utilizando `SECRET_KEY` e `ALGORITHM`.
+   - Integração com RD Station via OAuth2 (`/rd/login`, `/rd/callback`) e tabela `rdstation_tokens`.
 
 3. **producao/backend/src**  
    - Grande serviço FastAPI para processamento de lotes de produção e nesting de chapas. Usa DigitalOcean Spaces para armazenamento (`OBJECT_STORAGE_*` variáveis).  

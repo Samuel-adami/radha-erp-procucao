@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from routes import usuarios
-from routes import chat, campanha, publicacao, publicos, conhecimento, leads
+from routes import chat, campanha, publicacao, publicos, conhecimento, leads, rd_auth
 import os
 import uvicorn
 from database import init_db
@@ -39,6 +39,7 @@ app.include_router(conhecimento.router, prefix="/conhecimento")
 # acessar via gateway.
 app.include_router(usuarios.router)
 app.include_router(leads.router)
+app.include_router(rd_auth.router)
 
 
 @app.get("/")
