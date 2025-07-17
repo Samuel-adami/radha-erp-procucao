@@ -20,12 +20,13 @@ RDSTATION_REDIRECT_URI=<url de callback>
 Se já possuir tokens válidos, envie-os para `/rd/tokens`:
 
 ```
-POST /rd/tokens
-{
-  "access_token": "...",
-  "refresh_token": "...",
-  "expires_in": 3600
-}
-```
+curl -X POST https://SEU_DOMINIO/rd/tokens \
+  -H "Content-Type: application/json" \
+  -d '{
+    "access_token": "SEU_ACCESS_TOKEN",
+    "refresh_token": "SEU_REFRESH_TOKEN",
+    "expires_in": 86400
+}'
+
 
 Os tokens serão salvos para uso nas demais chamadas à API da RD Station.
