@@ -41,3 +41,13 @@ class LeadInfoDB(Base):
     vendedor_id = Column(Integer)
     cliente_id = Column(Integer)
     atendimento_id = Column(Integer)
+
+
+class RDStationTokenDB(Base):
+    __tablename__ = "rdstation_tokens"
+
+    id = Column(Integer, primary_key=True)
+    account_id = Column(String, unique=True, nullable=False)
+    access_token = Column(String)
+    refresh_token = Column(String)
+    expires_at = Column(Integer)
