@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
+
 from pydantic import BaseModel
 import os
 from services.rdstation_auth_service import exchange_code, save_tokens
+
 
 router = APIRouter(prefix="/rd", tags=["RD Station"])
 
@@ -11,11 +13,13 @@ REDIRECT_URI = os.getenv("RDSTATION_REDIRECT_URI")
 AUTH_URL = "https://api.rd.services/auth/dialog"
 
 
+
 class TokenData(BaseModel):
     access_token: str
     refresh_token: str
     expires_in: int
     account_id: str = "default"
+
 
 @router.get("/login")
 async def rd_login():
@@ -41,3 +45,4 @@ async def store_tokens(data: TokenData):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True}
+
