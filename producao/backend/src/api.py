@@ -403,7 +403,11 @@ async def executar_nesting(request: Request):
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
     config_layers = dados.get("config_layers")
-    sobras_ids = dados.get("sobras_ids", [])
+    sobras_ids_raw = dados.get("sobras_ids", [])
+    try:
+        sobras_ids = [int(s) for s in sobras_ids_raw if str(s).strip()]
+    except Exception:
+        sobras_ids = []
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
 
@@ -477,7 +481,11 @@ async def executar_nesting_final(request: Request):
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
     config_layers = dados.get("config_layers")
-    sobras_ids = dados.get("sobras_ids", [])
+    sobras_ids_raw = dados.get("sobras_ids", [])
+    try:
+        sobras_ids = [int(s) for s in sobras_ids_raw if str(s).strip()]
+    except Exception:
+        sobras_ids = []
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
 
