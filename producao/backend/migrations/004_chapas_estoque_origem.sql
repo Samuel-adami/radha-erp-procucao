@@ -1,3 +1,5 @@
+SET search_path TO producao;
+
 ALTER TABLE chapas_estoque ADD COLUMN IF NOT EXISTS origem TEXT;
 ALTER TABLE chapas_estoque ADD COLUMN IF NOT EXISTS reservada INTEGER DEFAULT 0;
 CREATE TABLE IF NOT EXISTS chapas_estoque_mov (

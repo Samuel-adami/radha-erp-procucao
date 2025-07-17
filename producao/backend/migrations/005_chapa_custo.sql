@@ -1,1 +1,3 @@
+SET search_path TO producao;
+
 ALTER TABLE chapas ADD COLUMN IF NOT EXISTS custo_m2 DOUBLE PRECISION;
