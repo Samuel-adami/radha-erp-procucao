@@ -392,6 +392,22 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
       setDadosPeca(prev => ({ ...prev, comprimento: novoComprimento, largura: novaLargura }));
       setTemPuxador(true);
 
+    } else if (operacao === "Raio 100") {
+        const mapRaio = {
+          C1: [
+            { tipo: "Raio", pos: "L1", raio: 100, subPos: "inferior" },
+            { tipo: "Raio", pos: "L3", raio: 100, subPos: "inferior" },
+          ],
+          C2: [
+            { tipo: "Raio", pos: "L1", raio: 100, subPos: "superior" },
+            { tipo: "Raio", pos: "L3", raio: 100, subPos: "superior" },
+          ],
+          L1: [ { tipo: "Raio", pos: "L1", raio: 100, subPos: "inferior" } ],
+          L2: [ { tipo: "Raio", pos: "L1", raio: 100, subPos: "superior" } ],
+          L3: [ { tipo: "Raio", pos: "L3", raio: 100, subPos: "inferior" } ],
+          L4: [ { tipo: "Raio", pos: "L3", raio: 100, subPos: "superior" } ],
+        };
+        operacoesAtuais.push(...(mapRaio[pos] || []));
     } else if (operacao === "Corte 45 graus" || operacao === "Puxador Cava 30º") {
         const prof = operacao === "Corte 45 graus" ? 18.2 : 12;
         const prefixo = operacao === "Corte 45 graus" ? "Corte45" : "PuxadorCava30";
@@ -536,6 +552,22 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
   const cores = ["blue", "green", "orange", "purple"];
 
   const campos = () => {
+    if (operacao === "Raio 100") {
+      return (
+        <>
+          <label className="block mt-2">Extremidade:
+            <select className="input" value={form.posicao} onChange={e => setForm({ ...form, posicao: e.target.value })}>
+              <option value="C1">C1</option>
+              <option value="C2">C2</option>
+              <option value="L1">L1</option>
+              <option value="L2">L2</option>
+              <option value="L3">L3</option>
+              <option value="L4">L4</option>
+            </select>
+          </label>
+        </>
+      );
+    }
     if (["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus", "Puxador Cava 30º"].includes(operacao)) {
       return (
         <>
@@ -641,11 +673,12 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
             <option>Puxador Cava Curvo</option>
             <option>Corte 45 graus</option>
             <option>Puxador Cava 30º</option>
+            <option>Raio 100</option>
           </select></label>
 
         {campos()}
 
-        { !["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus", "Puxador Cava 30º"].includes(operacao) && (operacao === "Furo" ? <p className="mt-2">Estratégia: Por Dentro</p> : (
+        { !["Puxador Cava", "Puxador Cava Curvo", "Corte 45 graus", "Puxador Cava 30º", "Raio 100"].includes(operacao) && (operacao === "Furo" ? <p className="mt-2">Estratégia: Por Dentro</p> : (
             <label className="block mt-2">Estratégia:
               <select className="input" value={form.estrategia} onChange={e => setForm({ ...form, estrategia: e.target.value })}>
                 <option>Por Dentro</option>
