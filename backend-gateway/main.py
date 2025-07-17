@@ -56,7 +56,13 @@ async def read_root():
 # Rota para o módulo de Marketing Digital IA (mantém as rotas existentes)
 @app.api_route("/marketing-ia/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def call_marketing_ia_backend(path: str, request: Request):
-    timeout = httpx.Timeout(30.0)  # aumenta timeout para 30 segundos
+    # Marketing IA endpoints podem demorar para responder devido à
+    # geração de conteúdos pela OpenAI. O timeout padrão de 30s era
+    # insuficiente e fazia o gateway retornar erro 503 quando a resposta
+    # atrasava. Permitimos configurar esse valor via variável de ambiente
+    # e elevamos o padrão para 90s para evitar falhas desnecessárias.
+    marketing_timeout = float(os.getenv("MARKETING_TIMEOUT", "90"))
+    timeout = httpx.Timeout(marketing_timeout)
     async with httpx.AsyncClient(timeout=timeout) as client:
 
         url = f"{MARKETING_IA_BACKEND_URL}/{path}"
