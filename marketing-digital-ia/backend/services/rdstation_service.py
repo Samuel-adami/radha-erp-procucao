@@ -2,8 +2,8 @@ import os
 import time
 import asyncio
 import httpx
+from services.rdstation_auth_service import get_access_token
 
-RD_TOKEN = os.getenv("RDSTATION_TOKEN")
 API_URL = "https://api.rd.services/platform/contacts"
 
 _CACHE = None
@@ -13,10 +13,11 @@ CACHE_TTL = 900  # 15 minutos
 
 async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
     """Obtém todos os leads paginando na API do RD Station."""
-    if not RD_TOKEN:
+    token = await get_access_token()
+    if not token:
         return []
 
-    headers = {"Authorization": f"Bearer {RD_TOKEN}"}
+    headers = {"Authorization": f"Bearer {token}"}
     resultados = []
     pagina = 1
 
