@@ -30,3 +30,14 @@ curl -X POST https://SEU_DOMINIO/rd/tokens \
 
 
 Os tokens serão salvos para uso nas demais chamadas à API da RD Station.
+
+### Reautorização obrigatória
+Se as chamadas à API retornarem `401 Unauthorized` mesmo após o backend tentar
+atualizar o token, provavelmente o `refresh_token` expirou. Nesse caso remova os
+tokens com:
+
+```
+DELETE FROM rdstation_tokens WHERE account_id='default';
+```
+
+Depois acesse novamente `/rd/login` para realizar uma nova autorização.
