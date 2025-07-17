@@ -62,6 +62,7 @@ def _age_seconds(value) -> float | None:
     except Exception:
         return None
 
+
 app = FastAPI()
 
 
@@ -77,10 +78,14 @@ async def _startup() -> None:
     except Exception as e:  # pragma: no cover - init failures only logged
         logging.error(f"Falha ao inicializar o banco: {e}")
     from storage import storage_config_summary, client
+
     if client:
         logging.info("Storage configurado: %s", storage_config_summary())
     else:
-        logging.warning("Storage NÃO configurado corretamente: %s", storage_config_summary())
+        logging.warning(
+            "Storage NÃO configurado corretamente: %s", storage_config_summary()
+        )
+
 
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
@@ -138,12 +143,27 @@ def ensure_pasta_local(key: str) -> Path:
     return pasta
 
 
+# Helper to check column existence
+def _has_column(conn, table: str, column: str) -> bool:
+    """Check if a column exists in the specified table for the configured schema."""
+    try:
+        row = conn.exec_driver_sql(
+            "SELECT 1 FROM information_schema.columns WHERE table_schema=%s AND table_name=%s AND column_name=%s",
+            (schema, table, column),
+        ).fetchone()
+        return row is not None
+    except Exception:
+        return False
+
+
 def proximo_oc_numero() -> int:
     """Retorna o próximo número sequencial de OC."""
     with get_db_connection() as conn:
         row = (
             conn.execute(
-                text(f"SELECT MAX(oc_numero) as m FROM {SCHEMA_PREFIX}lotes_ocorrencias")
+                text(
+                    f"SELECT MAX(oc_numero) as m FROM {SCHEMA_PREFIX}lotes_ocorrencias"
+                )
             )
             .mappings()
             .fetchone()
@@ -231,9 +251,7 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 return {"erro": f"Erro crítico no arquivo DXT: {e}"}
 
         if arquivo_xml:
-            logging.info(
-                f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'."
-            )
+            logging.info(f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'.")
             caminho_xml = Path(tmpdirname) / arquivo_xml.filename
             root = ET.fromstring(caminho_xml.read_bytes())
             tipo_xml = (
@@ -368,7 +386,7 @@ async def gerar_lote_final(request: Request):
     finally:
         os.remove(zip_path)
         shutil.rmtree(pasta_saida, ignore_errors=True)
-        
+
         time.sleep(2)
 
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
@@ -537,6 +555,11 @@ async def executar_nesting_final(request: Request):
     try:
         with get_db_connection() as conn:
             origem_lote = Path(pasta_lote).stem
+
+            has_origem = _has_column(conn, "chapas_estoque", "origem")
+            has_reservada = _has_column(conn, "chapas_estoque", "reservada")
+            has_mov_origem = _has_column(conn, "chapas_estoque_mov", "origem")
+
             for placa in sobras:
                 for s in placa:
                     mat = s.get("Material")
@@ -549,25 +572,53 @@ async def executar_nesting_final(request: Request):
                     chapa_id = row[0] if row else None
                     m2 = comp * larg / 1000000.0
                     desc = f"{mat} ({int(comp)} x {int(larg)})"
-                    conn.exec_driver_sql(
-                        f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, reservada) "
-                        f"VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},0,0,{PLACEHOLDER},0)",
-                        (
-                            chapa_id,
-                            desc,
-                            comp,
-                            larg,
-                            m2,
-                            origem_lote,
-                        ),
-                    )
+
+                    cols = [
+                        "chapa_id",
+                        "descricao",
+                        "comprimento",
+                        "largura",
+                        "m2",
+                        "custo_m2",
+                        "custo_total",
+                    ]
+                    params = [
+                        chapa_id,
+                        desc,
+                        comp,
+                        larg,
+                        m2,
+                        0,
+                        0,
+                    ]
+                    if has_origem:
+                        cols.append("origem")
+                        params.append(origem_lote)
+                    if has_reservada:
+                        cols.append("reservada")
+                        params.append(0)
+
+                    placeholders = ",".join([PLACEHOLDER] * len(params))
+                    sql = f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque ({', '.join(cols)}) VALUES ({placeholders})"
+                    conn.exec_driver_sql(sql, tuple(params))
+
             if sobras_ids:
+                sel_cols = [
+                    "chapa_id",
+                    "descricao",
+                    "comprimento",
+                    "largura",
+                    "m2",
+                    "custo_m2",
+                    "custo_total",
+                ]
+                if has_origem:
+                    sel_cols.append("origem")
+
+                sel_sql = f"SELECT {', '.join(sel_cols)} FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})"
                 rows_sel = [
                     dict(r)
-                    for r in conn.exec_driver_sql(
-                        f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
-                        (sobras_ids,),
-                    )
+                    for r in conn.exec_driver_sql(sel_sql, (sobras_ids,))
                     .mappings()
                     .all()
                 ]
@@ -576,23 +627,35 @@ async def executar_nesting_final(request: Request):
                     (sobras_ids,),
                 )
                 for r in rows_sel:
-                    conn.exec_driver_sql(
-                        f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
-                        (
+                    mov_cols = [
+                        "chapa_id",
+                        "descricao",
+                        "comprimento",
+                        "largura",
+                        "m2",
+                        "custo_m2",
+                        "custo_total",
+                    ]
+                    mov_params = [
+                        r.get("chapa_id"),
+                        r.get("descricao"),
+                        r.get("comprimento"),
+                        r.get("largura"),
+                        r.get("m2"),
+                        r.get("custo_m2"),
+                        r.get("custo_total"),
+                    ]
+                    if has_mov_origem:
+                        mov_cols.append("origem")
+                        mov_params.append(r.get("origem"))
 
-                            r.get("chapa_id"),
-                            r.get("descricao"),
-                            r.get("comprimento"),
-                            r.get("largura"),
-                            r.get("m2"),
-                            r.get("custo_m2"),
-                            r.get("custo_total"),
-                            r.get("origem"),
+                    mov_cols.extend(["destino", "criado_em"])
+                    mov_params.extend([origem_lote, datetime.now().isoformat()])
 
-                            origem_lote,
-                            datetime.now().isoformat(),
-                        ),
-                    )
+                    mov_placeholders = ",".join([PLACEHOLDER] * len(mov_params))
+                    sql = f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov ({', '.join(mov_cols)}) VALUES ({mov_placeholders})"
+                    conn.exec_driver_sql(sql, tuple(mov_params))
+
             conn.commit()
     except Exception as e:
         logging.error("Falha ao registrar sobras: %s", e)
@@ -687,8 +750,7 @@ async def listar_lotes():
                     age = _age_seconds(d.get("criado_em"))
                     if age is not None and age < LOT_CHECK_GRACE:
                         logging.info(
-                            "   ⚠ Lote recente (%ds), aguardando upload",
-                            int(age)
+                            "   ⚠ Lote recente (%ds), aguardando upload", int(age)
                         )
                     else:
                         logging.info("   ✗ NÃO encontrado no bucket")
@@ -952,9 +1014,7 @@ async def obter_config_maquina():
     try:
         with get_db_connection() as conn:
             row = (
-                conn.exec_driver_sql(
-                    "SELECT dados FROM config_maquina WHERE id=1"
-                )
+                conn.exec_driver_sql("SELECT dados FROM config_maquina WHERE id=1")
                 .mappings()
                 .fetchone()
             )
@@ -1009,9 +1069,7 @@ async def obter_ferramentas():
     try:
         with get_db_connection() as conn:
             row = (
-                conn.exec_driver_sql(
-                    "SELECT dados FROM config_ferramentas WHERE id=1"
-                )
+                conn.exec_driver_sql("SELECT dados FROM config_ferramentas WHERE id=1")
                 .mappings()
                 .fetchone()
             )
@@ -1046,9 +1104,7 @@ async def obter_cortes():
     try:
         with get_db_connection() as conn:
             row = (
-                conn.exec_driver_sql(
-                    "SELECT dados FROM config_cortes WHERE id=1"
-                )
+                conn.exec_driver_sql("SELECT dados FROM config_cortes WHERE id=1")
                 .mappings()
                 .fetchone()
             )
@@ -1083,9 +1139,7 @@ async def obter_layers():
     try:
         with get_db_connection() as conn:
             row = (
-                conn.exec_driver_sql(
-                    "SELECT dados FROM config_layers WHERE id=1"
-                )
+                conn.exec_driver_sql("SELECT dados FROM config_layers WHERE id=1")
                 .mappings()
                 .fetchone()
             )
@@ -1620,11 +1674,7 @@ async def relatorio_ocorrencias(request: Request):
     query += " ORDER BY o.oc_numero, p.peca_id"
     try:
         with get_db_connection() as conn:
-            rows = (
-                conn.exec_driver_sql(query, tuple(params_list))
-                .mappings()
-                .all()
-            )
+            rows = conn.exec_driver_sql(query, tuple(params_list)).mappings().all()
             return [dict(row) for row in rows]
     except Exception as e:
         return {"erro": str(e)}
