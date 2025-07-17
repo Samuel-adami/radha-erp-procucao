@@ -558,20 +558,20 @@ async def executar_nesting_final(request: Request):
                     )
             if sobras_ids:
                 placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
-                rows_sel = (
-                    conn.exec_driver_sql(
+                rows_sel = [
+                    dict(r)
+                    for r in conn.exec_driver_sql(
                         f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
                         tuple(sobras_ids),
                     )
                     .mappings()
                     .all()
-                )
+                ]
                 conn.exec_driver_sql(
                     f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
                     tuple(sobras_ids),
                 )
                 for r in rows_sel:
-                    rm = r._mapping if hasattr(r, "_mapping") else None
                     conn.exec_driver_sql(
                         f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque_mov (chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, destino, criado_em) VALUES ({PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER},{PLACEHOLDER})",
                         (
@@ -679,7 +679,6 @@ async def listar_lotes():
                 status = object_exists(key)
                 if status is True:
                     logging.info("   ✓ Existe no bucket")
-                    novos.append(key)
                 elif status is False:
                     age = _age_seconds(d.get("criado_em"))
                     if age is not None and age < LOT_CHECK_GRACE:
@@ -687,16 +686,11 @@ async def listar_lotes():
                             "   ⚠ Lote recente (%ds), aguardando upload",
                             int(age)
                         )
-                        novos.append(key)
                     else:
                         logging.info("   ✗ NÃO encontrado no bucket")
-                        conn.exec_driver_sql(
-                            f"DELETE FROM {SCHEMA_PREFIX}lotes WHERE id = :id",
-                            {"id": d["id"]},
-                        )
                 else:
                     logging.info("   ⚠ Erro ao verificar no bucket")
-                    novos.append(key)
+                novos.append(key)
 
             conn.commit()
             lotes_validos = novos

@@ -11,6 +11,8 @@ export interface Operacao {
   largura: number;
   altura: number;
   coords?: [number, number][];
+  cliente?: string;
+  ambiente?: string;
 }
 
 export interface Chapa {
@@ -111,6 +113,18 @@ const ChapaViewer: React.FC<Props> = ({
                 stroke={stroke}
                 strokeWidth={1}
               />
+            )}
+            {op.tipo === 'Peca' && (
+              <text
+                x={x + w / 2}
+                y={y + h / 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={12}
+                fill="#000"
+              >
+                {`${Math.round(op.largura)} x ${Math.round(op.altura)}`}
+              </text>
             )}
             {op.tipo === 'Sobra' && (
               <text
