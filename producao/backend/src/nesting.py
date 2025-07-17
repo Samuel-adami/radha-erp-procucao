@@ -1110,6 +1110,7 @@ def _ops_from_dxf(
         )
         if not cfg:
             continue
+        rot_angle = 90 if rotated else 0
         if ent.dxftype() == "CIRCLE":
             r = float(ent.dxf.radius)
             cx = float(ent.dxf.center.x)
@@ -1128,6 +1129,7 @@ def _ops_from_dxf(
                     "y": cy - r,
                     "largura": 2 * r,
                     "altura": 2 * r,
+                    "rotacao": rot_angle,
                 }
             )
             next_id += 1
@@ -1171,6 +1173,7 @@ def _ops_from_dxf(
                         "y": y,
                         "largura": w,
                         "altura": h,
+                        "rotacao": rot_angle,
                     }
                 )
                 next_id += 1
