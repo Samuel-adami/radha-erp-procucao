@@ -186,7 +186,9 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
     pasta = dxt_path.parent
     for part in root.findall(".//Part"):
         fields = {
-            f.find("Name").text: f.find("Value").text for f in part.findall("Field")
+            f.find("Name").text: f.find("Value").text
+            for f in part.findall("Field")
+            if f.find("Name") is not None and f.find("Value") is not None
         }
         if not fields:
             continue
@@ -207,6 +209,8 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
                     "Program1": fields.get("Program1", ""),
                     "Material": fields.get("Material", "Desconhecido"),
                     "Filename": filename,
+                    "Client": fields.get("Client", ""),
+                    "Project": fields.get("Project", ""),
                 }
             )
         except ValueError:
@@ -1322,6 +1326,8 @@ def gerar_nesting_preview(
                         "y": p_y,
                         "largura": w,
                         "altura": h,
+                        "cliente": p.get("Client", ""),
+                        "ambiente": p.get("Project", ""),
                     }
                 )
                 op_id += 1
@@ -1337,6 +1343,8 @@ def gerar_nesting_preview(
                     )
                     for d in dxf_ops:
                         d["id"] = op_id
+                        d["cliente"] = p.get("Client", "")
+                        d["ambiente"] = p.get("Project", "")
                         operacoes.append(d)
                         op_id += 1
                 x_min = min(x_min, p_x - ref_esq - espaco / 2)
