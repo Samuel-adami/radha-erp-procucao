@@ -543,10 +543,8 @@ async def executar_nesting_final(request: Request):
                     mat = s.get("Material")
                     comp = float(s.get("Length", 0))
                     larg = float(s.get("Width", 0))
-                    row = conn.execute(
-                        text(
-                            f"SELECT id FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1"
-                        ),
+                    row = conn.exec_driver_sql(
+                        f"SELECT id FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1",
                         (mat,),
                     ).fetchone()
                     chapa_id = row[0] if row else None
