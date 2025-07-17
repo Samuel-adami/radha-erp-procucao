@@ -46,9 +46,8 @@ const ChapaViewer: React.FC<Props> = ({
   const svgWidth = width;
   const escala = svgWidth / chapa.largura;
   const alturaSvg = chapa.altura * escala;
-  // As linhas de veio devem acompanhar a primeira medida da chapa
-  // (comprimento), que é representada pelo eixo horizontal no viewer.
-  const isHorizontal = true;
+  // As linhas de veio são sempre exibidas na horizontal,
+  // seguindo o comprimento da chapa no viewer.
   let sobraCount = 0;
 
   return (
@@ -56,28 +55,14 @@ const ChapaViewer: React.FC<Props> = ({
       <rect width={svgWidth} height={alturaSvg} fill="#f9fafb" stroke="#000" />
       {chapa.temVeio &&
         Array.from({ length: 8 }).map((_, i) => {
-          if (isHorizontal) {
-            const y = ((i + 1) * chapa.altura) / 9 * escala;
-            return (
-              <line
-                key={`veio-h-${i}`}
-                x1={0}
-                y1={y}
-                x2={svgWidth}
-                y2={y}
-                stroke="#bbb"
-                strokeDasharray="4 4"
-              />
-            );
-          }
-          const x = ((i + 1) * chapa.largura) / 9 * escala;
+          const y = ((i + 1) * chapa.altura) / 9 * escala;
           return (
             <line
-              key={`veio-v-${i}`}
-              x1={x}
-              y1={0}
-              x2={x}
-              y2={alturaSvg}
+              key={`veio-h-${i}`}
+              x1={0}
+              y1={y}
+              x2={svgWidth}
+              y2={y}
               stroke="#bbb"
               strokeDasharray="4 4"
             />
