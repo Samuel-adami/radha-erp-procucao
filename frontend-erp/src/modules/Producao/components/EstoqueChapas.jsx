@@ -8,7 +8,6 @@ const modelo = {
   descricao: "",
   comprimento: "",
   largura: "",
-  custo_m2: "",
   origem: "",
 };
 
@@ -27,6 +26,12 @@ const EstoqueChapas = () => {
   useEffect(() => { carregar(); }, []);
 
   const handle = campo => e => setForm({ ...form, [campo]: e.target.value });
+
+  const handleChapa = e => {
+    const id = e.target.value;
+    const c = chapas.find(ch => String(ch.id) === String(id));
+    setForm({ ...form, chapa_id: id, custo_m2: c?.custo_m2 || "" });
+  };
 
   const editar = item => {
     setForm({
@@ -88,7 +93,7 @@ const EstoqueChapas = () => {
       <div className="border p-4 rounded space-y-2">
         <label className="block">
           <span className="text-sm">Material</span>
-          <select className="input w-full" value={form.chapa_id} onChange={handle("chapa_id")}>\
+          <select className="input w-full" value={form.chapa_id} onChange={handleChapa}>\
             <option value="">Selecione</option>
             {chapas.map(c => (
               <option key={c.id} value={c.id}>{c.propriedade} {c.espessura}mm</option>
@@ -106,10 +111,6 @@ const EstoqueChapas = () => {
         <label className="block">
           <span className="text-sm">Largura</span>
           <input type="number" className="input w-full" value={form.largura} onChange={handle("largura")} />
-        </label>
-        <label className="block">
-          <span className="text-sm">Custo m²</span>
-          <input type="number" className="input w-full" value={form.custo_m2} onChange={handle("custo_m2")} />
         </label>
         <label className="block">
           <span className="text-sm">Origem</span>

@@ -566,10 +566,11 @@ async def executar_nesting_final(request: Request):
                     comp = float(s.get("Length", 0))
                     larg = float(s.get("Width", 0))
                     row = conn.exec_driver_sql(
-                        f"SELECT id FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1",
+                        f"SELECT id, custo_m2 FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1",
                         (mat,),
                     ).fetchone()
                     chapa_id = row[0] if row else None
+                    custo_m2 = float(row[1]) if row and row[1] is not None else 0.0
                     m2 = comp * larg / 1000000.0
                     desc = f"{mat} ({int(comp)} x {int(larg)})"
 
@@ -588,8 +589,8 @@ async def executar_nesting_final(request: Request):
                         comp,
                         larg,
                         m2,
-                        0,
-                        0,
+                        custo_m2,
+                        m2 * custo_m2,
                     ]
                     if has_origem:
                         cols.append("origem")
@@ -1175,7 +1176,7 @@ async def listar_chapas():
         with get_db_connection() as conn:
             rows = (
                 conn.exec_driver_sql(
-                    f"SELECT id, possui_veio, propriedade, espessura, comprimento, largura FROM {SCHEMA_PREFIX}chapas"
+                    f"SELECT id, possui_veio, propriedade, espessura, comprimento, largura, custo_m2 FROM {SCHEMA_PREFIX}chapas"
                 )
                 .mappings()
                 .all()
@@ -1192,7 +1193,7 @@ async def salvar_chapa(request: Request):
     try:
         with get_db_connection() as conn:
             if dados.get("id"):
-                sql_up = f"UPDATE {SCHEMA_PREFIX}chapas SET possui_veio={PLACEHOLDER}, propriedade={PLACEHOLDER}, espessura={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER} WHERE id={PLACEHOLDER}"
+                sql_up = f"UPDATE {SCHEMA_PREFIX}chapas SET possui_veio={PLACEHOLDER}, propriedade={PLACEHOLDER}, espessura={PLACEHOLDER}, comprimento={PLACEHOLDER}, largura={PLACEHOLDER}, custo_m2={PLACEHOLDER} WHERE id={PLACEHOLDER}"
                 conn.exec_driver_sql(
                     sql_up,
                     (
@@ -1201,13 +1202,14 @@ async def salvar_chapa(request: Request):
                         dados.get("espessura"),
                         dados.get("comprimento"),
                         dados.get("largura"),
+                        dados.get("custo_m2"),
                         dados["id"],
                     ),
                 )
             else:
                 sql_ins = (
-                    f"INSERT INTO {SCHEMA_PREFIX}chapas (possui_veio, propriedade, espessura, comprimento, largura)"
-                    f" VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
+                    f"INSERT INTO {SCHEMA_PREFIX}chapas (possui_veio, propriedade, espessura, comprimento, largura, custo_m2)"
+                    f" VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
                 )
                 conn.exec_driver_sql(
                     sql_ins,
@@ -1217,6 +1219,7 @@ async def salvar_chapa(request: Request):
                         dados.get("espessura"),
                         dados.get("comprimento"),
                         dados.get("largura"),
+                        dados.get("custo_m2"),
                     ),
                 )
             conn.commit()
@@ -1244,7 +1247,14 @@ async def listar_chapas_estoque(descricao: str | None = None):
     """Lista o estoque de chapas e sobras."""
     try:
         with get_db_connection() as conn:
-            sql = f"SELECT id, chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem, reservada FROM {SCHEMA_PREFIX}chapas_estoque"
+            sql = (
+                "SELECT ce.id, ce.chapa_id, ce.descricao, ce.comprimento, ce.largura, ce.m2, "
+                "COALESCE(c.custo_m2, ce.custo_m2) AS custo_m2, "
+                "ce.m2 * COALESCE(c.custo_m2, ce.custo_m2) AS custo_total, "
+                "ce.origem, ce.reservada "
+                f"FROM {SCHEMA_PREFIX}chapas_estoque ce "
+                f"LEFT JOIN {SCHEMA_PREFIX}chapas c ON c.id = ce.chapa_id"
+            )
             params: tuple = ()
             if descricao:
                 sql += " WHERE descricao ILIKE " + PLACEHOLDER
@@ -1272,7 +1282,17 @@ async def salvar_chapa_estoque(request: Request):
     comp = float(dados.get("comprimento", 0))
     larg = float(dados.get("largura", 0))
     m2 = comp * larg / 1000000.0
-    custo_m2 = float(dados.get("custo_m2", 0))
+    custo_m2 = 0.0
+    try:
+        with get_db_connection() as conn:
+            row = conn.exec_driver_sql(
+                f"SELECT custo_m2 FROM {SCHEMA_PREFIX}chapas WHERE id={PLACEHOLDER}",
+                (dados.get("chapa_id"),),
+            ).fetchone()
+            if row and row[0] is not None:
+                custo_m2 = float(row[0])
+    except Exception:
+        custo_m2 = 0.0
     total = m2 * custo_m2
     try:
         with get_db_connection() as conn:
