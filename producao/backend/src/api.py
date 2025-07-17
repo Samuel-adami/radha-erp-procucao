@@ -498,11 +498,10 @@ async def executar_nesting_final(request: Request):
         estoque_sel: Dict[str, List[Dict]] = {}
         if sobras_ids:
             with get_db_connection() as conn:
-                placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
                 rows = (
                     conn.exec_driver_sql(
-                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
-                        tuple(sobras_ids),
+                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
+                        (sobras_ids,),
                     )
                     .mappings()
                     .all()
@@ -543,10 +542,8 @@ async def executar_nesting_final(request: Request):
                     mat = s.get("Material")
                     comp = float(s.get("Length", 0))
                     larg = float(s.get("Width", 0))
-                    row = conn.execute(
-                        text(
-                            f"SELECT id FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1"
-                        ),
+                    row = conn.exec_driver_sql(
+                        f"SELECT id FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1",
                         (mat,),
                     ).fetchone()
                     chapa_id = row[0] if row else None
@@ -565,19 +562,18 @@ async def executar_nesting_final(request: Request):
                         ),
                     )
             if sobras_ids:
-                placeholders = ",".join([PLACEHOLDER] * len(sobras_ids))
                 rows_sel = [
                     dict(r)
                     for r in conn.exec_driver_sql(
-                        f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
-                        tuple(sobras_ids),
+                        f"SELECT chapa_id, descricao, comprimento, largura, m2, custo_m2, custo_total, origem FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
+                        (sobras_ids,),
                     )
                     .mappings()
                     .all()
                 ]
                 conn.exec_driver_sql(
-                    f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id IN ({placeholders})",
-                    tuple(sobras_ids),
+                    f"DELETE FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
+                    (sobras_ids,),
                 )
                 for r in rows_sel:
                     conn.exec_driver_sql(
