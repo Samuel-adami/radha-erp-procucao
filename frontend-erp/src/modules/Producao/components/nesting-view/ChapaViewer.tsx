@@ -13,6 +13,7 @@ export interface Operacao {
   coords?: [number, number][];
   cliente?: string;
   ambiente?: string;
+  rotacao?: number;
 }
 
 export interface Chapa {
@@ -75,8 +76,16 @@ const ChapaViewer: React.FC<Props> = ({
         const h = op.altura * escala;
         const cor = cores[op.tipo] || '#fca5a5';
         const stroke = destaqueId === op.id ? '#e11d48' : '#000';
+        const transform = op.rotacao
+          ? `rotate(${op.rotacao} ${x + w / 2} ${y + h / 2})`
+          : undefined;
         return (
-          <g key={op.id} onClick={() => onSelect(op)} className="cursor-pointer">
+          <g
+            key={op.id}
+            onClick={() => onSelect(op)}
+            className="cursor-pointer"
+            {...(transform ? { transform } : {})}
+          >
             {op.tipo === 'Sobra' && op.coords && op.coords.length > 0 ? (
               <polygon
                 points={op.coords
