@@ -2,7 +2,7 @@ import os
 import time
 import asyncio
 import httpx
-from services.rdstation_auth_service import get_access_token
+from services.rdstation_auth_service import get_access_token, refresh
 
 API_URL = "https://api.rd.services/platform/contacts"
 
@@ -25,6 +25,14 @@ async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
         while True:
             params = {"page": pagina, "page_size": page_size}
             resp = await client.get(API_URL, headers=headers, params=params)
+            if resp.status_code == 401:
+                # Token expirado ou inválido, tenta atualizar e refazer a requisição
+                await refresh()
+                token = await get_access_token()
+                if not token:
+                    resp.raise_for_status()
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await client.get(API_URL, headers=headers, params=params)
             resp.raise_for_status()
             data = resp.json()
             contatos = data.get("contacts", data.get("items", []))
