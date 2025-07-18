@@ -173,6 +173,7 @@ const Nesting = () => {
           ferramentas,
           config_maquina: JSON.parse(localStorage.getItem("configMaquina") || "null"),
           config_layers: layers,
+          sobras_ids: sobrasSel,
         }),
       });
       if (data?.erro) {

@@ -435,6 +435,21 @@ async def executar_nesting(request: Request):
         return {"erro": str(e)}
 
     try:
+        estoque_sel: Dict[str, List[Dict]] = {}
+        if sobras_ids:
+            with get_db_connection() as conn:
+                rows = (
+                    conn.exec_driver_sql(
+                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
+                        (sobras_ids,),
+                    )
+                    .mappings()
+                    .all()
+                )
+                for r in rows:
+                    desc = (r.get("descricao") or "").split("(")[0].strip()
+                    estoque_sel.setdefault(desc, []).append(dict(r))
+
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
             largura_chapa,
@@ -442,7 +457,7 @@ async def executar_nesting(request: Request):
             ferramentas,
             config_layers,
             config_maquina,
-            None,
+            estoque_sel or None,
         )
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
@@ -462,6 +477,12 @@ async def nesting_preview(request: Request):
     altura_chapa = float(dados.get("altura_chapa", 1850))
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
+    sobras_ids_raw = dados.get("sobras_ids", [])
+    try:
+        sobras_ids = [int(s) for s in sobras_ids_raw if str(s).strip()]
+    except Exception:
+        sobras_ids = []
+
     config_layers = dados.get("config_layers")
     if not pasta_lote:
         return {"erro": "Parâmetro 'pasta_lote' não informado."}
@@ -472,6 +493,21 @@ async def nesting_preview(request: Request):
         return {"erro": str(e)}
 
     try:
+        estoque_sel: Dict[str, List[Dict]] = {}
+        if sobras_ids:
+            with get_db_connection() as conn:
+                rows = (
+                    conn.exec_driver_sql(
+                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
+                        (sobras_ids,),
+                    )
+                    .mappings()
+                    .all()
+                )
+                for r in rows:
+                    desc = (r.get("descricao") or "").split("(")[0].strip()
+                    estoque_sel.setdefault(desc, []).append(dict(r))
+
         chapas = gerar_nesting_preview(
             str(pasta_lote_resolved),
             largura_chapa,
@@ -479,7 +515,7 @@ async def nesting_preview(request: Request):
             ferramentas,
             config_layers,
             config_maquina,
-            None,
+            estoque_sel or None,
         )
     except Exception as e:
         return {"erro": str(e)}
