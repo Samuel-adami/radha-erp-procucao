@@ -13,32 +13,39 @@ CACHE_TTL = 900  # 15 minutos
 
 async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
     print("[DEBUG] Iniciando _fetch_leads()")
+    token = await get_access_token()
+    print("[DEBUG] Token recebido:", token)
+    if not token:
+        print("[ERRO] Token de acesso ausente ou inválido.")
+        return []
+
+    headers = {"Authorization": f"Bearer {token}"}
     resultados = []
     pagina = 1
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         while True:
-            token = await get_access_token()
-            print("[DEBUG] Token recebido:", token)
-            if not token:
-                print("[ERRO] Token de acesso ausente ou inválido.")
-                return resultados
-
-            headers = {"Authorization": f"Bearer {token}"}
             params = {"page": pagina, "page_size": page_size}
             resp = await client.get(API_URL, headers=headers, params=params)
-            print("[DEBUG] Resposta da RD:", resp.status_code, resp.json())
+            print("[DEBUG] Código da resposta:", resp.status_code)
+            print("[DEBUG] Texto bruto da resposta:", resp.text)
             if resp.status_code == 401:
-                # Token expirado ou inválido, tenta atualizar e refazer a requisição
+                print("[ERRO] Token expirado ou inválido. Tentando refresh...")
                 await refresh()
-                continue
+                token = await get_access_token()
+                print("[DEBUG] Novo token:", token)
+                if not token:
+                    print("[ERRO] Falha ao obter novo token.")
+                    resp.raise_for_status()
+                headers["Authorization"] = f"Bearer {token}"
+                resp = await client.get(API_URL, headers=headers, params=params)
+
             resp.raise_for_status()
             data = resp.json()
-            print("[DEBUG] Resposta da RD Station:", data)
             contatos = data.get("contacts", data.get("items", []))
+            print(f"[DEBUG] Página {pagina} - {len(contatos)} contatos retornados")
             resultados.extend(contatos)
 
-            # Verifica se há mais páginas. A API pode retornar total ou next page.
             if len(contatos) < page_size:
                 break
 
@@ -46,7 +53,9 @@ async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
             if max_pages and pagina > max_pages:
                 break
 
+    print(f"[DEBUG] Total de leads acumulados: {len(resultados)}")
     return resultados
+
 
 async def obter_leads(
     force_refresh: bool = False,
