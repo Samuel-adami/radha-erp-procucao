@@ -14,6 +14,12 @@ def parse_float(value, default=0.0):
     except (ValueError, TypeError):
         return default
 
+def normalize_material_name(material):
+    """Remove casas decimais da espessura no nome do material."""
+    if not isinstance(material, str):
+        return material
+    return re.sub(r'(\d+)[.,]\d+(?=\s*mm)', r'\1', material, flags=re.IGNORECASE)
+
 def fix_dxf_content(file_path):
     encodings_to_try = ['cp1252', 'latin-1', 'utf-8']
     for enc in encodings_to_try:
@@ -416,6 +422,7 @@ def parse_dxt_producao(root, dxt_path):
 
             material_node = item_data.get("Material")
             material = material_node if material_node is not None else "Desconhecido"
+            material = normalize_material_name(material)
 
             id_raw = item_data.get("Program1") or Path(dxf_da_peca).stem
             try:
@@ -474,8 +481,10 @@ def parse_xml_orcamento(root):
 
                 ref_parts = atributos.get("REFERENCE", "").split(".")
                 espessura = ref_parts[2] if len(ref_parts) > 2 else "?"
+                espessura = re.sub(r'(\d+)[.,]\d+', r'\1', str(espessura))
                 cor = ref_parts[-1] if len(ref_parts) > 4 else "?"
                 material = materiais.get((espessura, cor), f"Desconhecido ({espessura}/{cor})")
+                material = normalize_material_name(material)
 
                 peca = {
                     "nome": nome_item,
@@ -584,6 +593,7 @@ def parse_xml_producao(root, xml_path):
                     if material_node is not None
                     else "Desconhecido"
                 )
+                material = normalize_material_name(material)
 
                 pecas.append(
                     {
