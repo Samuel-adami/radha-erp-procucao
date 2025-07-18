@@ -58,15 +58,20 @@ async def obter_leads(
     page_size: int = 100,
     max_pages: int | None = None,
 ):
+    print("[DEBUG] Entrou em obter_leads()")
     global _CACHE, _CACHE_TIMESTAMP
     async with _CACHE_LOCK:
         if not force_refresh and _CACHE and time.time() - _CACHE_TIMESTAMP < CACHE_TTL:
+            print("[DEBUG] Retornando dados do cache.")
             return _CACHE
         try:
+            print("[DEBUG] Chamando _fetch_leads()")
             leads = await _fetch_leads(page_size=page_size, max_pages=max_pages)
             _CACHE = leads
             _CACHE_TIMESTAMP = time.time()
+            print(f"[DEBUG] Leads recebidos: {len(leads)}")
             return leads
-        except Exception:
-            # Em caso de falha, retorna dados em cache mesmo que expirados
+        except Exception as e:
+            print(f"[ERRO] Falha ao obter leads: {e}")
             return _CACHE or []
+
