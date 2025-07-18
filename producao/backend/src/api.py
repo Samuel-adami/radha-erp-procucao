@@ -35,6 +35,7 @@ from operacoes import (
     parse_xml_orcamento,
     parse_xml_producao,
     parse_dxt_producao,
+    parse_gabster,
 )
 from nesting import (
     gerar_nesting,
@@ -233,6 +234,9 @@ async def importar_xml(files: list[UploadFile] = File(...)):
         arquivo_dxt = next(
             (f for f in files if f.filename.lower().endswith((".dxt", ".txt"))), None
         )
+        arquivo_csv = next(
+            (f for f in files if f.filename.lower().endswith(".csv")), None
+        )
         arquivo_xml = next(
             (f for f in files if f.filename.lower().endswith(".xml")), None
         )
@@ -249,6 +253,16 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 return {"pacotes": parse_dxt_producao(root, caminho_dxt)}
             except Exception as e:
                 return {"erro": f"Erro crítico no arquivo DXT: {e}"}
+
+        if arquivo_csv:
+            logging.info(
+                f"📄 Fluxo Gabster iniciado com '{arquivo_csv.filename}'."
+            )
+            caminho_csv = Path(tmpdirname) / arquivo_csv.filename
+            try:
+                return {"pacotes": parse_gabster(caminho_csv)}
+            except Exception as e:
+                return {"erro": f"Erro crítico no arquivo CSV: {e}"}
 
         if arquivo_xml:
             logging.info(f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'.")
@@ -268,7 +282,7 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 )
             }
 
-        return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml) foi enviado."}
+        return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml, .csv) foi enviado."}
 
 
 @app.post("/gerar-lote-final")

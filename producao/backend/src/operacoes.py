@@ -1,3 +1,4 @@
+import csv
 import re
 import io
 import ezdxf
@@ -654,4 +655,89 @@ def parse_xml_producao(root, xml_path):
         pacotes.append(pacote)
 
     print("✅ Finalizado parse_xml_producao")
+    return pacotes
+
+
+def parse_gabster(csv_path: Path) -> list[dict]:
+    """Importa arquivos CSV e DXF exportados pelo Gabster.
+
+    O formato retornado é compatível com ``parse_xml_producao`` para que as
+    peças possam ser utilizadas no mesmo fluxo de geração de lotes.
+    """
+    print("🚀 Início do parse_gabster")
+
+    pacotes: list[dict] = []
+    pecas: list[dict] = []
+    nome_cliente = "SemCliente"
+    nome_ambiente = "Projeto"
+
+    with open(csv_path, newline="", encoding="latin-1") as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row:
+                continue
+
+            try:
+                codigo = row[0].strip()
+                comprimento = parse_float(row[1])
+                largura = parse_float(row[2])
+                espessura = parse_float(row[3])
+                material = normalize_material_name(row[4].strip())
+
+                nome_cliente = nome_cliente or row[5].strip() or "SemCliente"
+                nome_ambiente = nome_ambiente or row[9].strip() or "Projeto"
+
+                descricao = row[6].strip().upper()
+                observacoes = row[7].strip()
+                quantidade = int(parse_float(row[11], 1)) if len(row) > 11 else 1
+
+                dxf_nome = f"{codigo}.dxf"
+                caminho_dxf = csv_path.parent / dxf_nome
+                if not caminho_dxf.exists():
+                    possivel = None
+                    nome_lower = dxf_nome.lower()
+                    for fpath in csv_path.parent.glob("*.dxf"):
+                        if fpath.name.lower() == nome_lower:
+                            possivel = fpath
+                            break
+                    if possivel:
+                        caminho_dxf = possivel
+                    else:
+                        print(f"  -> AVISO: Arquivo DXF não encontrado para a peça '{codigo}'")
+                        continue
+
+                operacoes = processar_dxf_producao(
+                    caminho_dxf,
+                    {"comprimento": comprimento, "largura": largura},
+                )
+
+                bpp_path = caminho_dxf.with_suffix(".bpp")
+                if bpp_path.exists():
+                    operacoes += parse_bpp_furos_topo(bpp_path, largura)
+
+                peca_base = {
+                    "nome": descricao,
+                    "codigo_peca": caminho_dxf.stem,
+                    "largura": largura,
+                    "comprimento": comprimento,
+                    "espessura": espessura,
+                    "material": material,
+                    "cliente": nome_cliente,
+                    "ambiente": nome_ambiente,
+                    "observacoes": observacoes,
+                    "orientacao": "horizontal" if comprimento > largura else "vertical",
+                    "operacoes": operacoes,
+                    "status": "Pendente",
+                }
+
+                for _ in range(max(1, quantidade)):
+                    pecas.append(peca_base.copy())
+            except Exception as e:  # pragma: no cover - log only
+                print(f"⚠️ Erro ao processar linha CSV: {e}. Linha: {row}")
+
+    if pecas:
+        pacote = {"nome_pacote": f"{nome_cliente} - {nome_ambiente}", "pecas": pecas}
+        pacotes.append(pacote)
+
+    print("✅ Finalizado parse_gabster")
     return pacotes
