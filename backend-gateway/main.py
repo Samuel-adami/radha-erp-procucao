@@ -53,6 +53,30 @@ def create_response(response: httpx.Response):
 async def read_root():
     return {"message": "Radha ERP Gateway API is running!"}
 
+# Rota específica para integrações RD Station dentro do módulo de Marketing.
+# Esta rota precisa ter prioridade sobre a rota genérica de marketing para
+# garantir que callbacks como /marketing-ia/rd/callback sejam encaminhados
+# corretamente ao backend de Marketing Digital IA.
+@app.api_route("/marketing-ia/rd/{path:path}", methods=["GET", "POST"])
+async def encaminhar_rdstation_callback(path: str, request: Request):
+    url = f"{MARKETING_IA_BACKEND_URL}/rd/{path}"
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                params=request.query_params,
+                content=await request.body()
+            )
+            return create_response(response)
+        except httpx.RequestError as e:
+            return JSONResponse(
+                {"detail": f"Erro ao encaminhar para backend de Marketing: {e}"},
+                status_code=502,
+            )
+
 # Rota para o módulo de Marketing Digital IA (mantém as rotas existentes)
 @app.api_route("/marketing-ia/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def call_marketing_ia_backend(path: str, request: Request):
