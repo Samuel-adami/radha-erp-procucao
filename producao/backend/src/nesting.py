@@ -268,8 +268,35 @@ def _gcode_peca(
         return f"{float(val):.{casas_dec}f}"
 
     mov_rapida = config_maquina.get("movRapida", "") if config_maquina else ""
-    mov_corte_ini = config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
+    mov_corte_ini = (
+        config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
+    )
     mov_corte = config_maquina.get("movCorte", "") if config_maquina else ""
+
+    def g0(x: float, y: float, z: float) -> str:
+        """Return rapid move ensuring all axes are present."""
+        if mov_rapida:
+            return substituir(
+                mov_rapida, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z)}
+            )
+        return f"G0 X{fmt(x)} Y{fmt(y)} Z{fmt(z)}"
+
+    def g1_ini(x: float, y: float, z: float, f: float) -> str:
+        """Return first cut movement (G1) with all axes."""
+        if mov_corte_ini:
+            return substituir(
+                mov_corte_ini,
+                {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)},
+            )
+        return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
+
+    def g1(x: float, y: float, z: float, f: float) -> str:
+        """Return cut movement (G1) with all axes."""
+        if mov_corte:
+            return substituir(
+                mov_corte, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)}
+            )
+        return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
 
     ops = []
     if dxf_path and config_layers:
@@ -426,47 +453,14 @@ def _gcode_peca(
             linhas.append(f"({tipo_lbl} - {int(round(l))} x {int(round(w))})")
             linhas.extend(
                 [
-                    substituir(
-                        mov_rapida, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(z_seg)}
-                    ),
-                    substituir(
-                        mov_rapida, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(z_pre)}
-                    ),
+                    g0(ox, oy, z_seg),
+                    g0(ox, oy, z_pre),
                     "(Step:1/1)",
-                    substituir(
-                        mov_corte_ini,
-                        {
-                            "X": fmt(ox + l),
-                            "Y": fmt(oy),
-                            "Z": fmt(-0.2),
-                            "F": fmt(3500.0),
-                        },
-                    ),
-                    substituir(
-                        mov_corte,
-                        {
-                            "X": fmt(ox + l),
-                            "Y": fmt(oy + w),
-                            "Z": fmt(-0.2),
-                            "F": fmt(7000.0),
-                        },
-                    ),
-                    substituir(
-                        mov_corte,
-                        {
-                            "X": fmt(ox),
-                            "Y": fmt(oy + w),
-                            "Z": fmt(-0.2),
-                            "F": fmt(7000.0),
-                        },
-                    ),
-                    substituir(
-                        mov_corte,
-                        {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(-0.2), "F": fmt(7000.0)},
-                    ),
-                    substituir(
-                        mov_rapida, {"X": fmt(ox), "Y": fmt(oy), "Z": fmt(z_seg)}
-                    ),
+                    g1_ini(ox + l, oy, 0.2, 3500.0),
+                    g1(ox + l, oy + w, 0.2, 7000.0),
+                    g1(ox, oy + w, 0.2, 7000.0),
+                    g1(ox, oy, 0.2, 7000.0),
+                    g0(ox, oy, z_seg),
                 ]
             )
         else:
@@ -475,28 +469,11 @@ def _gcode_peca(
                 last_layer = op["layer"]
             linhas.extend(
                 [
-                    substituir(
-                        mov_rapida,
-                        {"X": fmt(op["x"]), "Y": fmt(op["y"]), "Z": fmt(z_seg)},
-                    ),
-                    substituir(
-                        mov_rapida,
-                        {"X": fmt(op["x"]), "Y": fmt(op["y"]), "Z": fmt(z_pre)},
-                    ),
+                    g0(op["x"], op["y"], z_seg),
+                    g0(op["x"], op["y"], z_pre),
                     "(Step:1/1)",
-                    substituir(
-                        mov_corte_ini,
-                        {
-                            "X": fmt(op["x"]),
-                            "Y": fmt(op["y"]),
-                            "Z": fmt(-op["prof"]),
-                            "F": fmt(5000.0),
-                        },
-                    ),
-                    substituir(
-                        mov_rapida,
-                        {"X": fmt(op["x"]), "Y": fmt(op["y"]), "Z": fmt(z_seg)},
-                    ),
+                    g1_ini(op["x"], op["y"], op["prof"], 5000.0),
+                    g0(op["x"], op["y"], z_seg),
                 ]
             )
 
@@ -828,6 +805,7 @@ def _gerar_gcodes(
             "CMD_EXTRA": _expand_cmd_extra(primeira_ferramenta),
         }
         linhas.extend(substituir(header_tpl, valores_header).splitlines())
+        linhas.append("G90")
         linhas.append("")
         if config_maquina and config_maquina.get("furos"):
             linhas.extend(
