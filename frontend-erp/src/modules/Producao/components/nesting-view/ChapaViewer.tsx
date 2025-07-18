@@ -135,6 +135,25 @@ const ChapaViewer: React.FC<Props> = ({
           </g>
         );
       })}
+      <text
+        x={svgWidth / 2}
+        y={alturaSvg - 4}
+        textAnchor="middle"
+        fontSize={12}
+        fill="#555"
+      >
+        {Math.round(chapa.largura)}
+      </text>
+      <text
+        x={svgWidth - 4}
+        y={alturaSvg / 2}
+        textAnchor="middle"
+        fontSize={12}
+        fill="#555"
+        transform={`rotate(-90 ${svgWidth - 4} ${alturaSvg / 2})`}
+      >
+        {Math.round(chapa.altura)}
+      </text>
     </svg>
   );
 };
