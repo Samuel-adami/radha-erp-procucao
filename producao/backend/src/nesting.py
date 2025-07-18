@@ -1115,7 +1115,6 @@ def _ops_from_dxf(
         )
         if not cfg:
             continue
-        rot_angle = 90 if rotated else 0
         if ent.dxftype() == "CIRCLE":
             r = float(ent.dxf.radius)
             cx = float(ent.dxf.center.x)
@@ -1134,7 +1133,11 @@ def _ops_from_dxf(
                     "y": cy - r,
                     "largura": 2 * r,
                     "altura": 2 * r,
-                    "rotacao": rot_angle,
+                    # A rotação já é aplicada nos cálculos de posição quando a pe
+                    # ça está rotacionada. Para o visualizador manter as
+                    # operações dentro da peça, não precisamos informar este
+                    # ângulo separadamente.
+                    "rotacao": 0,
                 }
             )
             next_id += 1
@@ -1178,7 +1181,9 @@ def _ops_from_dxf(
                         "y": y,
                         "largura": w,
                         "altura": h,
-                        "rotacao": rot_angle,
+                        # A rotação das operações já foi levada em conta ao
+                        # recalcular ``x`` e ``y`` quando a peça é girada.
+                        "rotacao": 0,
                     }
                 )
                 next_id += 1
