@@ -1,6 +1,7 @@
 import os
 import time
 import httpx
+from jose import jwt
 from sqlalchemy import text
 from database import get_db_connection
 
@@ -10,8 +11,24 @@ REDIRECT_URI = os.getenv("RDSTATION_REDIRECT_URI")
 TOKEN_URL = "https://api.rd.services/auth/token"
 
 
+def _calculate_expires_at(access_token: str | None, expires_in: int | None) -> int:
+    """Return an absolute expiration timestamp for the given token."""
+    if access_token:
+        try:
+            claims = jwt.get_unverified_claims(access_token)
+            exp = claims.get("exp")
+            if exp:
+                return int(exp)
+            if "iat" in claims and "exp" not in claims:
+                # Some tokens provide the lifetime in "exp" relative to iat
+                return int(claims["iat"]) + int(claims.get("expires_in", 0))
+        except Exception:
+            pass
+    return int(time.time()) + int(expires_in or 0)
+
+
 def save_tokens(account_id: str, access: str, refresh: str, expires_in: int) -> None:
-    expires_at = int(time.time()) + int(expires_in)
+    expires_at = _calculate_expires_at(access, expires_in)
     conn = get_db_connection()
     row = conn.execute(text("SELECT id FROM rdstation_tokens WHERE account_id=:a"), {"a": account_id}).fetchone()
     if row:
