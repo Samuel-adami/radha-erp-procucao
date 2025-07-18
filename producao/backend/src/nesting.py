@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import itertools
 import re
+import json
 from datetime import datetime
 
 from shapely.geometry import box, CAP_STYLE, JOIN_STYLE
@@ -1611,4 +1612,11 @@ def gerar_nesting(
         config_maquina,
         sobras,
     )
+    try:
+        (pasta_saida / "layout.json").write_text(
+            json.dumps(chapas, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
     return str(pasta_saida), sobras
