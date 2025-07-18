@@ -24,7 +24,32 @@ let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) ||
 
 const HomeProducao = () => {
   const navigate = useNavigate();
-  const [lotes, setLotes] = useState(JSON.parse(localStorage.getItem("lotesProducao") || "[]"));
+  const [lotes, setLotes] = useState(
+    () => JSON.parse(localStorage.getItem("lotesProducao") || "[]")
+  );
+
+  useEffect(() => {
+    fetchComAuth("/listar-lotes")
+      .then((d) => {
+        const server = Array.isArray(d?.lotes) ? d.lotes.map((k) => {
+          const nome = k.split(/[/\\]/).pop().replace(/^Lote_/, "").replace(/\.zip$/, "");
+          return { nome, pacotes: [] };
+        }) : [];
+        setLotes((prev) => {
+          const nomes = new Set(prev.map((l) => l.nome));
+          const merged = [...prev];
+          server.forEach((l) => {
+            if (!nomes.has(l.nome)) {
+              merged.push(l);
+              nomes.add(l.nome);
+            }
+          });
+          localStorage.setItem("lotesProducao", JSON.stringify(merged));
+          return merged;
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const criarLote = () => {
     const nome = prompt("Digite o nome do novo lote:");
