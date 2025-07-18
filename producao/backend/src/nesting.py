@@ -92,6 +92,9 @@ def _apply_image_orientation(img: Image.Image, cfg: Dict) -> Image.Image:
 
 from database import get_db_connection
 from sqlalchemy import text
+from database import schema, PLACEHOLDER
+
+SCHEMA_PREFIX = f"{schema}." if schema else ""
 
 
 def _sanitize_extension(ext: Optional[str], default: str = "bmp") -> str:
@@ -1208,6 +1211,27 @@ def _calcular_sobras_polys(
     return [g for g in geoms if not g.is_empty]
 
 
+def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
+    """Retorna sobras cadastradas no estoque para os materiais informados."""
+    estoque: Dict[str, List[Dict]] = {}
+    try:
+        with get_db_connection() as conn:
+            for mat in materiais:
+                rows = (
+                    conn.exec_driver_sql(
+                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE descricao ILIKE {PLACEHOLDER}",
+                        (f"%{mat}%",),
+                    )
+                    .mappings()
+                    .all()
+                )
+                if rows:
+                    estoque[mat] = [dict(r) for r in rows]
+    except Exception:
+        pass
+    return estoque
+
+
 def gerar_nesting_preview(
     pasta_lote: str,
     largura_chapa: float = 2750,
@@ -1246,6 +1270,12 @@ def gerar_nesting_preview(
     for p in pecas:
         material = p.get("Material", "Desconhecido")
         pecas_por_material.setdefault(material, []).append(p)
+
+    if estoque is None:
+        estoque = _carregar_estoque(list(pecas_por_material.keys()))
+
+
+
 
     chapas: List[Dict] = []
     idx = 1
@@ -1487,6 +1517,9 @@ def gerar_nesting(
     for p in pecas:
         material = p.get("Material", "Desconhecido")
         pecas_por_material.setdefault(material, []).append(p)
+    if estoque is None:
+        estoque = _carregar_estoque(list(pecas_por_material.keys()))
+
 
     espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
     ref_inf = float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
