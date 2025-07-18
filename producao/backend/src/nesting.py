@@ -233,8 +233,10 @@ def _gcode_peca(
     rotated: bool = False,
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
+    rotation_angle: int = 0,
 ):
     # (Sem alteração estrutural — função já estava em bom padrão, só pequenas correções de nomenclatura.)
+    _ = rotation_angle  # parâmetro reservado para uso futuro
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
             texto = texto.replace(f"[{k}]", str(v))
@@ -727,6 +729,7 @@ def _gerar_gcodes(
                 rotated=p.get("rotated", False),
                 orig_length=p.get("originalLength"),
                 orig_width=p.get("originalWidth"),
+                rotation_angle=p.get("rotationAngle", 90 if p.get("rotated") else 0),
             )
             if used and primeira is None:
                 code = used[0].split(" - ", 1)[0]
@@ -857,6 +860,7 @@ def _gerar_gcodes(
                 rotated=p.get("rotated", False),
                 orig_length=p.get("originalLength"),
                 orig_width=p.get("originalWidth"),
+                rotation_angle=p.get("rotationAngle", 90 if p.get("rotated") else 0),
             )
             furos_lines.extend(codigo.split("\n")[1:])
         if last_tool and last_tool.get("tipo") == "Broca":
@@ -884,6 +888,7 @@ def _gerar_gcodes(
                 rotated=p.get("rotated", False),
                 orig_length=p.get("originalLength"),
                 orig_width=p.get("originalWidth"),
+                rotation_angle=p.get("rotationAngle", 90 if p.get("rotated") else 0),
             )
             if codigo.strip():
                 tem_fresa = True
@@ -916,6 +921,7 @@ def _gerar_gcodes(
                 rotated=p.get("rotated", False),
                 orig_length=p.get("originalLength"),
                 orig_width=p.get("originalWidth"),
+                rotation_angle=p.get("rotationAngle", 90 if p.get("rotated") else 0),
             )
             if tem_fresa_por_peca[idx]:
                 contorno_lines.extend(codigo.split("\n")[1:])
@@ -992,6 +998,7 @@ def _gerar_gcodes(
                     tipo="Sobra",
                     etapa="contorno",
                     ferramenta_atual=last_tool,
+                    rotation_angle=0,
                 )
                 sobras_chapa.append(sobra)
                 sobras_polys.append(g)
@@ -1053,6 +1060,7 @@ def _gerar_gcodes(
                     tipo="Sobra",
                     etapa="contorno",
                     ferramenta_atual=last_tool,
+                    rotation_angle=0,
                 )
                 sobras_chapa.append(sobra)
                 sobras_polys.append(geom)
@@ -1320,6 +1328,7 @@ def gerar_nesting_preview(
                 p["originalLength"] = orig_l
                 p["originalWidth"] = orig_w
                 p["rotated"] = rotated_piece
+                p["rotationAngle"] = 90 if rotated_piece else 0
                 operacoes.append(
                     {
                         "id": op_id,
@@ -1552,6 +1561,7 @@ def gerar_nesting(
                 piece["originalLength"] = orig_l
                 piece["originalWidth"] = orig_w
                 piece["rotated"] = rotated_piece
+                piece["rotationAngle"] = 90 if rotated_piece else 0
                 placa.append(piece)
             if placa:
                 chapas.append(placa)
