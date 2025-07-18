@@ -276,6 +276,21 @@ def _gcode_peca(
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
+            from ezdxf.math import Matrix44, Vec2
+
+            cx = ox + (orig_length or l) / 2
+            cy = oy + (orig_width or w) / 2
+
+            if rotated:
+                ang = rotation_angle or 90
+                m = Matrix44.axis_rotate(angle=math.radians(ang), axis="z", center=(cx, cy, 0))
+
+                def rotacionar_ponto(x: float, y: float) -> tuple:
+                    v = Vec2(x, y).transform(m)
+                    return v.x, v.y
+            else:
+                def rotacionar_ponto(x: float, y: float) -> tuple:
+                    return x, y
             for ent in msp:
                 layer = ent.dxf.layer
                 cfg = next(
@@ -294,16 +309,9 @@ def _gcode_peca(
                     continue
                 prof = float(cfg.get("profundidade", 1))
                 if ent.dxftype() == "CIRCLE":
-                    cx = float(ent.dxf.center.x)
-                    cy = float(ent.dxf.center.y)
-                    if rotated and orig_length and orig_width:
-                        rx = orig_width - cy
-                        ry = cx
-                    else:
-                        rx = cx
-                        ry = cy
-                    x = ox + rx
-                    y = oy + ry
+                    cx0 = float(ent.dxf.center.x) + ox
+                    cy0 = float(ent.dxf.center.y) + oy
+                    x, y = rotacionar_ponto(cx0, cy0)
                     ops.append(
                         {
                             "tool": ferramenta_cfg,
@@ -329,20 +337,9 @@ def _gcode_peca(
                     if xs and ys:
                         x = min(xs)
                         y = min(ys)
-                        w = max(xs) - min(xs)
-                        h = max(ys) - min(ys)
-                        if rotated and orig_length and orig_width:
-                            x, y, w, h = (
-                                orig_width - (y + h),
-                                x,
-                                h,
-                                w,
-                            )
-                            x += ox
-                            y += oy
-                        else:
-                            x = x + ox
-                            y = y + oy
+                        x0 = x + ox
+                        y0 = y + oy
+                        x, y = rotacionar_ponto(x0, y0)
                         ops.append(
                             {
                                 "tool": ferramenta_cfg,
