@@ -1527,6 +1527,8 @@ def gerar_nesting(
     area_alt = altura_chapa - ref_inf - ref_sup
 
     chapas: List[List[Dict]] = []
+    layout_chapas: List[Dict] = []
+    idx = 1
     for material, lista in pecas_por_material.items():
         cfg = chapas_cfg.get(material, {})
         rot = False if cfg.get("possui_veio") else True
@@ -1556,6 +1558,8 @@ def gerar_nesting(
             if not abin:
                 continue
             placa = []
+            ops_layout: List[Dict] = []
+            op_id = 1
             for rect in abin:
                 piece = rect.rid.copy()
                 orig_l = float(piece.get("Length", 0))
@@ -1575,8 +1579,34 @@ def gerar_nesting(
                 piece["rotated"] = rotated_piece
                 piece["rotationAngle"] = 90 if rotated_piece else 0
                 placa.append(piece)
+                ops_layout.append(
+                    {
+                        "id": op_id,
+                        "nome": piece.get("PartName", f"Peca {op_id}"),
+                        "tipo": "Peca",
+                        "x": piece["x"],
+                        "y": piece["y"],
+                        "largura": piece["Length"],
+                        "altura": piece["Width"],
+                        "cliente": piece.get("Client", ""),
+                        "ambiente": piece.get("Project", ""),
+                    }
+                )
+                op_id += 1
             if placa:
                 chapas.append(placa)
+                layout_chapas.append(
+                    {
+                        "id": idx,
+                        "codigo": f"{idx:03d}",
+                        "descricao": f"{cfg.get('propriedade', material)} ({int(float(abin.width))} x {int(float(abin.height))})",
+                        "temVeio": bool(cfg.get("possui_veio")),
+                        "largura": float(abin.width),
+                        "altura": float(abin.height),
+                        "operacoes": ops_layout,
+                    }
+                )
+                idx += 1
 
     pasta_saida = pasta / "nesting"
     pasta_saida.mkdir(exist_ok=True)
@@ -1612,9 +1642,37 @@ def gerar_nesting(
         config_maquina,
         sobras,
     )
+
+
+    # Incluir sobras no layout final
+    for i, lista in enumerate(sobras or []):
+        if i >= len(layout_chapas):
+            break
+        ops = layout_chapas[i].setdefault("operacoes", [])
+        prox = max((op.get("id", 0) for op in ops), default=0) + 1
+        for s in lista:
+            coords = []
+            poly = s.get("polygon")
+            if poly is not None:
+                coords = [[float(x), float(y)] for x, y in poly.exterior.coords]
+            ops.append(
+                {
+                    "id": prox,
+                    "nome": "Sobra",
+                    "tipo": "Sobra",
+                    "x": s.get("x", 0),
+                    "y": s.get("y", 0),
+                    "largura": s.get("Length", 0),
+                    "altura": s.get("Width", 0),
+                    "coords": coords,
+                }
+            )
+            prox += 1
+
     try:
         (pasta_saida / "layout.json").write_text(
-            json.dumps(chapas, ensure_ascii=False, indent=2),
+            json.dumps(layout_chapas, ensure_ascii=False, indent=2),
+
             encoding="utf-8",
         )
     except Exception:
