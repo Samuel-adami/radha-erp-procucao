@@ -1643,6 +1643,7 @@ def gerar_nesting(
         sobras,
     )
 
+
     # Incluir sobras no layout final
     for i, lista in enumerate(sobras or []):
         if i >= len(layout_chapas):
@@ -1671,6 +1672,7 @@ def gerar_nesting(
     try:
         (pasta_saida / "layout.json").write_text(
             json.dumps(layout_chapas, ensure_ascii=False, indent=2),
+
             encoding="utf-8",
         )
     except Exception:
