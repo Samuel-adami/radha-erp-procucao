@@ -29,12 +29,14 @@ async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
                 # Token expirado ou inválido, tenta atualizar e refazer a requisição
                 await refresh()
                 token = await get_access_token()
+                print("[DEBUG] Usando token:", token)
                 if not token:
                     resp.raise_for_status()
                 headers["Authorization"] = f"Bearer {token}"
                 resp = await client.get(API_URL, headers=headers, params=params)
             resp.raise_for_status()
             data = resp.json()
+            print("[DEBUG] Resposta da RD Station:", data)
             contatos = data.get("contacts", data.get("items", []))
             resultados.extend(contatos)
 
