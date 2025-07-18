@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchComAuth } from "../../../utils/fetchComAuth";
+import { fetchComAuth, downloadComAuth } from "../../../utils/fetchComAuth";
 import { Button } from "./ui/button";
-
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
 
 const modeloLayer = {
   nome: "",
@@ -266,9 +264,13 @@ const Nesting = () => {
     }
   };
 
-  const baixarNesting = (n) => {
-    const url = `${GATEWAY_URL}/producao/download-nesting/${n.id}`;
-    window.open(url, '_blank');
+  const baixarNesting = async (n) => {
+    const url = `/download-nesting/${n.id}`;
+    try {
+      await downloadComAuth(url, `${n.lote.split(/[/\\]/).pop()}.zip`);
+    } catch (err) {
+      alert('Falha ao baixar otimização');
+    }
   };
 
   const visualizarNesting = (n) => {

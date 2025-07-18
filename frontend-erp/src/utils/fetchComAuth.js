@@ -1,11 +1,12 @@
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
 
 export async function fetchComAuth(url, options = {}) {
+  const { raw, ...fetchOpts } = options;
   const token = localStorage.getItem("token");
   console.log("Requisição iniciada:", url, "com token:", token);
   
   const headers = {
-    ...(options.headers || {}),
+    ...(fetchOpts.headers || {}),
   };
 
   if (token) {
@@ -13,7 +14,7 @@ export async function fetchComAuth(url, options = {}) {
   }
 
   // Define o Content-Type como JSON, a menos que seja um FormData.
-  if (options.body && !(options.body instanceof FormData)) {
+  if (fetchOpts.body && !(fetchOpts.body instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -22,7 +23,7 @@ export async function fetchComAuth(url, options = {}) {
   if (url.startsWith('/')) { // Se for uma rota relativa
       if (url.startsWith('/publicos') || url.startsWith('/nova-campanha') || url.startsWith('/nova-publicacao') || url.startsWith('/chat') || url.startsWith('/conhecimento') || url.startsWith('/leads')) {
           finalUrl = `${GATEWAY_URL}/marketing-ia${url}`; // Rotas do Marketing Digital IA via Gateway
-        } else if (url.startsWith('/importar-xml') || url.startsWith('/gerar-lote-final') || url.startsWith('/carregar-lote-final') || url.startsWith('/executar-nesting') || url.startsWith('/executar-nesting-final') || url.startsWith('/nesting-preview') || url.startsWith('/listar-lotes') || url.startsWith('/excluir-lote') || url.startsWith('/config-maquina') || url.startsWith('/config-ferramentas') || url.startsWith('/config-cortes') || url.startsWith('/config-layers') || url.startsWith('/chapas') || url.startsWith('/coletar-layers') || url.startsWith('/coletar-chapas') || url.startsWith('/lotes-ocorrencias') || url.startsWith('/motivos-ocorrencias') || url.startsWith('/relatorio-ocorrencias') || url.startsWith('/nestings') || url.startsWith('/remover-nesting')) {
+        } else if (url.startsWith('/importar-xml') || url.startsWith('/gerar-lote-final') || url.startsWith('/carregar-lote-final') || url.startsWith('/executar-nesting') || url.startsWith('/executar-nesting-final') || url.startsWith('/nesting-preview') || url.startsWith('/listar-lotes') || url.startsWith('/excluir-lote') || url.startsWith('/config-maquina') || url.startsWith('/config-ferramentas') || url.startsWith('/config-cortes') || url.startsWith('/config-layers') || url.startsWith('/chapas') || url.startsWith('/coletar-layers') || url.startsWith('/coletar-chapas') || url.startsWith('/lotes-ocorrencias') || url.startsWith('/motivos-ocorrencias') || url.startsWith('/relatorio-ocorrencias') || url.startsWith('/nestings') || url.startsWith('/remover-nesting') || url.startsWith('/download-lote') || url.startsWith('/download-nesting')) {
             finalUrl = `${GATEWAY_URL}/producao${url}`; // Rotas de Produção via Gateway
         } else if (url.startsWith('/comercial')) {
             finalUrl = `${GATEWAY_URL}${url}`; // Rotas do módulo Comercial via Gateway
@@ -44,7 +45,7 @@ export async function fetchComAuth(url, options = {}) {
   let response;
   try {
     response = await fetch(finalUrl, {
-      ...options,
+      ...fetchOpts,
       headers,
     });
     console.log("Resposta recebida:", finalUrl, "→ status:", response.status);
@@ -73,6 +74,10 @@ export async function fetchComAuth(url, options = {}) {
     throw new Error(`Erro ${response.status}: ${errorMessage}`);
   }
 
+  if (raw) {
+    return response;
+  }
+
   const responseText = await response.text();
   const contentType = response.headers.get("content-type") || "";
   if (!responseText) return null;
@@ -89,4 +94,15 @@ export async function fetchComAuth(url, options = {}) {
     }
   }
   return responseText;
+}
+
+export async function downloadComAuth(url, filename) {
+  const response = await fetchComAuth(url, { raw: true });
+  const blob = await response.blob();
+  const dlUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = dlUrl;
+  a.download = filename || '';
+  a.click();
+  window.URL.revokeObjectURL(dlUrl);
 }
