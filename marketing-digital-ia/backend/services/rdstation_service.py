@@ -25,6 +25,7 @@ async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
         while True:
             params = {"page": pagina, "page_size": page_size}
             resp = await client.get(API_URL, headers=headers, params=params)
+            print("[DEBUG] Resposta da RD:", resp.status_code, resp.json())
             if resp.status_code == 401:
                 # Token expirado ou inválido, tenta atualizar e refazer a requisição
                 await refresh()
