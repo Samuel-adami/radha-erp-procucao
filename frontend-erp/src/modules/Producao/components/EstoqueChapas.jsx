@@ -15,6 +15,7 @@ const EstoqueChapas = () => {
   const [itens, setItens] = useState([]);
   const [chapas, setChapas] = useState([]);
   const [form, setForm] = useState(modelo);
+  const [selecionados, setSelecionados] = useState([]);
 
   const carregar = async () => {
     const dados = await fetchComAuth("/chapas-estoque");
@@ -84,6 +85,47 @@ const EstoqueChapas = () => {
     }
   };
 
+  const toggleSelecionado = id => {
+    setSelecionados(prev =>
+      prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  };
+
+  const selecionarTodos = () => {
+    setSelecionados(prev =>
+      prev.length === itens.length ? [] : itens.map(i => i.id)
+    );
+  };
+
+  const baixarSelecionados = async () => {
+    if (selecionados.length === 0) return;
+    const motivo = window.prompt('Motivo da baixa:');
+    if (!motivo) return;
+    const senha = window.prompt('Digite sua senha para baixar');
+    if (!senha) return;
+    const usuario = JSON.parse(localStorage.getItem('usuario') || '{}');
+    try {
+      const auth = await fetchComAuth('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username: usuario.username, password: senha }),
+      });
+      if (!['Diretor','Coordenador','Supervisor','Gerente'].includes(auth.usuario?.cargo)) {
+        alert('Usuário sem permissão');
+        return;
+      }
+      for (const id of selecionados) {
+        await fetchComAuth(`/chapas-estoque/${id}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ destino: `${usuario.username} - ${motivo}` }),
+        });
+      }
+      setSelecionados([]);
+      carregar();
+    } catch (err) {
+      alert('Senha incorreta ou erro');
+    }
+  };
+
   const m2 = ((parseFloat(form.comprimento) || 0) * (parseFloat(form.largura) || 0)) / 1000000;
   const total = m2 * (parseFloat(form.custo_m2) || 0);
 
@@ -119,37 +161,60 @@ const EstoqueChapas = () => {
         <div className="text-sm">m²: {m2.toFixed(3)} | Custo Total: {total.toFixed(2)}</div>
         <Button onClick={salvar}>Salvar</Button>
       </div>
-      <table className="text-sm w-full">
-        <thead>
-          <tr>
-            <th className="border px-2">Descrição</th>
-            <th className="border px-2">Origem</th>
-            <th className="border px-2">Comp</th>
-            <th className="border px-2">Larg</th>
-            <th className="border px-2">m²</th>
-            <th className="border px-2">Custo m²</th>
-            <th className="border px-2">Total</th>
-            <th className="border px-2"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {itens.map(it => (
-            <tr key={it.id}>
-              <td className="border px-2">{it.descricao}</td>
-              <td className="border px-2">{it.origem}</td>
-              <td className="border px-2">{it.comprimento}</td>
-              <td className="border px-2">{it.largura}</td>
-              <td className="border px-2">{(it.m2 || 0).toFixed(3)}</td>
-              <td className="border px-2">{it.custo_m2}</td>
-              <td className="border px-2">{(it.custo_total || 0).toFixed(2)}</td>
-              <td className="border px-2 space-x-1">
-                <Button size="sm" variant="outline" onClick={() => editar(it)}>Editar</Button>
-                <Button size="sm" variant="destructive" onClick={() => remover(it.id)}>Excluir</Button>
-              </td>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={selecionados.length === itens.length && itens.length > 0}
+            onChange={selecionarTodos}
+          />
+          <Button size="sm" onClick={selecionarTodos}>
+            {selecionados.length === itens.length ? 'Desmarcar Todos' : 'Selecionar Todos'}
+          </Button>
+          <Button size="sm" variant="destructive" onClick={baixarSelecionados}>
+            Baixar Selecionados
+          </Button>
+        </div>
+        <table className="text-sm w-full">
+          <thead>
+            <tr>
+              <th className="border px-2"></th>
+              <th className="border px-2">Descrição</th>
+              <th className="border px-2">Origem</th>
+              <th className="border px-2">Comp</th>
+              <th className="border px-2">Larg</th>
+              <th className="border px-2">m²</th>
+              <th className="border px-2">Custo m²</th>
+              <th className="border px-2">Total</th>
+              <th className="border px-2"></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {itens.map(it => (
+              <tr key={it.id}>
+                <td className="border px-2 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selecionados.includes(it.id)}
+                    onChange={() => toggleSelecionado(it.id)}
+                  />
+                </td>
+                <td className="border px-2">{it.descricao}</td>
+                <td className="border px-2">{it.origem}</td>
+                <td className="border px-2">{it.comprimento}</td>
+                <td className="border px-2">{it.largura}</td>
+                <td className="border px-2">{(it.m2 || 0).toFixed(3)}</td>
+                <td className="border px-2">{it.custo_m2}</td>
+                <td className="border px-2">{(it.custo_total || 0).toFixed(2)}</td>
+                <td className="border px-2 space-x-1">
+                  <Button size="sm" variant="outline" onClick={() => editar(it)}>Editar</Button>
+                  <Button size="sm" variant="destructive" onClick={() => remover(it.id)}>Excluir</Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
