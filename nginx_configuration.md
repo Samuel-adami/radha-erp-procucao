@@ -94,8 +94,13 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    # Novo: encaminha chamadas do módulo de Marketing Digital IA
-    # (ex.: /marketing-ia/chat/) para o Gateway na porta 8040
+    location ~ ^/marketing-ia/rd/ {
+        proxy_pass http://127.0.0.1:8040;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
     location /marketing-ia/ {
         proxy_pass http://127.0.0.1:8040;
         proxy_set_header Host $host;
