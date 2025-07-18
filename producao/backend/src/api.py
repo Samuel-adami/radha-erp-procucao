@@ -548,7 +548,7 @@ async def executar_nesting_final(request: Request):
         base_dir=pasta_resultado_path.name,
     )
 
-    obj_key = f"nestings/{pasta_resultado_path.parent.name}.zip"
+    obj_key = f"nestings/Nesting_{pasta_resultado_path.parent.name}.zip"
     upload_file(zip_path, obj_key)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
