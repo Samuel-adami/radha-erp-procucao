@@ -530,7 +530,9 @@ def _gerar_xml_chapas(
         material = pecas[0].get("Material", "chapa") if pecas else "chapa"
         material = _sanitize_material_name(material)
         thickness = int(pecas[0].get("Thickness", 0)) if pecas else 0
-        prefix = f"{lote_fmt} Nesting_{material}_{i}"
+        # Use the exact NC file name generated for the plate
+        # to ensure the XML references match the real files.
+        prefix = f"{i:03d}-{material}"
 
         cycle = ET.SubElement(root, "Cycle", Name="Cycle_List")
         _add_field(cycle, "PlateID", f"{prefix}.nc")
