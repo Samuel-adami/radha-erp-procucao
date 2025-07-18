@@ -12,9 +12,11 @@ _CACHE_LOCK = asyncio.Lock()
 CACHE_TTL = 900  # 15 minutos
 
 async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
-    """Obtém todos os leads paginando na API do RD Station."""
+    print("[DEBUG] Iniciando _fetch_leads()")
     token = await get_access_token()
+    print("[DEBUG] Token recebido:", token)
     if not token:
+        print("[ERRO] Token de acesso ausente ou inválido.")
         return []
 
     headers = {"Authorization": f"Bearer {token}"}
