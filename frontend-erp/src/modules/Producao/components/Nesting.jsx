@@ -267,7 +267,8 @@ const Nesting = () => {
   const baixarNesting = async (n) => {
     const url = `/download-nesting/${n.id}`;
     try {
-      await downloadComAuth(url, `${n.lote.split(/[/\\]/).pop()}.zip`);
+      const loteBase = n.lote.split(/[/\\]/).pop().replace(/\.zip$/i, '');
+      await downloadComAuth(url, `Nesting_${loteBase}.zip`);
     } catch (err) {
       alert('Falha ao baixar otimização');
     }
@@ -298,7 +299,7 @@ const Nesting = () => {
           <option value="">Selecione...</option>
           {lotes.map((l) => (
             <option key={l} value={l}>
-              {l.split(/[/\\]/).pop()}
+              {l.split(/[/\\]/).pop().replace(/\.zip$/i, '')}
             </option>
           ))}
         </select>
@@ -381,7 +382,7 @@ const Nesting = () => {
           <ul className="space-y-2">
             {nestings.map((n) => (
               <li key={n.id} className="flex justify-between items-center border p-2 rounded">
-                <span>{n.lote.split(/[/\\]/).pop()}</span>
+                <span>{n.lote.split(/[/\\]/).pop().replace(/\.zip$/i, '')}</span>
                 <div className="space-x-2">
                   <Button size="sm" onClick={() => visualizarNesting(n)}>
                     Visualizar
