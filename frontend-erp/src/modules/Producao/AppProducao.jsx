@@ -3,7 +3,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "./components/ui/button"; 
 import ImportarXML from "./components/ImportarXML";
 import VisualizacaoPeca from "./components/VisualizacaoPeca";
-import { fetchComAuth } from "../../utils/fetchComAuth";
+import { fetchComAuth, downloadComAuth } from "../../utils/fetchComAuth";
 import Pacote from "./components/Pacote";
 import Apontamento from "./components/Apontamento";
 import ApontamentoVolume from "./components/ApontamentoVolume";
@@ -19,8 +19,6 @@ import EditarLoteOcorrencia from "./components/EditarLoteOcorrencia";
 import PacoteOcorrencia from "./components/PacoteOcorrencia";
 import VisualizacaoNesting from "./components/nesting-view/VisualizacaoNesting";
 import "./Producao.css";
-
-const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
 
@@ -55,9 +53,13 @@ const HomeProducao = () => {
     }
   };
 
-  const baixarLote = (nome) => {
-    const url = `${GATEWAY_URL}/producao/download-lote/${encodeURIComponent(nome)}`;
-    window.open(url, '_blank');
+  const baixarLote = async (nome) => {
+    const url = `/download-lote/${encodeURIComponent(nome)}`;
+    try {
+      await downloadComAuth(url, `Lote_${nome}.zip`);
+    } catch (err) {
+      alert('Falha ao baixar lote');
+    }
   };
 
   return (
