@@ -885,29 +885,16 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     if not object_name:
         return {"erro": "Nesting não encontrado"}
 
-    try:
-        pasta = ensure_pasta_local(object_name)
-    except FileNotFoundError as e:
-        return {"erro": str(e)}
+    status = object_exists(object_name)
+    if status is False:
+        return {"erro": "Pasta não encontrada"}
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
-    base_name = tmp.name[:-4]
-    zip_path = base_name + ".zip"
-    if pasta.is_dir():
-
-        shutil.make_archive(
-            base_name, "zip", root_dir=pasta.parent, base_dir=pasta.name
-        )
-
-        upload_file(zip_path, object_name)
-    elif object_exists(object_name) is False:
-        os.remove(zip_path)
-        return {"erro": "Pasta não encontrada"}
     filename = Path(object_name).name
-    background_tasks.add_task(os.remove, zip_path)
+    background_tasks.add_task(os.remove, tmp.name)
     return StreamingResponse(
-        download_stream(object_name, zip_path),
+        download_stream(object_name, tmp.name),
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
