@@ -95,3 +95,13 @@ Os componentes React ficam em `frontend-erp/src/modules/MarketingDigitalIA`.
 - **Falha de comunicação com a API da RD Station** – erros de rede são registrados e o serviço pode retornar dados em cache.
 
 Com estes arquivos e passos é possível depurar por que os leads não estão aparecendo no Radha ERP.
+
+## 8. Testes automatizados
+
+Os testes do módulo RD Station ficam em `tests/rdstation/`. Para executá-los, instale as dependências de desenvolvimento (como `pytest` e `pytest-asyncio`) e rode:
+
+```bash
+pytest tests/rdstation
+```
+
+Isso valida a lógica de atualização de token, a paginação de leads e garante que um erro seja levantado quando não há tokens salvos.
