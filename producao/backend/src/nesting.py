@@ -563,6 +563,7 @@ def _gcode_peca(
 def _gerar_cyc(
     chapas: List[List[Dict]],
     saida: Path,
+    largura_chapa: float,
     sobras: Optional[List[List[Dict]]] = None,
 ) -> None:
     """Gera arquivos ``.cyc`` posicionando etiquetas de peças e sobras."""
@@ -577,7 +578,18 @@ def _gerar_cyc(
         for p in todas:
             cycle = ET.SubElement(root, "Cycle", Name="Cycle_Label")
             _add_field(cycle, "LabelName", f"{p['Program1']}.bmp")
-            _add_field(cycle, "X", str(_invert_x(p["x"], p["Length"], largura_chapa) + p["Length"] / 2))
+            _add_field(
+                cycle,
+                "X",
+                str(
+                    _invert_x(
+                        p["x"],
+                        p["Length"],
+                        largura_chapa,
+                    )
+                    + p["Length"] / 2
+                ),
+            )
             _add_field(cycle, "Y", str(p["y"] + p["Width"] / 2))
             _add_field(cycle, "R", "0")
         tree = ET.ElementTree(root)
@@ -1671,7 +1683,7 @@ def gerar_nesting(
         config_maquina,
         Path(pasta_lote),
     )
-    _gerar_cyc(chapas, pasta_saida, sobras)
+    _gerar_cyc(chapas, pasta_saida, altura_chapa, sobras)
     _gerar_xml_chapas(
         chapas,
         pasta_saida,
