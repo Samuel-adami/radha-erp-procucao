@@ -16,6 +16,21 @@ import math
 from ezdxf.math import ConstructionArc
 from PIL import Image, ImageDraw
 
+# Área mínima aproveitável para registrar sobras (0,1 m² em mm²)
+AREA_MIN_SOBRA = 0.1 * 1000 * 1000
+
+
+def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
+    """Return a rectangular polygon if ``g`` already forms a rectangle."""
+    if not isinstance(g, Polygon) or g.is_empty:
+        return None
+    rect = box(*g.bounds)
+    if g.symmetric_difference(rect).area > tol:
+        return None
+    if rect.area < AREA_MIN_SOBRA:
+        return None
+    return rect
+
 # Fallback templates to ensure `.nc` files always contain the standard headers
 # and footers even quando a configuração da máquina estiver ausente ou vazia.
 DEFAULT_INTRO = (
@@ -952,7 +967,10 @@ def _gerar_gcodes(
                     g = g.difference(pecas_union)
                 if g.is_empty:
                     continue
-                minx, miny, maxx, maxy = g.bounds
+                g_rect = _retangulo_sobra(g)
+                if not g_rect:
+                    continue
+                minx, miny, maxx, maxy = g_rect.bounds
                 sobra = {
                     "PartName": "SB",
                     "Length": maxx - minx,
@@ -964,7 +982,7 @@ def _gerar_gcodes(
                     "Program1": f"{next(proximo_id):08d}",
                     "x": minx,
                     "y": miny,
-                    "polygon": g,
+                    "polygon": g_rect,
                 }
                 codigo, last_tool, _ = _gcode_peca(
                     sobra,
@@ -981,7 +999,7 @@ def _gerar_gcodes(
                     rotation_angle=0,
                 )
                 sobras_chapa.append(sobra)
-                sobras_polys.append(g)
+                sobras_polys.append(g_rect)
                 linhas.extend(codigo.split("\n"))
 
         # As sobras devem considerar apenas a área útil da chapa, logo é
@@ -1014,7 +1032,10 @@ def _gerar_gcodes(
                     geom = geom.difference(pecas_union)
                 if geom.is_empty:
                     continue
-                minx, miny, maxx, maxy = geom.bounds
+                g_rect = _retangulo_sobra(geom)
+                if not g_rect:
+                    continue
+                minx, miny, maxx, maxy = g_rect.bounds
                 sobra = {
                     "PartName": "SB",
                     "Length": maxx - minx,
@@ -1026,7 +1047,7 @@ def _gerar_gcodes(
                     "Program1": f"{next(proximo_id):08d}",
                     "x": minx,
                     "y": miny,
-                    "polygon": geom,
+                    "polygon": g_rect,
                 }
                 codigo, last_tool, _ = _gcode_peca(
                     sobra,
@@ -1043,7 +1064,7 @@ def _gerar_gcodes(
                     rotation_angle=0,
                 )
                 sobras_chapa.append(sobra)
-                sobras_polys.append(geom)
+                sobras_polys.append(g_rect)
                 linhas.extend(codigo.split("\n"))
 
         sobras_por_chapa.append(sobras_chapa)
@@ -1396,7 +1417,10 @@ def gerar_nesting_preview(
                         g = g.difference(pecas_union)
                     if g.is_empty:
                         continue
-                    minx, miny, maxx, maxy = g.bounds
+                    g_rect = _retangulo_sobra(g)
+                    if not g_rect:
+                        continue
+                    minx, miny, maxx, maxy = g_rect.bounds
                     operacoes.append(
                         {
                             "id": op_id,
@@ -1407,11 +1431,11 @@ def gerar_nesting_preview(
                             "largura": maxx - minx,
                             "altura": maxy - miny,
                             "coords": [
-                                [float(cx), float(cy)] for cx, cy in g.exterior.coords
+                                [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
                             ],
                         }
                     )
-                    sobras_polys.append(g)
+                    sobras_polys.append(g_rect)
                     op_id += 1
 
             # Ajusta as sobras considerando o deslocamento das margens de refilo
@@ -1443,7 +1467,10 @@ def gerar_nesting_preview(
                         geom = geom.difference(pecas_union)
                     if geom.is_empty:
                         continue
-                    minx, miny, maxx, maxy = geom.bounds
+                    g_rect = _retangulo_sobra(geom)
+                    if not g_rect:
+                        continue
+                    minx, miny, maxx, maxy = g_rect.bounds
                     operacoes.append(
                         {
                             "id": op_id,
@@ -1454,12 +1481,11 @@ def gerar_nesting_preview(
                             "largura": maxx - minx,
                             "altura": maxy - miny,
                             "coords": [
-                                [float(cx), float(cy)]
-                                for cx, cy in geom.exterior.coords
+                                [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
                             ],
                         }
                     )
-                    sobras_polys.append(geom)
+                    sobras_polys.append(g_rect)
                     op_id += 1
 
             if operacoes:
