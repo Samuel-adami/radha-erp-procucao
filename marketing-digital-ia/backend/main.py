@@ -3,9 +3,11 @@ from fastapi.responses import JSONResponse
 from routes import usuarios
 from routes import chat, campanha, publicacao, publicos, conhecimento, leads, rd_auth
 import os
+import asyncio
 import uvicorn
 from database import init_db
 from services.auth_service import ensure_default_admin
+from services.rdstation_auth_service import auto_refresh_tokens
 
 import sys
 import numpy
@@ -20,6 +22,12 @@ app = FastAPI(redirect_slashes=False)
 # Initialize database tables on startup
 init_db()
 ensure_default_admin()
+
+
+@app.on_event("startup")
+async def _start_background_tasks() -> None:
+    """Inicializa tarefas assíncronas."""
+    asyncio.create_task(auto_refresh_tokens())
 
 # Removido: Configuração de CORS, pois será gerenciada pelo Gateway API
 

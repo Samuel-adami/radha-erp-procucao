@@ -15,6 +15,8 @@ RDSTATION_REDIRECT_URI=<url de callback>
 1. Acesse `/rd/login` estando autenticado no sistema. Você será redirecionado para a página de autorização da RD Station.
 2. Após conceder acesso, a RD Station redireciona para `RDSTATION_REDIRECT_URI`, que deve apontar para `/rd/callback`. Essa rota troca o `code` pelos tokens e armazena tudo na tabela `rdstation_tokens`.
 3. O backend renova automaticamente o `access_token` usando o `refresh_token` quando necessário.
+   Uma tarefa de fundo (`auto_refresh_tokens`) verifica periodicamente se os
+   tokens estão prestes a expirar e solicita a renovação.
 
 ### Inserção manual de tokens
 Se já possuir tokens válidos, envie-os para `/rd/tokens`:
