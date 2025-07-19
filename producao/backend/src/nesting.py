@@ -134,14 +134,18 @@ def _is_operacao(cfg: Dict) -> bool:
 
 
 def _rotate_rect_cw(x: float, y: float, w: float, h: float, largura: float) -> tuple:
-    """Rotate rectangle 270 degrees clockwise within a plate of width ``largura``."""
-    return y, largura - x - w, h, w
+    """Rotate rectangle 270 degrees clockwise so that the rotated plate starts
+    at the lower-left origin."""
+    return y, x, h, w
 
 
 def _rotate_poly_cw(poly: Polygon, largura: float) -> Polygon:
-    """Rotate polygon 270 degrees clockwise keeping coordinates positive."""
-    g = affinity.rotate(poly, -270, origin=(0, 0))
-    return affinity.translate(g, yoff=largura)
+    """Rotate polygon 270 degrees clockwise keeping coordinates positive with
+    origin at the lower-left."""
+    g = affinity.rotate(poly, -90, origin=(0, 0))
+    g = affinity.scale(g, yfact=-1, origin=(0, 0))
+    minx, miny, _, _ = g.bounds
+    return affinity.translate(g, xoff=-minx, yoff=-miny)
 
 
 def _rotate_plate_cw(chapa: Dict) -> Dict:
@@ -153,7 +157,7 @@ def _rotate_plate_cw(chapa: Dict) -> Dict:
         nx, ny, nw, nh = _rotate_rect_cw(x, y, w, h, largura)
         op["x"], op["y"], op["largura"], op["altura"] = nx, ny, nw, nh
         if op.get("coords"):
-            op["coords"] = [[cy, largura - cx] for cx, cy in op["coords"]]
+            op["coords"] = [[cy, cx] for cx, cy in op["coords"]]
         if isinstance(op.get("polygon"), (Polygon, MultiPolygon)):
             op["polygon"] = _rotate_poly_cw(op["polygon"], largura)
     chapa["largura"], chapa["altura"] = altura, largura
