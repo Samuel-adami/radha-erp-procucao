@@ -298,6 +298,7 @@ def _gcode_peca(
     def fmt(val: float) -> str:
         return f"{float(val):.{casas_dec}f}"
 
+
     mov_rapida = config_maquina.get("movRapida", "") if config_maquina else ""
     mov_corte_ini = (
         config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
