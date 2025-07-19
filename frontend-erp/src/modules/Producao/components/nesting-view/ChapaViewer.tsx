@@ -57,21 +57,22 @@ const ChapaViewer: React.FC<Props> = ({
       {chapa.temVeio &&
         Array.from({ length: 8 }).map((_, i) => {
           const y = ((i + 1) * chapa.altura) / 9 * escala;
+          const vy = alturaSvg - y;
           return (
             <line
               key={`veio-h-${i}`}
               x1={0}
-              y1={y}
+              y1={vy}
               x2={svgWidth}
-              y2={y}
+              y2={vy}
               stroke="#bbb"
               strokeDasharray="4 4"
             />
           );
         })}
       {chapa.operacoes.map((op) => {
-        const x = op.x * escala;
-        const y = op.y * escala;
+        const x = (chapa.largura - op.x - op.largura) * escala;
+        const y = (chapa.altura - op.y - op.altura) * escala;
         const w = op.largura * escala;
         const h = op.altura * escala;
         const cor = cores[op.tipo] || '#fca5a5';
@@ -89,7 +90,7 @@ const ChapaViewer: React.FC<Props> = ({
             {op.tipo === 'Sobra' && op.coords && op.coords.length > 0 ? (
               <polygon
                 points={op.coords
-                  .map(([px, py]) => `${px * escala},${py * escala}`)
+                  .map(([px, py]) => `${(chapa.largura - px) * escala},${(chapa.altura - py) * escala}`)
                   .join(' ')}
                 fill={cor}
                 opacity={0.3}

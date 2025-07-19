@@ -162,6 +162,11 @@ def _cfg_val(cfg: Optional[Dict], *keys: str, default: float = 0.0) -> float:
     return float(cfg.get(keys[0], default))
 
 
+def _invert_x(x: float, width: float, chapa_width: float) -> float:
+    """Return ``x`` mirrored using the right edge of the sheet as origin."""
+    return chapa_width - (x + width)
+
+
 def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
     # (Sem alteração — mesma função de extração de medidas do DXF)
     try:
@@ -297,6 +302,7 @@ def _gcode_peca(
 
     def fmt(val: float) -> str:
         return f"{float(val):.{casas_dec}f}"
+
 
     mov_rapida = config_maquina.get("movRapida", "") if config_maquina else ""
     mov_corte_ini = (
@@ -531,7 +537,7 @@ def _gerar_cyc(
         for p in todas:
             cycle = ET.SubElement(root, "Cycle", Name="Cycle_Label")
             _add_field(cycle, "LabelName", f"{p['Program1']}.bmp")
-            _add_field(cycle, "X", str(p["x"] + p["Length"] / 2))
+            _add_field(cycle, "X", str(_invert_x(p["x"], p["Length"], largura_chapa) + p["Length"] / 2))
             _add_field(cycle, "Y", str(p["y"] + p["Width"] / 2))
             _add_field(cycle, "R", "0")
         tree = ET.ElementTree(root)
@@ -725,7 +731,7 @@ def _gerar_gcodes(
                 dxf_path = pasta_lote / p["Filename"]
             _, last_tool, used = _gcode_peca(
                 p,
-                p.get("x", 0),
+                _invert_x(p.get("x", 0), p.get("Length", 0), largura_chapa),
                 p.get("y", 0),
                 ferramentas,
                 dxf_path,
@@ -849,7 +855,7 @@ def _gerar_gcodes(
                 dxf_path = pasta_lote / p["Filename"]
             codigo, last_tool, _ = _gcode_peca(
                 p,
-                p["x"],
+                _invert_x(p["x"], p["Length"], largura_chapa),
                 p["y"],
                 ferramentas,
                 dxf_path,
@@ -877,7 +883,7 @@ def _gerar_gcodes(
                 dxf_path = pasta_lote / p["Filename"]
             codigo, last_tool, _ = _gcode_peca(
                 p,
-                p["x"],
+                _invert_x(p["x"], p["Length"], largura_chapa),
                 p["y"],
                 ferramentas,
                 dxf_path,
@@ -910,7 +916,7 @@ def _gerar_gcodes(
                 dxf_path = pasta_lote / p["Filename"]
             codigo, last_tool, _ = _gcode_peca(
                 p,
-                p["x"],
+                _invert_x(p["x"], p["Length"], largura_chapa),
                 p["y"],
                 ferramentas,
                 dxf_path,
@@ -993,7 +999,7 @@ def _gerar_gcodes(
                 }
                 codigo, last_tool, _ = _gcode_peca(
                     sobra,
-                    sobra["x"],
+                    _invert_x(sobra["x"], sobra["Length"], largura_chapa),
                     sobra["y"],
                     ferramentas,
                     None,
@@ -1058,7 +1064,7 @@ def _gerar_gcodes(
                 }
                 codigo, last_tool, _ = _gcode_peca(
                     sobra,
-                    sobra["x"],
+                    _invert_x(sobra["x"], sobra["Length"], largura_chapa),
                     sobra["y"],
                     ferramentas,
                     None,
