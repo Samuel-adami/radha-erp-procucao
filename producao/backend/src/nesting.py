@@ -306,12 +306,18 @@ def _gcode_peca(
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
+            from ezdxf.math import Matrix44, Vec2
 
-            if rotated and orig_length and orig_width:
+            cx = ox + (orig_length or l) / 2
+            cy = oy + (orig_width or w) / 2
+
+            if rotated:
+                ang = rotation_angle or 90
+                m = Matrix44.axis_rotate(angle=math.radians(ang), axis="z", center=(cx, cy, 0))
+
                 def rotacionar_ponto(x: float, y: float) -> tuple:
-                    dx = x - ox
-                    dy = y - oy
-                    return ox + orig_width - dy, oy + dx
+                    v = Vec2(x, y).transform(m)
+                    return v.x, v.y
             else:
                 def rotacionar_ponto(x: float, y: float) -> tuple:
                     return x, y
@@ -1457,18 +1463,16 @@ def gerar_nesting_preview(
                     op_id += 1
 
             if operacoes:
-                largura_bin = float(abin.width)
-                altura_bin = float(abin.height)
                 desc_chapa = cfg.get("propriedade", material)
-                desc_chapa = f"{desc_chapa} ({int(largura_bin)} x {int(altura_bin)})"
+                desc_chapa = f"{desc_chapa} ({int(largura)} x {int(altura)})"
                 chapas.append(
                     {
                         "id": idx,
                         "codigo": f"{idx:03d}",
                         "descricao": desc_chapa,
                         "temVeio": bool(cfg.get("possui_veio")),
-                        "largura": largura_bin,
-                        "altura": altura_bin,
+                        "largura": largura,
+                        "altura": altura,
                         "operacoes": operacoes,
                     }
                 )
