@@ -1,12 +1,18 @@
-import boto3
+"""Download de um arquivo do bucket usando variáveis de ambiente."""
 
-# Parâmetros do bucket S3 para o teste de download. Definidos diretamente
-# aqui para eliminar a dependência de variáveis de ambiente.
-ENDPOINT = "https://nyc3.digitaloceanspaces.com"
-ACCESS_KEY = "DO801RVLRYQAQ7ZBKxxx"
-SECRET_KEY = "0D4o8nUESJUP0X3WyUuaDiO9DNysuACxJKSOCL4dxxxx"
-BUCKET = "radha-arquivos"
-PREFIX = "producao/"
+import os
+import boto3
+from dotenv import load_dotenv
+
+# Carrega variáveis definidas em .env, se existir
+load_dotenv()
+
+# Configuração do bucket via variáveis de ambiente
+ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
+ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
+SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
+BUCKET = os.getenv("OBJECT_STORAGE_BUCKET", "radha-arquivos")
+PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
 
 session = boto3.session.Session()
 s3 = session.client(
