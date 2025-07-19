@@ -2,6 +2,7 @@ import os
 import time
 import asyncio
 import httpx
+from fastapi import HTTPException
 from services.rdstation_auth_service import get_access_token, refresh
 
 API_URL = "https://api.rd.services/platform/contacts"
@@ -17,7 +18,7 @@ async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
     print("[DEBUG] Token recebido:", token)
     if not token:
         print("[ERRO] Token de acesso ausente ou inválido.")
-        return []
+        raise HTTPException(status_code=401, detail="RD Station token missing")
 
     headers = {"Authorization": f"Bearer {token}"}
     resultados = []
@@ -75,6 +76,9 @@ async def obter_leads(
             _CACHE_TIMESTAMP = time.time()
             print(f"[DEBUG] Leads recebidos: {len(leads)}")
             return leads
+        except HTTPException:
+            # Propaga erros de autenticação para que a rota trate adequadamente
+            raise
         except Exception as e:
             print(f"[ERRO] Falha ao obter leads: {e}")
             return _CACHE or []
