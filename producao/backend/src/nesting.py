@@ -9,6 +9,7 @@ from datetime import datetime
 from shapely.geometry import box, CAP_STYLE, JOIN_STYLE
 from shapely.ops import unary_union
 from shapely.geometry import Polygon, MultiPolygon
+from shapely import affinity
 
 from rectpack import newPacker
 import ezdxf
@@ -130,6 +131,45 @@ def _is_operacao(cfg: Dict) -> bool:
     """Return True if layer configuration represents an operation."""
     tipo = str(cfg.get("tipo", "")).lower()
     return tipo in {"operação", "operacao"}
+
+
+def _rotate_rect_cw(x: float, y: float, w: float, h: float, largura: float) -> tuple:
+    """Rotate rectangle 90 degrees clockwise within a plate of width ``largura``."""
+    return y, largura - x - w, h, w
+
+
+def _rotate_poly_cw(poly: Polygon, largura: float) -> Polygon:
+    """Rotate polygon 90 degrees clockwise keeping coordinates positive."""
+    g = affinity.rotate(poly, -90, origin=(0, 0))
+    return affinity.translate(g, yoff=largura)
+
+
+def _rotate_plate_cw(chapa: Dict) -> Dict:
+    """Rotate entire plate data (in-place) 90 degrees clockwise."""
+    largura = chapa.get("largura", 0)
+    altura = chapa.get("altura", 0)
+    for op in chapa.get("operacoes", []):
+        x, y, w, h = op.get("x", 0), op.get("y", 0), op.get("largura", 0), op.get("altura", 0)
+        nx, ny, nw, nh = _rotate_rect_cw(x, y, w, h, largura)
+        op["x"], op["y"], op["largura"], op["altura"] = nx, ny, nw, nh
+        if op.get("coords"):
+            op["coords"] = [[cy, largura - cx] for cx, cy in op["coords"]]
+        if isinstance(op.get("polygon"), (Polygon, MultiPolygon)):
+            op["polygon"] = _rotate_poly_cw(op["polygon"], largura)
+    chapa["largura"], chapa["altura"] = altura, largura
+    return chapa
+
+
+def _rotate_placa_cw(placa: List[Dict], largura: float) -> List[Dict]:
+    """Rotate coordinates of each piece on a plate clockwise."""
+    for p in placa:
+        x, y = p.get("x", 0), p.get("y", 0)
+        l, w = p.get("Length", 0), p.get("Width", 0)
+        nx, ny, nl, nw = _rotate_rect_cw(x, y, l, w, largura)
+        p["x"], p["y"], p["Length"], p["Width"] = nx, ny, nl, nw
+        if isinstance(p.get("polygon"), (Polygon, MultiPolygon)):
+            p["polygon"] = _rotate_poly_cw(p["polygon"], largura)
+    return placa
 
 
 def _expand_cmd_extra(tool: Optional[Dict]) -> str:
@@ -1504,17 +1544,16 @@ def gerar_nesting_preview(
             if operacoes:
                 desc_chapa = cfg.get("propriedade", material)
                 desc_chapa = f"{desc_chapa} ({int(largura)} x {int(altura)})"
-                chapas.append(
-                    {
-                        "id": idx,
-                        "codigo": f"{idx:03d}",
-                        "descricao": desc_chapa,
-                        "temVeio": bool(cfg.get("possui_veio")),
-                        "largura": largura,
-                        "altura": altura,
-                        "operacoes": operacoes,
-                    }
-                )
+                chapa = {
+                    "id": idx,
+                    "codigo": f"{idx:03d}",
+                    "descricao": desc_chapa,
+                    "temVeio": bool(cfg.get("possui_veio")),
+                    "largura": largura,
+                    "altura": altura,
+                    "operacoes": operacoes,
+                }
+                chapas.append(_rotate_plate_cw(chapa))
                 idx += 1
 
     return chapas
@@ -1618,15 +1657,15 @@ def gerar_nesting(
                 piece["rotationAngle"] = 90 if rotated_piece else 0
                 placa.append(piece)
             if placa:
-                chapas.append(placa)
+                chapas.append(_rotate_placa_cw(placa, largura))
 
     pasta_saida = pasta / "nesting"
     pasta_saida.mkdir(exist_ok=True)
     sobras = _gerar_gcodes(
         chapas,
         pasta_saida,
-        largura_chapa,
         altura_chapa,
+        largura_chapa,
         ferramentas,
         config_layers,
         config_maquina,
@@ -1636,15 +1675,15 @@ def gerar_nesting(
     _gerar_xml_chapas(
         chapas,
         pasta_saida,
-        largura_chapa,
         altura_chapa,
+        largura_chapa,
         pasta.name,
     )
     _gerar_imagens_chapas(
         chapas,
         pasta_saida,
-        largura_chapa,
         altura_chapa,
+        largura_chapa,
         config_maquina,
         sobras,
     )

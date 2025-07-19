@@ -72,7 +72,9 @@ const ChapaViewer: React.FC<Props> = ({
         })}
       {chapa.operacoes.map((op) => {
 
-        const x = (chapa.largura - op.x - op.largura) * escala;
+        const x = op.x * escala;
+
+
 
         const y = (chapa.altura - op.y - op.altura) * escala;
         const w = op.largura * escala;
@@ -93,7 +95,7 @@ const ChapaViewer: React.FC<Props> = ({
               <polygon
                 points={op.coords
 
-                  .map(([px, py]) => `${(chapa.largura - px) * escala},${(chapa.altura - py) * escala}`)
+                  .map(([px, py]) => `${px * escala},${(chapa.altura - py) * escala}`)
 
                   .join(' ')}
                 fill={cor}
