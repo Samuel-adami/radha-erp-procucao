@@ -1,12 +1,18 @@
-import boto3
+"""Upload de um arquivo para o bucket configurado em variáveis de ambiente."""
 
-# Parâmetros de acesso ao bucket para teste. Antes eram lidos do .env,
-# agora ficam definidos diretamente aqui para facilitar a execução.
-ENDPOINT = "https://nyc3.digitaloceanspaces.com"
-ACCESS_KEY = "DO801RVLRYQAQ7ZBKxxx"
-SECRET_KEY = "0D4o8nUESJUP0X3WyUuaDiO9DNysuACxJKSOCL4dxxxx"
-BUCKET = "radha-arquivos"
-PREFIX = "producao/"
+import os
+import boto3
+from dotenv import load_dotenv
+
+# Carrega variáveis definidas em .env, se existir
+load_dotenv()
+
+# Parâmetros de acesso ao bucket obtidos das variáveis de ambiente
+ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
+ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
+SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
+BUCKET = os.getenv("OBJECT_STORAGE_BUCKET", "radha-arquivos")
+PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
 
 # Conexão S3
 session = boto3.session.Session()
