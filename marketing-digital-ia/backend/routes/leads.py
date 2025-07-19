@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 import json
 import httpx
 import os
@@ -21,7 +21,11 @@ async def listar_leads(
     campanha: str | None = Query(None),
     estagio: str | None = Query(None),
 ):
-    dados = await obter_leads()
+    try:
+        dados = await obter_leads()
+    except HTTPException as exc:
+        # Repassa problemas de autenticação da RD Station para o frontend
+        raise exc
 
     def filtro(item: dict) -> bool:
         data_conv = item.get("created_at") or item.get("conversion_date")
