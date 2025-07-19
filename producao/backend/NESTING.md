@@ -62,6 +62,14 @@ A função `_gerar_cyc`:
 - Imagens de pré-visualização de cada chapa.
 - Etiquetas em imagem (se configurado).
 
+## Reaproveitamento de sobras
+Sobras geradas durante o nesting passam por uma validação adicional:
+
+- O contorno final deve formar um retângulo alinhado aos eixos. Formatos
+  irregulares são descartados.
+- Apenas sobras com área igual ou superior a 0,1&nbsp;m² são registradas e
+  cortadas quando o parâmetro `cortarSobras` estiver habilitado.
+
 ## Fonte de dados
 - **Banco `chapas`**: define tamanhos padrões e se o material possui veio (interfere na rotação das peças).
 - **Tabelas `config_maquina`, `config_ferramentas` e `config_layers`**: armazenam as preferências utilizadas durante o nesting.
