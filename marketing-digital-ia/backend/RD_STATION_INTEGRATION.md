@@ -43,3 +43,12 @@ DELETE FROM rdstation_tokens WHERE account_id='default';
 ```
 
 Depois acesse novamente `/rd/login` para realizar uma nova autorização.
+
+## Diagnóstico da integração
+Para coletar informações detalhadas sobre as variáveis de ambiente e tokens salvos, execute:
+
+```bash
+python scripts/debug_rdstation_integration.py
+```
+
+Um arquivo `rdstation_debug_info.json` será gerado contendo o resultado das tentativas de atualização dos tokens e de uma chamada de teste aos leads. Isso facilita a identificação de problemas quando a integração não está retornando dados.

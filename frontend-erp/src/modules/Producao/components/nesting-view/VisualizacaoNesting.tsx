@@ -30,6 +30,7 @@ const VisualizacaoNesting: React.FC = () => {
             return;
           } catch {}
         }
+
         try {
           const remoto = await fetchComAuth(
             `/carregar-nesting-preview?obj_key=${encodeURIComponent(objKey)}`
@@ -44,6 +45,7 @@ const VisualizacaoNesting: React.FC = () => {
             return;
           }
         } catch {}
+
       }
 
       try {
