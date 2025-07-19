@@ -30,6 +30,22 @@ const VisualizacaoNesting: React.FC = () => {
             return;
           } catch {}
         }
+
+        try {
+          const remoto = await fetchComAuth(
+            `/carregar-nesting-preview?obj_key=${encodeURIComponent(objKey)}`
+          );
+          if (Array.isArray(remoto?.chapas)) {
+            setChapas(remoto.chapas);
+            localStorage.setItem(
+              `nestingPreview_${objKey}`,
+              JSON.stringify(remoto.chapas)
+            );
+            setConfirmado(true);
+            return;
+          }
+        } catch {}
+
       }
 
       try {

@@ -1583,7 +1583,7 @@ def gerar_nesting(
     config_layers: Optional[List[Dict]] = None,
     config_maquina: Optional[Dict] = None,
     estoque: Optional[Dict[str, List[Dict]]] = None,
-) -> tuple[str, List[List[Dict]]]:
+) -> tuple[str, List[List[Dict]], List[List[Dict]]]:
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
         raise FileNotFoundError(f"Pasta '{pasta_lote}' não encontrada")
@@ -1709,4 +1709,4 @@ def gerar_nesting(
         config_maquina,
         sobras,
     )
-    return str(pasta_saida), sobras
+    return str(pasta_saida), sobras, chapas
