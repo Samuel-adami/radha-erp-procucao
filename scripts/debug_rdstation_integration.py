@@ -7,6 +7,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 from sqlalchemy import text
+import httpx
 
 # Adiciona o backend ao path para importar modulos existentes
 BACKEND_DIR = Path(__file__).resolve().parents[1] / "marketing-digital-ia" / "backend"
@@ -19,6 +20,9 @@ if env_path.exists():
 
 from database import get_db_connection  # type: ignore
 from services import rdstation_auth_service, rdstation_service  # type: ignore
+
+API_URL = rdstation_service.API_URL
+TOKEN_URL = rdstation_auth_service.TOKEN_URL
 
 
 async def main() -> None:
@@ -44,23 +48,54 @@ async def main() -> None:
         expires_in = token.get("expires_at", 0) - int(time.time())
         info["token_status"] = "expired" if expires_in <= 0 else "valid"
 
-        # Tenta atualizar o token
-        try:
-            refreshed = await rdstation_auth_service.refresh(token.get("account_id", "default"))
-            info["refresh_success"] = True
-            info["refresh_response"] = refreshed
-        except Exception as exc:
-            info["refresh_success"] = False
-            info["refresh_error"] = str(exc)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # ------- Refresh Token -------
+            refresh_payload = {
+                "client_id": os.getenv("RDSTATION_CLIENT_ID"),
+                "client_secret": os.getenv("RDSTATION_CLIENT_SECRET"),
+                "refresh_token": token.get("refresh_token"),
+            }
+            refresh_headers = {"Content-Type": "application/json"}
+            refresh_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+            refresh_info = {
+                "endpoint": TOKEN_URL,
+                "body": refresh_payload,
+                "headers": refresh_headers,
+                "timestamp": refresh_ts,
+            }
+            try:
+                resp = await client.post(TOKEN_URL, json=refresh_payload)
+                refresh_info.update(
+                    {
+                        "status": resp.status_code,
+                        "response": resp.text,
+                    }
+                )
+            except Exception as exc:
+                refresh_info["error"] = str(exc)
+            info["refresh_attempt"] = refresh_info
 
-        # Tenta buscar um lead para validar a comunicacao
-        try:
-            leads = await rdstation_service._fetch_leads(page_size=1, max_pages=1)
-            info["fetch_success"] = True
-            info["lead_sample"] = leads[0] if leads else None
-        except Exception as exc:
-            info["fetch_success"] = False
-            info["fetch_error"] = str(exc)
+            # ------- Fetch Sample Lead -------
+            fetch_headers = {"Authorization": f"Bearer {token.get('access_token')}"}
+            params = {"page": 1, "page_size": 1}
+            fetch_ts = time.strftime("%Y-%m-%d %H:%M:%S")
+            fetch_info = {
+                "endpoint": API_URL,
+                "headers": fetch_headers,
+                "params": params,
+                "timestamp": fetch_ts,
+            }
+            try:
+                resp = await client.get(API_URL, headers=fetch_headers, params=params)
+                fetch_info.update(
+                    {
+                        "status": resp.status_code,
+                        "response": resp.text,
+                    }
+                )
+            except Exception as exc:
+                fetch_info["error"] = str(exc)
+            info["fetch_attempt"] = fetch_info
 
     with open("rdstation_debug_info.json", "w", encoding="utf-8") as f:
         json.dump(info, f, indent=2, ensure_ascii=False)
