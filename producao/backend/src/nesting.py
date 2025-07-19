@@ -149,6 +149,19 @@ def _add_field(cycle: ET.Element, name: str, value: str) -> ET.Element:
     return ET.SubElement(cycle, "Field", attrib=attrib)
 
 
+def _cfg_val(cfg: Optional[Dict], *keys: str, default: float = 0.0) -> float:
+    """Return ``float`` value from ``cfg`` trying multiple key variants."""
+    if not cfg:
+        return default
+    for k in keys:
+        if k in cfg:
+            try:
+                return float(cfg[k])
+            except Exception:
+                break
+    return float(cfg.get(keys[0], default))
+
+
 def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
     # (Sem alteração — mesma função de extração de medidas do DXF)
     try:
@@ -764,16 +777,10 @@ def _gerar_gcodes(
         prefix = f"{i:03d}-{material}"
 
         # Margens de refilo configuradas para a máquina
-        ref_inf = (
-            float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
-        )
-        ref_sup = (
-            float(config_maquina.get("refiloSuperior", 0)) if config_maquina else 0
-        )
-        ref_esq = (
-            float(config_maquina.get("refiloEsquerda", 0)) if config_maquina else 0
-        )
-        ref_dir = float(config_maquina.get("refiloDireita", 0)) if config_maquina else 0
+        ref_inf = _cfg_val(config_maquina, "refiloInferior", "refilo_inferior")
+        ref_sup = _cfg_val(config_maquina, "refiloSuperior", "refilo_superior")
+        ref_esq = _cfg_val(config_maquina, "refiloEsquerda", "refilo_esquerda")
+        ref_dir = _cfg_val(config_maquina, "refiloDireita", "refilo_direita")
         area_larg = largura_chapa - ref_esq - ref_dir
         area_alt = altura_chapa - ref_inf - ref_sup
         espaco = (
@@ -932,13 +939,13 @@ def _gerar_gcodes(
         # sobras corretamente precisamos considerar apenas a área útil da
         # chapa (sem o refilo), por isso subtraímos o refilo das coordenadas
         # absolutas das peças.
-        x_min = min((p["x"] - ref_esq - espaco / 2 for p in pecas), default=0)
-        y_min = min((p["y"] - ref_inf - espaco / 2 for p in pecas), default=0)
+        x_min = min((p["x"] - ref_esq for p in pecas), default=0)
+        y_min = min((p["y"] - ref_inf for p in pecas), default=0)
         x_max = max(
-            (p["x"] - ref_esq + p["Length"] + espaco / 2 for p in pecas), default=0
+            (p["x"] - ref_esq + p["Length"] + espaco for p in pecas), default=0
         )
         y_max = max(
-            (p["y"] - ref_inf + p["Width"] + espaco / 2 for p in pecas), default=0
+            (p["y"] - ref_inf + p["Width"] + espaco for p in pecas), default=0
         )
 
         pecas_polys = [
@@ -1301,10 +1308,10 @@ def gerar_nesting_preview(
     chapas: List[Dict] = []
     idx = 1
     espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
-    ref_inf = float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
-    ref_sup = float(config_maquina.get("refiloSuperior", 0)) if config_maquina else 0
-    ref_esq = float(config_maquina.get("refiloEsquerda", 0)) if config_maquina else 0
-    ref_dir = float(config_maquina.get("refiloDireita", 0)) if config_maquina else 0
+    ref_inf = _cfg_val(config_maquina, "refiloInferior", "refilo_inferior")
+    ref_sup = _cfg_val(config_maquina, "refiloSuperior", "refilo_superior")
+    ref_esq = _cfg_val(config_maquina, "refiloEsquerda", "refilo_esquerda")
+    ref_dir = _cfg_val(config_maquina, "refiloDireita", "refilo_direita")
     area_larg = largura_chapa - ref_esq - ref_dir
     area_alt = altura_chapa - ref_inf - ref_sup
 
@@ -1349,8 +1356,8 @@ def gerar_nesting_preview(
                 p = rect.rid.copy()
                 orig_l = float(p.get("Length", 0))
                 orig_w = float(p.get("Width", 0))
-                p_x = float(rect.x) + ref_esq + espaco / 2
-                p_y = float(rect.y) + ref_inf + espaco / 2
+                p_x = float(rect.x) + ref_esq
+                p_y = float(rect.y) + ref_inf
                 w = float(rect.width) - espaco
                 h = float(rect.height) - espaco
                 rotated_piece = (
@@ -1392,10 +1399,10 @@ def gerar_nesting_preview(
                         d["ambiente"] = p.get("Project", "")
                         operacoes.append(d)
                         op_id += 1
-                x_min = min(x_min, p_x - ref_esq - espaco / 2)
-                y_min = min(y_min, p_y - ref_inf - espaco / 2)
-                x_max = max(x_max, p_x - ref_esq + w + espaco / 2)
-                y_max = max(y_max, p_y - ref_inf + h + espaco / 2)
+                x_min = min(x_min, rect.x)
+                y_min = min(y_min, rect.y)
+                x_max = max(x_max, rect.x + rect.width)
+                y_max = max(y_max, rect.y + rect.height)
                 pecas_polys.append(box(p_x, p_y, p_x + w, p_y + h))
 
             pecas_union = unary_union(pecas_polys) if pecas_polys else None
@@ -1548,10 +1555,10 @@ def gerar_nesting(
 
 
     espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
-    ref_inf = float(config_maquina.get("refiloInferior", 0)) if config_maquina else 0
-    ref_sup = float(config_maquina.get("refiloSuperior", 0)) if config_maquina else 0
-    ref_esq = float(config_maquina.get("refiloEsquerda", 0)) if config_maquina else 0
-    ref_dir = float(config_maquina.get("refiloDireita", 0)) if config_maquina else 0
+    ref_inf = _cfg_val(config_maquina, "refiloInferior", "refilo_inferior")
+    ref_sup = _cfg_val(config_maquina, "refiloSuperior", "refilo_superior")
+    ref_esq = _cfg_val(config_maquina, "refiloEsquerda", "refilo_esquerda")
+    ref_dir = _cfg_val(config_maquina, "refiloDireita", "refilo_direita")
     area_larg = largura_chapa - ref_esq - ref_dir
     area_alt = altura_chapa - ref_inf - ref_sup
 
@@ -1589,8 +1596,8 @@ def gerar_nesting(
                 piece = rect.rid.copy()
                 orig_l = float(piece.get("Length", 0))
                 orig_w = float(piece.get("Width", 0))
-                piece["x"] = float(rect.x) + ref_esq + espaco / 2
-                piece["y"] = float(rect.y) + ref_inf + espaco / 2
+                piece["x"] = float(rect.x) + ref_esq
+                piece["y"] = float(rect.y) + ref_inf
                 piece["Length"] = float(rect.width) - espaco
                 piece["Width"] = float(rect.height) - espaco
                 piece["Material"] = material
