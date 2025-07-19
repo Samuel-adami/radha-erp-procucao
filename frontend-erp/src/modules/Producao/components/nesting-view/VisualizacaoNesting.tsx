@@ -114,9 +114,36 @@ const VisualizacaoNesting: React.FC = () => {
   };
 
   const desfazer = () => {
+    const cfg = localStorage.getItem('ultimaExecucaoNesting');
+    if (cfg) {
+      try {
+        const params = JSON.parse(cfg);
+        fetchComAuth('/limpar-nesting-preview', {
+          method: 'POST',
+          body: JSON.stringify({ pasta_lote: params.pastaLote })
+        }).catch(() => {});
+      } catch {}
+    }
     localStorage.removeItem('ultimaExecucaoNesting');
     setChapas([]);
   };
+
+  useEffect(() => {
+    return () => {
+      if (!confirmado) {
+        const cfg = localStorage.getItem('ultimaExecucaoNesting');
+        if (cfg) {
+          try {
+            const params = JSON.parse(cfg);
+            fetchComAuth('/limpar-nesting-preview', {
+              method: 'POST',
+              body: JSON.stringify({ pasta_lote: params.pastaLote })
+            }).catch(() => {});
+          } catch {}
+        }
+      }
+    };
+  }, [confirmado]);
 
   return (
     <div className="p-6 space-y-4">

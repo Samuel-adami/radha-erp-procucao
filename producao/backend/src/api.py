@@ -1047,6 +1047,31 @@ async def excluir_lote(request: Request):
     return {"status": "ok", "mensagem": "Lote não encontrado"}
 
 
+@app.post("/limpar-nesting-preview")
+async def limpar_nesting_preview(request: Request):
+    """Remove a pasta temporária criada para visualização do nesting."""
+    dados = await request.json()
+    pasta_lote = dados.get("pasta_lote")
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+
+    key_no_prefix = (
+        pasta_lote[len(OBJECT_PREFIX) :]
+        if pasta_lote.startswith(OBJECT_PREFIX)
+        else pasta_lote
+    )
+    if key_no_prefix.startswith("lotes/"):
+        pasta = SAIDA_DIR / Path(key_no_prefix).stem
+    else:
+        pasta = SAIDA_DIR / Path(key_no_prefix).name
+
+    if pasta.is_dir():
+        shutil.rmtree(pasta, ignore_errors=True)
+        return {"status": "ok", "removido": True}
+
+    return {"status": "ok", "removido": False}
+
+
 @app.get("/config-maquina")
 async def obter_config_maquina():
     """Retorna a configuracao de maquina persistida."""
