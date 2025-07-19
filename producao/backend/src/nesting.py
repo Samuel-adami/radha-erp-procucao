@@ -134,18 +134,18 @@ def _is_operacao(cfg: Dict) -> bool:
 
 
 def _rotate_rect_cw(x: float, y: float, w: float, h: float, largura: float) -> tuple:
-    """Rotate rectangle 90 degrees clockwise within a plate of width ``largura``."""
+    """Rotate rectangle 270 degrees clockwise within a plate of width ``largura``."""
     return y, largura - x - w, h, w
 
 
 def _rotate_poly_cw(poly: Polygon, largura: float) -> Polygon:
-    """Rotate polygon 90 degrees clockwise keeping coordinates positive."""
-    g = affinity.rotate(poly, -90, origin=(0, 0))
+    """Rotate polygon 270 degrees clockwise keeping coordinates positive."""
+    g = affinity.rotate(poly, -270, origin=(0, 0))
     return affinity.translate(g, yoff=largura)
 
 
 def _rotate_plate_cw(chapa: Dict) -> Dict:
-    """Rotate entire plate data (in-place) 90 degrees clockwise."""
+    """Rotate entire plate data (in-place) 270 degrees clockwise."""
     largura = chapa.get("largura", 0)
     altura = chapa.get("altura", 0)
     for op in chapa.get("operacoes", []):
