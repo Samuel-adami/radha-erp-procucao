@@ -1,5 +1,7 @@
 import os
 import time
+import asyncio
+import logging
 import httpx
 from jose import jwt
 from sqlalchemy import text
@@ -112,3 +114,29 @@ async def get_access_token(account_id: str = "default") -> str | None:
             return None
         token = _get(account_id)
     return token.get("access_token")
+
+
+async def auto_refresh_tokens(interval: int = 3600, threshold: int = 300) -> None:
+    """Periodicamente renova tokens prestes a expirar.
+
+    Args:
+        interval: Tempo em segundos entre cada verificação.
+        threshold: Quantos segundos antes do vencimento o token será renovado.
+    """
+    while True:
+        conn = get_db_connection()
+        rows = conn.execute(
+            text("SELECT account_id, expires_at FROM rdstation_tokens")
+        ).fetchall()
+        conn.close()
+        now = int(time.time())
+        for row in rows:
+            data = row._mapping
+            if data.get("expires_at") and data["expires_at"] <= now + threshold:
+                try:
+                    await refresh(data["account_id"])
+                except Exception as exc:  # pragma: no cover - log only
+                    logging.error(
+                        "Erro ao renovar tokens para %s: %s", data["account_id"], exc
+                    )
+        await asyncio.sleep(interval)
