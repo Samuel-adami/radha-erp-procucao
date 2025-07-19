@@ -578,7 +578,7 @@ async def executar_nesting_final(request: Request):
                     desc = (r.get("descricao") or "").split("(")[0].strip()
                     estoque_sel.setdefault(desc, []).append(dict(r))
 
-        pasta_resultado, sobras = gerar_nesting(
+        pasta_resultado, sobras, preview_chapas = gerar_nesting(
             str(pasta_lote_resolved),
             largura_chapa,
             altura_chapa,
@@ -600,6 +600,14 @@ async def executar_nesting_final(request: Request):
 
     obj_key = f"nestings/Nesting_{pasta_resultado_path.parent.name}.zip"
     upload_file(zip_path, obj_key)
+    preview_key = obj_key.replace(".zip", "_preview.json")
+    try:
+        tmp_prev = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        with open(tmp_prev.name, "w", encoding="utf-8") as f:
+            json.dump(preview_chapas, f)
+        upload_file(tmp_prev.name, preview_key)
+    finally:
+        os.remove(tmp_prev.name)
     os.remove(zip_path)
     shutil.rmtree(pasta_resultado_path, ignore_errors=True)
     shutil.rmtree(pasta_lote_resolved, ignore_errors=True)
@@ -948,6 +956,28 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@app.get("/carregar-nesting-preview")
+async def carregar_nesting_preview(obj_key: str):
+    """Retorna o preview salvo para a otimização identificada por ``obj_key``."""
+    preview_key = obj_key.replace(".zip", "_preview.json")
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+    tmp.close()
+    try:
+        status = object_exists(preview_key)
+        if status is False:
+            return {"erro": "Prévia não encontrada"}
+        if status is None:
+            return {"erro": "Falha ao acessar armazenamento"}
+        download_file(preview_key, tmp.name)
+        with open(tmp.name, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+        return {"chapas": dados}
+    except Exception as e:
+        return {"erro": str(e)}
+    finally:
+        os.remove(tmp.name)
 
 
 @app.post("/remover-nesting")

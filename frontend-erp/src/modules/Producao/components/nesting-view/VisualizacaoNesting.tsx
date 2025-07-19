@@ -19,6 +19,33 @@ const VisualizacaoNesting: React.FC = () => {
   useEffect(() => {
     async function carregar() {
       const cfg = localStorage.getItem('ultimaExecucaoNesting');
+      const objKey = localStorage.getItem('visualizarNestingObjKey');
+
+      if (objKey) {
+        const dadosSalvos = localStorage.getItem(`nestingPreview_${objKey}`);
+        if (dadosSalvos) {
+          try {
+            setChapas(JSON.parse(dadosSalvos));
+            setConfirmado(true);
+            return;
+          } catch {}
+        }
+        try {
+          const remoto = await fetchComAuth(
+            `/carregar-nesting-preview?obj_key=${encodeURIComponent(objKey)}`
+          );
+          if (Array.isArray(remoto?.chapas)) {
+            setChapas(remoto.chapas);
+            localStorage.setItem(
+              `nestingPreview_${objKey}`,
+              JSON.stringify(remoto.chapas)
+            );
+            setConfirmado(true);
+            return;
+          }
+        } catch {}
+      }
+
       try {
         const params = cfg ? JSON.parse(cfg) : {};
         const dados = await fetchComAuth('/nesting-preview', {
@@ -93,7 +120,7 @@ const VisualizacaoNesting: React.FC = () => {
     try {
       const cfg = localStorage.getItem('ultimaExecucaoNesting');
       const params = cfg ? JSON.parse(cfg) : {};
-      await fetchComAuth('/executar-nesting-final', {
+      const resp = await fetchComAuth('/executar-nesting-final', {
         method: 'POST',
         body: JSON.stringify({
           pasta_lote: params.pastaLote,
@@ -105,6 +132,9 @@ const VisualizacaoNesting: React.FC = () => {
           sobras_ids: JSON.parse(localStorage.getItem('sobrasSelecionadas') || '[]'),
         }),
       });
+      if (resp?.pasta_resultado) {
+        localStorage.setItem(`nestingPreview_${resp.pasta_resultado}`, JSON.stringify(chapas));
+      }
       localStorage.removeItem('sobrasSelecionadas');
       setConfirmado(true);
     } catch (e) {
@@ -125,6 +155,7 @@ const VisualizacaoNesting: React.FC = () => {
       } catch {}
     }
     localStorage.removeItem('ultimaExecucaoNesting');
+    localStorage.removeItem('visualizarNestingObjKey');
     setChapas([]);
   };
 
@@ -142,6 +173,7 @@ const VisualizacaoNesting: React.FC = () => {
           } catch {}
         }
       }
+      localStorage.removeItem('visualizarNestingObjKey');
     };
   }, [confirmado]);
 

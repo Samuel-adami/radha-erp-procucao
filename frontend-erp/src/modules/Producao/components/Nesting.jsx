@@ -284,6 +284,9 @@ const Nesting = () => {
         alturaChapa,
       })
     );
+    if (n.obj_key) {
+      localStorage.setItem('visualizarNestingObjKey', n.obj_key);
+    }
     navigate('visualizacao');
   };
 
