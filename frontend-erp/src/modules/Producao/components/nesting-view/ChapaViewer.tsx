@@ -44,20 +44,16 @@ const ChapaViewer: React.FC<Props> = ({
   destaqueId,
   width = 500,
 }) => {
-  const margemDireita = 20;
-  const margemInferior = 20;
-  const boardWidth = width;
-  const escala = boardWidth / chapa.largura;
-  const boardHeight = chapa.altura * escala;
-  const svgWidth = boardWidth + margemDireita;
-  const alturaSvg = boardHeight + margemInferior;
+  const svgWidth = width;
+  const escala = svgWidth / chapa.largura;
+  const alturaSvg = chapa.altura * escala;
   // As linhas de veio são sempre exibidas na horizontal,
   // seguindo o comprimento da chapa no viewer.
   let sobraCount = 0;
 
   return (
     <svg width={svgWidth} height={alturaSvg} className="border bg-white">
-      <rect width={boardWidth} height={boardHeight} fill="#f9fafb" stroke="#000" />
+      <rect width={svgWidth} height={alturaSvg} fill="#f9fafb" stroke="#000" />
       {chapa.temVeio &&
         Array.from({ length: 8 }).map((_, i) => {
           const y = ((i + 1) * chapa.altura) / 9 * escala;
@@ -66,7 +62,7 @@ const ChapaViewer: React.FC<Props> = ({
               key={`veio-h-${i}`}
               x1={0}
               y1={y}
-              x2={boardWidth}
+              x2={svgWidth}
               y2={y}
               stroke="#bbb"
               strokeDasharray="4 4"
@@ -140,8 +136,8 @@ const ChapaViewer: React.FC<Props> = ({
         );
       })}
       <text
-        x={boardWidth / 2}
-        y={boardHeight + margemInferior - 4}
+        x={svgWidth / 2}
+        y={alturaSvg - 4}
         textAnchor="middle"
         fontSize={12}
         fill="#555"
@@ -149,12 +145,12 @@ const ChapaViewer: React.FC<Props> = ({
         {Math.round(chapa.largura)}
       </text>
       <text
-        x={boardWidth + margemDireita - 4}
-        y={boardHeight / 2}
+        x={svgWidth - 4}
+        y={alturaSvg / 2}
         textAnchor="middle"
         fontSize={12}
         fill="#555"
-        transform={`rotate(-90 ${boardWidth + margemDireita - 4} ${boardHeight / 2})`}
+        transform={`rotate(-90 ${svgWidth - 4} ${alturaSvg / 2})`}
       >
         {Math.round(chapa.altura)}
       </text>
