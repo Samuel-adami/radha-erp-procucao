@@ -950,38 +950,6 @@ async def download_nesting(nid: int, background_tasks: BackgroundTasks):
     )
 
 
-@app.get("/nesting-layout/{nid}")
-async def nesting_layout(nid: int):
-    """Retorna o layout gerado para uma otimização existente."""
-    try:
-        with get_db_connection() as conn:
-            row = (
-                conn.exec_driver_sql(
-                    f"SELECT obj_key FROM {SCHEMA_PREFIX}nestings WHERE id={PLACEHOLDER}",
-                    (nid,),
-                )
-                .mappings()
-                .fetchone()
-            )
-            obj_key = row.get("obj_key") if row else None
-    except Exception:
-        obj_key = None
-    if not obj_key:
-        return {"erro": "Nesting não encontrado"}
-    try:
-        pasta = ensure_pasta_local(obj_key)
-    except FileNotFoundError:
-        return {"erro": "Pasta não encontrada"}
-    layout = pasta / "layout.json"
-    if not layout.is_file():
-        return {"erro": "Layout não encontrado"}
-    try:
-        dados = json.loads(layout.read_text(encoding="utf-8"))
-    except Exception as e:
-        return {"erro": str(e)}
-    return {"chapas": dados}
-
-
 @app.post("/remover-nesting")
 async def remover_nesting(request: Request):
     """Exclui uma otimização de nesting e remove seus arquivos."""

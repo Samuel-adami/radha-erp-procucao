@@ -276,8 +276,14 @@ const Nesting = () => {
   };
 
   const visualizarNesting = (n) => {
-    localStorage.removeItem('ultimaExecucaoNesting');
-    localStorage.setItem('visualizarNestingId', String(n.id));
+    localStorage.setItem(
+      'ultimaExecucaoNesting',
+      JSON.stringify({
+        pastaLote: n.lote,
+        larguraChapa,
+        alturaChapa,
+      })
+    );
     navigate('visualizacao');
   };
 

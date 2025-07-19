@@ -15,32 +15,24 @@ const VisualizacaoNesting: React.FC = () => {
   const [destaque, setDestaque] = useState<number | null>(null);
   const [confirmado, setConfirmado] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const apenasVisualizacao = !!localStorage.getItem('visualizarNestingId');
 
   useEffect(() => {
     async function carregar() {
-      const nid = localStorage.getItem('visualizarNestingId');
+      const cfg = localStorage.getItem('ultimaExecucaoNesting');
       try {
-        let dados: any;
-        if (nid) {
-          dados = await fetchComAuth(`/nesting-layout/${nid}`);
-          localStorage.removeItem('visualizarNestingId');
-        } else {
-          const cfg = localStorage.getItem('ultimaExecucaoNesting');
-          const params = cfg ? JSON.parse(cfg) : {};
-          dados = await fetchComAuth('/nesting-preview', {
-            method: 'POST',
-            body: JSON.stringify({
-              pasta_lote: params.pastaLote,
-              largura_chapa: params.larguraChapa,
-              altura_chapa: params.alturaChapa,
-              ferramentas: JSON.parse(localStorage.getItem('ferramentasNesting') || '[]'),
-              config_maquina: JSON.parse(localStorage.getItem('configMaquina') || 'null'),
-              config_layers: JSON.parse(localStorage.getItem('configLayers') || '[]'),
-              sobras_ids: JSON.parse(localStorage.getItem('sobrasSelecionadas') || '[]'),
-            }),
-          });
-        }
+        const params = cfg ? JSON.parse(cfg) : {};
+        const dados = await fetchComAuth('/nesting-preview', {
+          method: 'POST',
+          body: JSON.stringify({
+            pasta_lote: params.pastaLote,
+            largura_chapa: params.larguraChapa,
+            altura_chapa: params.alturaChapa,
+            ferramentas: JSON.parse(localStorage.getItem('ferramentasNesting') || '[]'),
+            config_maquina: JSON.parse(localStorage.getItem('configMaquina') || 'null'),
+            config_layers: JSON.parse(localStorage.getItem('configLayers') || '[]'),
+            sobras_ids: JSON.parse(localStorage.getItem('sobrasSelecionadas') || '[]'),
+          }),
+        });
         if (dados?.erro) {
           alert(dados.erro);
         } else if (Array.isArray(dados?.chapas)) {
@@ -175,17 +167,15 @@ const VisualizacaoNesting: React.FC = () => {
           ▶
         </Button>
       </div>
-      {!apenasVisualizacao && (
-        <div className="pt-4 space-x-2">
-          <Button disabled={confirmado || enviando} onClick={confirmar}>
-            Confirmar e Gerar Arquivos
-          </Button>
-          <Button variant="outline" onClick={desfazer}>
-            Desfazer Otimização Nesting
-          </Button>
-          {confirmado && <span className="ml-2 text-green-600">Concluído!</span>}
-        </div>
-      )}
+      <div className="pt-4 space-x-2">
+        <Button disabled={confirmado || enviando} onClick={confirmar}>
+          Confirmar e Gerar Arquivos
+        </Button>
+        <Button variant="outline" onClick={desfazer}>
+          Desfazer Otimização Nesting
+        </Button>
+        {confirmado && <span className="ml-2 text-green-600">Concluído!</span>}
+      </div>
       <OperacaoDetailModal operacao={selecionada} onClose={() => setSelecionada(null)} />
     </div>
   );
