@@ -75,9 +75,12 @@ def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
 
     rects.sort(key=lambda r: r.area, reverse=True)
     final: List[Polygon] = []
+    union = None
     for r in rects:
-        if not any(r.within(o) for o in final):
-            final.append(r)
+        if union and r.intersects(union):
+            continue
+        final.append(r)
+        union = r if union is None else union.union(r)
     return final
 
 # Fallback templates to ensure `.nc` files always contain the standard headers
@@ -434,12 +437,10 @@ def _gcode_peca(
             msp = doc.modelspace()
             from ezdxf.math import Matrix44, Vec2
 
-            cx = ox + (orig_length or l) / 2
-            cy = oy + (orig_width or w) / 2
-
             if rotated:
-                ang = rotation_angle or 90
-                m = Matrix44.axis_rotate(angle=math.radians(ang), axis="z", center=(cx, cy, 0))
+                ang = -(rotation_angle or 90)
+                m = Matrix44.axis_rotate(angle=math.radians(ang), axis="z", center=(ox, oy))
+                m = m @ Matrix44.scale(1, -1, 1, center=(ox, oy))
 
                 def rotacionar_ponto(x: float, y: float) -> tuple:
                     v = Vec2(x, y).transform(m)
@@ -1220,17 +1221,9 @@ def _ops_from_dxf(
     msp = doc.modelspace()
     ops: List[Dict] = []
     next_id = 1
-    if rotated and orig_length and orig_width:
-        cx_piece = ox + orig_length / 2
-        cy_piece = oy + orig_width / 2
-
+    if rotated:
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
-            ang = math.radians(90)
-            dx = ax - cx_piece
-            dy = ay - cy_piece
-            rx = cx_piece + dx * math.cos(ang) - dy * math.sin(ang)
-            ry = cy_piece + dx * math.sin(ang) + dy * math.cos(ang)
-            return rx, ry
+            return ox + ay - oy, oy + ax - ox
     else:
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
             return ax, ay
