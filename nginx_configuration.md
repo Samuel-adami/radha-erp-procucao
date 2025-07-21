@@ -22,6 +22,8 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/erp.radhadigital.com.br/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    # Permite uploads maiores de arquivos XML ou ZIP
+    client_max_body_size 200m;
 
     # FRONTEND (React build, na porta 3015 via serve ou similar)
     location / {
