@@ -45,6 +45,25 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
+### Finance Backend
+```
+/etc/systemd/system/radha-finance-backend.service
+
+[Unit]
+Description=Radha ERP - Backend Financeiro
+After=network.target
+
+[Service]
+User=samuel
+WorkingDirectory=/home/samuel/radha-erp-procucao/finance_backend
+EnvironmentFile=/home/samuel/radha-erp-procucao/finance_backend/.env
+ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
 ### Marketing Digital IA Backend
 ```
 /etc/systemd/system/radha-marketing-backend.service
