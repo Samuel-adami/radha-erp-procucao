@@ -33,8 +33,8 @@
 
 **Integração e Deploy**
 
-- O nginx faz o reverse proxy para o React (porta 3015) e redireciona as rotas de API para o gateway (porta 8040). Outras rotas internas (marketing, produção, comercial) também passam pelo gateway.
-- Cada backend roda como serviço systemd dedicado (`radha-producao-backend`, `radha-comercial-backend`, `radha-marketing-backend`, `radha-gateway-backend`) e o frontend é servido em `radha-frontend` na porta 3015.
+- O nginx faz o reverse proxy para o React (porta 3015) e redireciona as rotas de API para o gateway (porta 8040). Outras rotas internas (marketing, produção, comercial, financeiro) também passam pelo gateway.
+- Cada backend roda como serviço systemd dedicado (`radha-producao-backend`, `radha-comercial-backend`, `radha-marketing-backend`, `radha-finance-backend`, `radha-gateway-backend`) e o frontend é servido em `radha-frontend` na porta 3015.
 - Script `comandos_systemctl.txt` descreve como iniciar, reiniciar e monitorar todos os serviços via systemctl e journalctl.
 
 **Fluxo de Comunicação**
@@ -45,6 +45,7 @@ Frontend-->|HTTP via nginx|Gateway
 Gateway-->|HTTP|MarketingIA
 Gateway-->|HTTP|Producao
 Gateway-->|HTTP|Comercial
+Gateway-->|HTTP|Finance
 Producao-->|S3 Storage|DigitalOceanSpaces
 MarketingIA-->|OpenAI API|OpenAI
 ```
