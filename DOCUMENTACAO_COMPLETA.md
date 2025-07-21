@@ -178,6 +178,9 @@ ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn api:app --host 0.0.0.
 ```
 
 O Nginx direciona requisições para o Gateway e para o frontend conforme `nginx_configuration.md`【F:nginx_configuration.md†L1-L63】.
+Caso o upload de XML ou ZIP retorne **413 Request Entity Too Large**, aumente o
+limite com `client_max_body_size` no bloco `server` do Nginx, por exemplo
+`client_max_body_size 200m;`.
 
 **Exemplo de fluxo HTTP – Nesting**
 1. O usuário faz `POST https://erp.radhadigital.com.br/producao/importar-xml` enviando os arquivos XML/DXT.
