@@ -46,7 +46,6 @@ from nesting import (
 )
 import ezdxf
 from typing import Union, Dict, List
-from packaide_wrapper import is_available as packaide_available
 
 
 def _age_seconds(value) -> float | None:
@@ -407,12 +406,6 @@ async def gerar_lote_final(request: Request):
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
 
 
-@app.get("/packaide-status")
-async def packaide_status():
-    """Retorna ``True`` se o motor Packaide está disponível."""
-    return {"packaide": packaide_available()}
-
-
 @app.get("/carregar-lote-final")
 async def carregar_lote_final(pasta: str):
     """Lê o lote final identificado pela chave de objeto ``pasta``."""
@@ -443,7 +436,6 @@ async def executar_nesting(request: Request):
     config_maquina = dados.get("config_maquina")
     config_layers = dados.get("config_layers")
     sobras_ids_raw = dados.get("sobras_ids", [])
-    engine = dados.get("engine", "packaide")
     try:
         sobras_ids = [int(s) for s in sobras_ids_raw if str(s).strip()]
     except Exception:
@@ -480,7 +472,6 @@ async def executar_nesting(request: Request):
             config_layers,
             config_maquina,
             estoque_sel or None,
-            engine=engine,
         )
         layers = coletar_layers(str(pasta_lote_resolved))
     except Exception as e:
@@ -501,7 +492,6 @@ async def nesting_preview(request: Request):
     ferramentas = dados.get("ferramentas", [])
     config_maquina = dados.get("config_maquina")
     sobras_ids_raw = dados.get("sobras_ids", [])
-    engine = dados.get("engine", "packaide")
     try:
         sobras_ids = [int(s) for s in sobras_ids_raw if str(s).strip()]
     except Exception:
@@ -540,7 +530,6 @@ async def nesting_preview(request: Request):
             config_layers,
             config_maquina,
             estoque_sel or None,
-            engine=engine,
         )
     except Exception as e:
         return {"erro": str(e)}
@@ -597,7 +586,6 @@ async def executar_nesting_final(request: Request):
             config_layers,
             config_maquina,
             estoque_sel,
-            engine=engine,
         )
     except Exception as e:
         return {"erro": str(e)}

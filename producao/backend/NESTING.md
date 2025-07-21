@@ -30,12 +30,11 @@ A comunicação acontece via requisições HTTP (fetch) do frontend para a API.
    - `/executar-nesting` – chama `gerar_nesting_preview` e retorna a prévia com a lista de layers encontrados.
    - `/nesting-preview` – repete a geração da prévia para visualização.
    - `/executar-nesting-final` – executa `gerar_nesting`, grava o resultado em `Lote_X/nesting/` e registra na tabela `nestings`.
-   - `/packaide-status` – indica se o motor Packaide está disponível no servidor.
 
 4. **Função `gerar_nesting`** (`nesting.py`)
    - Lê o arquivo `.dxt` do lote para obter as peças.
    - Consulta a tabela `chapas` para saber tamanho e possibilidade de rotação de cada material.
-   - Executa o empacotamento utilizando o motor configurado. Por padrão é empregado o `Packaide`, com suporte a formas irregulares e rotação. Caso o pacote não esteja instalado via `pip`, o backend tenta carregá-lo a partir da pasta `externals/Packaide`. Quando a biblioteca não está presente o sistema recorre ao algoritmo baseado em `rectpack`.
+   - Executa o empacotamento com `rectpack`, criando listas de peças para cada chapa.
    - Para cada chapa resultante, chama funções auxiliares que geram os arquivos de saída (gcodes, cyc, xml, imagens e etiquetas).
    - Os resultados são gravados em `Lote_X/nesting/` e o caminho é retornado ao frontend.
 
