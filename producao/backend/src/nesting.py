@@ -12,6 +12,7 @@ from shapely.geometry import Polygon, MultiPolygon
 from shapely import affinity
 
 from rectpack import newPacker
+from packaide_wrapper import pack as packaide_pack, Bin as PackaideBin, Placement as PackaidePlacement
 import ezdxf
 import math
 from ezdxf.math import ConstructionArc
@@ -1330,6 +1331,7 @@ def gerar_nesting_preview(
     config_layers: Optional[List[Dict]] = None,
     config_maquina: Optional[Dict] = None,
     estoque: Optional[Dict[str, List[Dict]]] = None,
+    engine: str = "rectpack",
 ) -> List[Dict]:
     """Gera apenas a disposição das chapas sem criar arquivos."""
 
@@ -1383,27 +1385,31 @@ def gerar_nesting_preview(
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
 
-        packer = newPacker(rotation=rot)
-        for p in lista:
-            packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
-        estoque_material = estoque.get(material) if estoque else []
-        if estoque_material:
-            min_l = min(float(p["Length"]) for p in lista)
-            min_w = min(float(p["Width"]) for p in lista)
-            for s in estoque_material:
-                c = float(s.get("comprimento", 0))
-                l = float(s.get("largura", 0))
-                fits = (
-                    (c >= min_l and l >= min_w)
-                    or (rot and c >= min_w and l >= min_l)
-                )
-                if fits:
-                    packer.add_bin(int(c), int(l))
-        for _ in range(len(lista)):
-            packer.add_bin(int(largura), int(altura))
-        packer.pack()
+        if engine == "packaide":
+            bins = packaide_pack(lista, largura, altura, rotation=rot)
+        else:
+            packer = newPacker(rotation=rot)
+            for p in lista:
+                packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
+            estoque_material = estoque.get(material) if estoque else []
+            if estoque_material:
+                min_l = min(float(p["Length"]) for p in lista)
+                min_w = min(float(p["Width"]) for p in lista)
+                for s in estoque_material:
+                    c = float(s.get("comprimento", 0))
+                    l = float(s.get("largura", 0))
+                    fits = (
+                        (c >= min_l and l >= min_w)
+                        or (rot and c >= min_w and l >= min_l)
+                    )
+                    if fits:
+                        packer.add_bin(int(c), int(l))
+            for _ in range(len(lista)):
+                packer.add_bin(int(largura), int(altura))
+            packer.pack()
+            bins = packer
 
-        for abin in packer:
+        for abin in bins:
             if not abin:
                 continue
             operacoes: List[Dict] = []
@@ -1583,6 +1589,7 @@ def gerar_nesting(
     config_layers: Optional[List[Dict]] = None,
     config_maquina: Optional[Dict] = None,
     estoque: Optional[Dict[str, List[Dict]]] = None,
+    engine: str = "rectpack",
 ) -> tuple[str, List[List[Dict]], List[List[Dict]]]:
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
@@ -1629,27 +1636,31 @@ def gerar_nesting(
         rot = False if cfg.get("possui_veio") else True
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
-        packer = newPacker(rotation=rot)
-        for p in lista:
-            packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
-        estoque_material = estoque.get(material) if estoque else []
-        if estoque_material:
-            min_l = min(float(p["Length"]) for p in lista)
-            min_w = min(float(p["Width"]) for p in lista)
-            for s in estoque_material:
-                c = float(s.get("comprimento", 0))
-                l = float(s.get("largura", 0))
-                fits = (
-                    (c >= min_l and l >= min_w)
-                    or (rot and c >= min_w and l >= min_l)
-                )
-                if fits:
-                    packer.add_bin(int(c), int(l))
-        for _ in range(len(lista)):
-            packer.add_bin(int(largura), int(altura))
-        packer.pack()
+        if engine == "packaide":
+            bins = packaide_pack(lista, largura, altura, rotation=rot)
+        else:
+            packer = newPacker(rotation=rot)
+            for p in lista:
+                packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
+            estoque_material = estoque.get(material) if estoque else []
+            if estoque_material:
+                min_l = min(float(p["Length"]) for p in lista)
+                min_w = min(float(p["Width"]) for p in lista)
+                for s in estoque_material:
+                    c = float(s.get("comprimento", 0))
+                    l = float(s.get("largura", 0))
+                    fits = (
+                        (c >= min_l and l >= min_w)
+                        or (rot and c >= min_w and l >= min_l)
+                    )
+                    if fits:
+                        packer.add_bin(int(c), int(l))
+            for _ in range(len(lista)):
+                packer.add_bin(int(largura), int(altura))
+            packer.pack()
+            bins = packer
 
-        for abin in packer:
+        for abin in bins:
             if not abin:
                 continue
             placa = []
