@@ -2,7 +2,12 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv, find_dotenv
-from .models import Base
+
+try:
+    from .models import Base
+except ImportError:  # pragma: no cover - when executed as a script
+    from models import Base
+
 
 load_dotenv(find_dotenv())
 
