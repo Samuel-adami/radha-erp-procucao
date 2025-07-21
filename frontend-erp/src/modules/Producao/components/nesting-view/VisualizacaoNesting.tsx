@@ -15,17 +15,6 @@ const VisualizacaoNesting: React.FC = () => {
   const [destaque, setDestaque] = useState<number | null>(null);
   const [confirmado, setConfirmado] = useState(false);
   const [enviando, setEnviando] = useState(false);
-  const [packaideOk, setPackaideOk] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    fetchComAuth('/packaide-status')
-      .then((d) => {
-        if (d && typeof d.packaide === 'boolean') {
-          setPackaideOk(d.packaide);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     async function carregar() {
@@ -193,13 +182,6 @@ const VisualizacaoNesting: React.FC = () => {
   return (
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-semibold">Visualização de Nesting</h2>
-      {packaideOk !== null && (
-        <div
-          className={`p-2 text-sm rounded ${packaideOk ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
-        >
-          {packaideOk ? 'Otimização usando Packaide' : 'Packaide não disponível'}
-        </div>
-      )}
       <FiltroChapa
         descricao={descricao}
         setDescricao={setDescricao}

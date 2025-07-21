@@ -35,6 +35,7 @@ except Exception:  # pragma: no cover - import failure handled at runtime
         except Exception:
             packaide = None
 
+
 PACKAIDE_AVAILABLE = packaide is not None
 
 def is_available() -> bool:
