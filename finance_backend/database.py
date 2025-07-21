@@ -39,4 +39,10 @@ def insert_with_id(conn, sql: str, params: tuple):
 
 
 def init_db():
+
+    """Create database schema and tables if needed."""
+    if schema:
+        with engine.begin() as conn:
+            conn.exec_driver_sql(f"CREATE SCHEMA IF NOT EXISTS {schema}")
+
     Base.metadata.create_all(engine)
