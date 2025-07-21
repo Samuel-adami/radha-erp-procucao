@@ -32,6 +32,54 @@ def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
         return None
     return rect
 
+
+def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
+    """Return a list of rectangular polygons representing usable scraps.
+
+    If ``g`` is already a rectangle, a single-element list is returned. The
+    function attempts to split irregular shapes into the largest axis-aligned
+    rectangles possible using a simple guillotine approach based on existing
+    vertex coordinates.
+    """
+
+    rect = _retangulo_sobra(g, tol)
+    if rect:
+        return [rect]
+
+    if not isinstance(g, Polygon) or g.is_empty:
+        return []
+
+    xs = {c[0] for c in g.exterior.coords}
+    ys = {c[1] for c in g.exterior.coords}
+    for ring in g.interiors:
+        xs.update(x for x, _ in ring.coords)
+        ys.update(y for _, y in ring.coords)
+
+    minx, miny, maxx, maxy = g.bounds
+    xs.update([minx, maxx])
+    ys.update([miny, maxy])
+    xs = sorted(xs)
+    ys = sorted(ys)
+
+    gb = g.buffer(tol)
+    rects: List[Polygon] = []
+    for i, x1 in enumerate(xs[:-1]):
+        for x2 in xs[i + 1 :]:
+            for j, y1 in enumerate(ys[:-1]):
+                for y2 in ys[j + 1 :]:
+                    r = box(x1, y1, x2, y2)
+                    if r.area < AREA_MIN_SOBRA:
+                        continue
+                    if r.within(gb):
+                        rects.append(r)
+
+    rects.sort(key=lambda r: r.area, reverse=True)
+    final: List[Polygon] = []
+    for r in rects:
+        if not any(r.within(o) for o in final):
+            final.append(r)
+    return final
+
 # Fallback templates to ensure `.nc` files always contain the standard headers
 # and footers even quando a configuração da máquina estiver ausente ou vazia.
 DEFAULT_INTRO = (
@@ -1036,40 +1084,38 @@ def _gerar_gcodes(
                     g = g.difference(pecas_union)
                 if g.is_empty:
                     continue
-                g_rect = _retangulo_sobra(g)
-                if not g_rect:
-                    continue
-                minx, miny, maxx, maxy = g_rect.bounds
-                sobra = {
-                    "PartName": "SB",
-                    "Length": maxx - minx,
-                    "Width": maxy - miny,
-                    "Thickness": thickness,
-                    "Material": material,
-                    "Observacao": f"Sobra da chapa original {largura_chapa}x{altura_chapa}",
-                    "Filename": "",
-                    "Program1": f"{next(proximo_id):08d}",
-                    "x": minx,
-                    "y": miny,
-                    "polygon": g_rect,
-                }
-                codigo, last_tool, _ = _gcode_peca(
-                    sobra,
-                    _invert_x(sobra["x"], sobra["Length"], largura_chapa),
-                    sobra["y"],
-                    ferramentas,
-                    None,
-                    None,
-                    config_maquina,
-                    tpl_troca,
-                    tipo="Sobra",
-                    etapa="contorno",
-                    ferramenta_atual=last_tool,
-                    rotation_angle=0,
-                )
-                sobras_chapa.append(sobra)
-                sobras_polys.append(g_rect)
-                linhas.extend(codigo.split("\n"))
+                for g_rect in _retangulos_sobra(g):
+                    minx, miny, maxx, maxy = g_rect.bounds
+                    sobra = {
+                        "PartName": "SB",
+                        "Length": maxx - minx,
+                        "Width": maxy - miny,
+                        "Thickness": thickness,
+                        "Material": material,
+                        "Observacao": f"Sobra da chapa original {largura_chapa}x{altura_chapa}",
+                        "Filename": "",
+                        "Program1": f"{next(proximo_id):08d}",
+                        "x": minx,
+                        "y": miny,
+                        "polygon": g_rect,
+                    }
+                    codigo, last_tool, _ = _gcode_peca(
+                        sobra,
+                        _invert_x(sobra["x"], sobra["Length"], largura_chapa),
+                        sobra["y"],
+                        ferramentas,
+                        None,
+                        None,
+                        config_maquina,
+                        tpl_troca,
+                        tipo="Sobra",
+                        etapa="contorno",
+                        ferramenta_atual=last_tool,
+                        rotation_angle=0,
+                    )
+                    sobras_chapa.append(sobra)
+                    sobras_polys.append(g_rect)
+                    linhas.extend(codigo.split("\n"))
 
         # As sobras devem considerar apenas a área útil da chapa, logo é
         # necessário aplicar o deslocamento dos refilos nas coordenadas.
@@ -1101,40 +1147,38 @@ def _gerar_gcodes(
                     geom = geom.difference(pecas_union)
                 if geom.is_empty:
                     continue
-                g_rect = _retangulo_sobra(geom)
-                if not g_rect:
-                    continue
-                minx, miny, maxx, maxy = g_rect.bounds
-                sobra = {
-                    "PartName": "SB",
-                    "Length": maxx - minx,
-                    "Width": maxy - miny,
-                    "Thickness": thickness,
-                    "Material": material,
-                    "Observacao": f"Sobra da chapa original {largura_chapa}x{altura_chapa}",
-                    "Filename": "",
-                    "Program1": f"{next(proximo_id):08d}",
-                    "x": minx,
-                    "y": miny,
-                    "polygon": g_rect,
-                }
-                codigo, last_tool, _ = _gcode_peca(
-                    sobra,
-                    _invert_x(sobra["x"], sobra["Length"], largura_chapa),
-                    sobra["y"],
-                    ferramentas,
-                    None,
-                    None,
-                    config_maquina,
-                    tpl_troca,
-                    tipo="Sobra",
-                    etapa="contorno",
-                    ferramenta_atual=last_tool,
-                    rotation_angle=0,
-                )
-                sobras_chapa.append(sobra)
-                sobras_polys.append(g_rect)
-                linhas.extend(codigo.split("\n"))
+                for g_rect in _retangulos_sobra(geom):
+                    minx, miny, maxx, maxy = g_rect.bounds
+                    sobra = {
+                        "PartName": "SB",
+                        "Length": maxx - minx,
+                        "Width": maxy - miny,
+                        "Thickness": thickness,
+                        "Material": material,
+                        "Observacao": f"Sobra da chapa original {largura_chapa}x{altura_chapa}",
+                        "Filename": "",
+                        "Program1": f"{next(proximo_id):08d}",
+                        "x": minx,
+                        "y": miny,
+                        "polygon": g_rect,
+                    }
+                    codigo, last_tool, _ = _gcode_peca(
+                        sobra,
+                        _invert_x(sobra["x"], sobra["Length"], largura_chapa),
+                        sobra["y"],
+                        ferramentas,
+                        None,
+                        None,
+                        config_maquina,
+                        tpl_troca,
+                        tipo="Sobra",
+                        etapa="contorno",
+                        ferramenta_atual=last_tool,
+                        rotation_angle=0,
+                    )
+                    sobras_chapa.append(sobra)
+                    sobras_polys.append(g_rect)
+                    linhas.extend(codigo.split("\n"))
 
         sobras_por_chapa.append(sobras_chapa)
 
@@ -1486,26 +1530,24 @@ def gerar_nesting_preview(
                         g = g.difference(pecas_union)
                     if g.is_empty:
                         continue
-                    g_rect = _retangulo_sobra(g)
-                    if not g_rect:
-                        continue
-                    minx, miny, maxx, maxy = g_rect.bounds
-                    operacoes.append(
-                        {
-                            "id": op_id,
-                            "nome": "Sobra",
-                            "tipo": "Sobra",
-                            "x": minx,
-                            "y": miny,
-                            "largura": maxx - minx,
-                            "altura": maxy - miny,
-                            "coords": [
-                                [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
-                            ],
-                        }
-                    )
-                    sobras_polys.append(g_rect)
-                    op_id += 1
+                    for g_rect in _retangulos_sobra(g):
+                        minx, miny, maxx, maxy = g_rect.bounds
+                        operacoes.append(
+                            {
+                                "id": op_id,
+                                "nome": "Sobra",
+                                "tipo": "Sobra",
+                                "x": minx,
+                                "y": miny,
+                                "largura": maxx - minx,
+                                "altura": maxy - miny,
+                                "coords": [
+                                    [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
+                                ],
+                            }
+                        )
+                        sobras_polys.append(g_rect)
+                        op_id += 1
 
             # Ajusta as sobras considerando o deslocamento das margens de refilo
             cut_l = max(0.0, x_min)
@@ -1536,26 +1578,24 @@ def gerar_nesting_preview(
                         geom = geom.difference(pecas_union)
                     if geom.is_empty:
                         continue
-                    g_rect = _retangulo_sobra(geom)
-                    if not g_rect:
-                        continue
-                    minx, miny, maxx, maxy = g_rect.bounds
-                    operacoes.append(
-                        {
-                            "id": op_id,
-                            "nome": "Sobra",
-                            "tipo": "Sobra",
-                            "x": minx,
-                            "y": miny,
-                            "largura": maxx - minx,
-                            "altura": maxy - miny,
-                            "coords": [
-                                [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
-                            ],
-                        }
-                    )
-                    sobras_polys.append(g_rect)
-                    op_id += 1
+                    for g_rect in _retangulos_sobra(geom):
+                        minx, miny, maxx, maxy = g_rect.bounds
+                        operacoes.append(
+                            {
+                                "id": op_id,
+                                "nome": "Sobra",
+                                "tipo": "Sobra",
+                                "x": minx,
+                                "y": miny,
+                                "largura": maxx - minx,
+                                "altura": maxy - miny,
+                                "coords": [
+                                    [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
+                                ],
+                            }
+                        )
+                        sobras_polys.append(g_rect)
+                        op_id += 1
 
             if operacoes:
                 desc_chapa = cfg.get("propriedade", material)
