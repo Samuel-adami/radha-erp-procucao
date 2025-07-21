@@ -1220,6 +1220,21 @@ def _ops_from_dxf(
     msp = doc.modelspace()
     ops: List[Dict] = []
     next_id = 1
+    if rotated and orig_length and orig_width:
+        cx_piece = ox + orig_length / 2
+        cy_piece = oy + orig_width / 2
+
+        def rot_point(ax: float, ay: float) -> tuple[float, float]:
+            ang = math.radians(90)
+            dx = ax - cx_piece
+            dy = ay - cy_piece
+            rx = cx_piece + dx * math.cos(ang) - dy * math.sin(ang)
+            ry = cy_piece + dx * math.sin(ang) + dy * math.cos(ang)
+            return rx, ry
+    else:
+        def rot_point(ax: float, ay: float) -> tuple[float, float]:
+            return ax, ay
+
     for ent in msp:
         layer = str(ent.dxf.layer)
         cfg = next(
@@ -1234,12 +1249,9 @@ def _ops_from_dxf(
             continue
         if ent.dxftype() == "CIRCLE":
             r = float(ent.dxf.radius)
-            cx = float(ent.dxf.center.x)
-            cy = float(ent.dxf.center.y)
-            if rotated and orig_length and orig_width:
-                cx, cy = orig_width - cy, cx
-            cx += ox
-            cy += oy
+            cx = float(ent.dxf.center.x) + ox
+            cy = float(ent.dxf.center.y) + oy
+            cx, cy = rot_point(cx, cy)
             ops.append(
                 {
                     "id": next_id,
@@ -1250,10 +1262,6 @@ def _ops_from_dxf(
                     "y": cy - r,
                     "largura": 2 * r,
                     "altura": 2 * r,
-                    # A rotação já é aplicada nos cálculos de posição quando a pe
-                    # ça está rotacionada. Para o visualizador manter as
-                    # operações dentro da peça, não precisamos informar este
-                    # ângulo separadamente.
                     "rotacao": 0,
                 }
             )
@@ -1269,25 +1277,15 @@ def _ops_from_dxf(
                 ]
             else:
                 points = list(ent.get_points("xy"))
-            xs = [float(p[0]) for p in points]
-            ys = [float(p[1]) for p in points]
-            if xs and ys:
+            if points:
+                pts = [(float(px) + ox, float(py) + oy) for px, py in points]
+                pts = [rot_point(px, py) for px, py in pts]
+                xs = [p[0] for p in pts]
+                ys = [p[1] for p in pts]
                 x = min(xs)
                 y = min(ys)
-                w = max(xs) - min(xs)
-                h = max(ys) - min(ys)
-                if rotated and orig_length and orig_width:
-                    x, y, w, h = (
-                        orig_width - (y + h),
-                        x,
-                        h,
-                        w,
-                    )
-                    x += ox
-                    y += oy
-                else:
-                    x = x + ox
-                    y = y + oy
+                w = max(xs) - x
+                h = max(ys) - y
                 ops.append(
                     {
                         "id": next_id,
@@ -1298,8 +1296,6 @@ def _ops_from_dxf(
                         "y": y,
                         "largura": w,
                         "altura": h,
-                        # A rotação das operações já foi levada em conta ao
-                        # recalcular ``x`` e ``y`` quando a peça é girada.
                         "rotacao": 0,
                     }
                 )
