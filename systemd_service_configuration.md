@@ -37,7 +37,6 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/comercial-backend
-EnvironmentFile=/home/samuel/radha-erp-procucao/comercial-backend/.env
 ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8070
 Restart=always
 
@@ -56,8 +55,7 @@ After=network.target
 [Service]
 User=samuel
 WorkingDirectory=/home/samuel/radha-erp-procucao/finance_backend
-EnvironmentFile=/home/samuel/radha-erp-procucao/finance_backend/.env
-ExecStart=/home/samuel/radha-erp-procucao/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8080
+ExecStart=/home/samuel/radha-erp-procucao/venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8080
 Restart=always
 
 [Install]
