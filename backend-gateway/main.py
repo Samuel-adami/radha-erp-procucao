@@ -166,7 +166,9 @@ async def call_comercial_backend(path: str, request: Request):
 @app.api_route("/finance/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def call_finance_backend(path: str, request: Request):
     async with httpx.AsyncClient() as client:
-        url = f"{FINANCE_BACKEND_URL}/{path}"
+        # The finance backend exposes its routes under the /finance prefix
+        # so we need to preserve it when forwarding the request.
+        url = f"{FINANCE_BACKEND_URL}/finance/{path}"
         try:
             headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
             response = await client.request(
