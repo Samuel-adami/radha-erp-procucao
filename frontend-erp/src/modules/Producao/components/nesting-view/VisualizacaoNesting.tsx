@@ -14,6 +14,10 @@ const VisualizacaoNesting: React.FC = () => {
   const [selecionada, setSelecionada] = useState<Operacao | null>(null);
   const [destaque, setDestaque] = useState<number | null>(null);
   const [confirmado, setConfirmado] = useState(false);
+  const confirmadoRef = React.useRef(confirmado);
+  useEffect(() => {
+    confirmadoRef.current = confirmado;
+  }, [confirmado]);
   const [enviando, setEnviando] = useState(false);
 
   useEffect(() => {
@@ -163,7 +167,7 @@ const VisualizacaoNesting: React.FC = () => {
 
   useEffect(() => {
     return () => {
-      if (!confirmado) {
+      if (!confirmadoRef.current) {
         const cfg = localStorage.getItem('ultimaExecucaoNesting');
         if (cfg) {
           try {
@@ -177,7 +181,7 @@ const VisualizacaoNesting: React.FC = () => {
       }
       localStorage.removeItem('visualizarNestingObjKey');
     };
-  }, [confirmado]);
+  }, []);
 
   return (
     <div className="p-6 space-y-4">
