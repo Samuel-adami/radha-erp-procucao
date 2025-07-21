@@ -38,6 +38,10 @@ MARKETING_IA_BACKEND_URL = os.getenv(
     "MARKETING_IA_BACKEND_URL", "http://127.0.0.1:8050"
 )
 PRODUCAO_BACKEND_URL = os.getenv("PRODUCAO_BACKEND_URL", "http://127.0.0.1:8060")
+# Algumas operações do backend de Produção, como gerar o lote final,
+# podem levar minutos. Para evitar erro 503 no Gateway, o tempo limite
+# de resposta pode ser configurado via PRODUCAO_TIMEOUT.
+PRODUCAO_TIMEOUT = float(os.getenv("PRODUCAO_TIMEOUT", "120"))
 COMERCIAL_BACKEND_URL = os.getenv("COMERCIAL_BACKEND_URL", "http://127.0.0.1:8070")
 
 
@@ -117,7 +121,8 @@ async def call_marketing_ia_backend(path: str, request: Request):
 # Rota para o módulo de Produção (mantém as rotas existentes)
 @app.api_route("/producao/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def call_producao_backend(path: str, request: Request):
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(PRODUCAO_TIMEOUT)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         url = f"{PRODUCAO_BACKEND_URL}/{path}"
         try:
             headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
