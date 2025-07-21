@@ -35,6 +35,14 @@ const PERMISSOES_DISPONIVEIS = {
     'comercial',
     'comercial/atendimentos'
   ],
+  'Financeiro': [
+    'finance',
+    'finance/bancos',
+    'finance/contas',
+    'finance/contas-pagar',
+    'finance/contas-receber',
+    'finance/config-fiscal'
+  ],
   'Formulários': [
     'formularios',
     'formularios/briefing-vendas'
