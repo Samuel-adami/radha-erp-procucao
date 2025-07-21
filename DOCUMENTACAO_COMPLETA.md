@@ -188,6 +188,7 @@ Ajuste o tempo limite configurando `PRODUCAO_TIMEOUT` em
 `radha-gateway-backend`. Acompanhe os logs com
 `journalctl -u radha-gateway-backend` para verificar.
 
+
 **Exemplo de fluxo HTTP – Nesting**
 1. O usuário faz `POST https://erp.radhadigital.com.br/producao/importar-xml` enviando os arquivos XML/DXT.
 2. O Nginx direciona a requisição para `http://127.0.0.1:8040/producao/importar-xml`.
