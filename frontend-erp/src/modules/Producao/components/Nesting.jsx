@@ -74,6 +74,16 @@ const Nesting = () => {
   const [mostrarSobras, setMostrarSobras] = useState(false);
 
   useEffect(() => {
+    fetchComAuth('/packaide-status')
+      .then((d) => {
+        if (d && d.packaide) {
+          alert('Packaide iniciado');
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
     if (cfg.pastaLote) setPastaLote(cfg.pastaLote);
     if (cfg.larguraChapa) setLarguraChapa(cfg.larguraChapa);

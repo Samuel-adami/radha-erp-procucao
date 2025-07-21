@@ -35,6 +35,14 @@ except Exception:  # pragma: no cover - import failure handled at runtime
         except Exception:
             packaide = None
 
+
+PACKAIDE_AVAILABLE = packaide is not None
+
+def is_available() -> bool:
+    """Return ``True`` when the Packaide engine could be imported."""
+    return packaide is not None
+
+
 from shapely.geometry import box
 from shapely import affinity
 

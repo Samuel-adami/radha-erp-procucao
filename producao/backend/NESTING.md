@@ -30,6 +30,7 @@ A comunicação acontece via requisições HTTP (fetch) do frontend para a API.
    - `/executar-nesting` – chama `gerar_nesting_preview` e retorna a prévia com a lista de layers encontrados.
    - `/nesting-preview` – repete a geração da prévia para visualização.
    - `/executar-nesting-final` – executa `gerar_nesting`, grava o resultado em `Lote_X/nesting/` e registra na tabela `nestings`.
+   - `/packaide-status` – indica se o motor Packaide está disponível no servidor.
 
 4. **Função `gerar_nesting`** (`nesting.py`)
    - Lê o arquivo `.dxt` do lote para obter as peças.
