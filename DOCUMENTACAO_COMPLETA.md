@@ -181,6 +181,13 @@ O Nginx direciona requisições para o Gateway e para o frontend conforme `nginx
 Caso o upload de XML ou ZIP retorne **413 Request Entity Too Large**, aumente o
 limite com `client_max_body_size` no bloco `server` do Nginx, por exemplo
 `client_max_body_size 200m;`.
+Se o frontend exibir **Erro 503** ao chamar `/producao/gerar-lote-final`,
+o Gateway pode ter encerrado a requisição antes que o backend finalize.
+Ajuste o tempo limite configurando `PRODUCAO_TIMEOUT` em
+`backend-gateway/.env` (padrão `120` segundos) e reinicie o serviço
+`radha-gateway-backend`. Acompanhe os logs com
+`journalctl -u radha-gateway-backend` para verificar.
+
 
 **Exemplo de fluxo HTTP – Nesting**
 1. O usuário faz `POST https://erp.radhadigital.com.br/producao/importar-xml` enviando os arquivos XML/DXT.
@@ -213,6 +220,9 @@ OBJECT_STORAGE_PREFIX=
 MARKETING_IA_BACKEND_URL=
 PRODUCAO_BACKEND_URL=
 COMERCIAL_BACKEND_URL=
+# Timeouts para evitar erro 503
+MARKETING_TIMEOUT=90
+PRODUCAO_TIMEOUT=120
 RADHA_ADMIN_USER=  # opcional
 RADHA_ADMIN_PASS=  # opcional
 ```
