@@ -2,7 +2,6 @@ fastapi
 uvicorn
 ezdxf
 rectpack
-packaide
 Pillow
 shapely
 sqlalchemy
