@@ -1,0 +1,44 @@
+{
+  "env": {
+    "RDSTATION_CLIENT_ID": true,
+    "RDSTATION_CLIENT_SECRET": true,
+    "RDSTATION_REDIRECT_URI": true
+  },
+  "tokens": [
+    {
+      "id": 2,
+      "account_id": "default",
+      "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5yZC5zZXJ2aWNlcyIsInN1YiI6Ikdlb3p0NHY3dWVGYlZmTGlYNEh0cm93U1ZPWnA4VlRkNE9JY3dYRDFCbE1AY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vYXBwLnJkc3RhdGlvbi5jb20uYnIvYXBpL3YyLyIsImFwcF9uYW1lIjoiUmFkaGEgRVJQIiwiZXhwIjoxNzUzMjIyMjQyLCJpYXQiOjE3NTMxMzU4NDIsInNjb3BlIjoiIn0.XqNSzcQ__dSn21fwQSWG6flW3Al-72BchsmcB6d9IBFiC8bGmVFfJtFXZl_YO15IXL7ovd4XrKy_8VEtJyDulLgBsquLeAXSVoUHNDM2ZsxV20yJ7X9_Bm37zGpPbCeHM1AuruF5uNYkpi678X7bne9Ad2mNLlgHbA8Kow3Ate_4OYIATdPJ7LBbHUvZvdVJGwZPYqyxcKtmHpU945uI2Zr_lbhgguzNcWmU6ux-fd5weMdXbY8dQrywhtds-X2acvTFY1FTJC0Qe8kNZrIXZiAmuXUjo1hWH7qu_E9Q0DTUfWzM1TLUCAxT5mpi8JjDtoV77_DNFhxbyepD16TVNQ",
+      "refresh_token": "q5Q6ur5umKFLnw3IW90JiTy4ImO0nApuYiDEr-C7Gac",
+      "expires_at": 1753222242
+    }
+  ],
+  "token_status": "valid",
+  "refresh_attempt": {
+    "endpoint": "https://api.rd.services/auth/token",
+    "body": {
+      "client_id": "a8e44616-6cbd-45cd-83e2-daf4460f2cd7",
+      "client_secret": "48fd7855081f45f1b79125a7d179bf12",
+      "refresh_token": "q5Q6ur5umKFLnw3IW90JiTy4ImO0nApuYiDEr-C7Gac"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "timestamp": "2025-07-21 23:25:06",
+    "status": 200,
+    "response": "{\"access_token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5yZC5zZXJ2aWNlcyIsInN1YiI6Ikdlb3p0NHY3dWVGYlZmTGlYNEh0cm93U1ZPWnA4VlRkNE9JY3dYRDFCbE1AY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vYXBwLnJkc3RhdGlvbi5jb20uYnIvYXBpL3YyLyIsImFwcF9uYW1lIjoiUmFkaGEgRVJQIiwiZXhwIjoxNzUzMjIyMjQyLCJpYXQiOjE3NTMxMzU4NDIsInNjb3BlIjoiIn0.XqNSzcQ__dSn21fwQSWG6flW3Al-72BchsmcB6d9IBFiC8bGmVFfJtFXZl_YO15IXL7ovd4XrKy_8VEtJyDulLgBsquLeAXSVoUHNDM2ZsxV20yJ7X9_Bm37zGpPbCeHM1AuruF5uNYkpi678X7bne9Ad2mNLlgHbA8Kow3Ate_4OYIATdPJ7LBbHUvZvdVJGwZPYqyxcKtmHpU945uI2Zr_lbhgguzNcWmU6ux-fd5weMdXbY8dQrywhtds-X2acvTFY1FTJC0Qe8kNZrIXZiAmuXUjo1hWH7qu_E9Q0DTUfWzM1TLUCAxT5mpi8JjDtoV77_DNFhxbyepD16TVNQ\",\"expires_in\":86400,\"refresh_token\":\"q5Q6ur5umKFLnw3IW90JiTy4ImO0nApuYiDEr-C7Gac\"}"
+  },
+  "fetch_attempt": {
+    "endpoint": "https://api.rd.services/platform/contacts",
+    "headers": {
+      "Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5yZC5zZXJ2aWNlcyIsInN1YiI6Ikdlb3p0NHY3dWVGYlZmTGlYNEh0cm93U1ZPWnA4VlRkNE9JY3dYRDFCbE1AY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vYXBwLnJkc3RhdGlvbi5jb20uYnIvYXBpL3YyLyIsImFwcF9uYW1lIjoiUmFkaGEgRVJQIiwiZXhwIjoxNzUzMjIyMjQyLCJpYXQiOjE3NTMxMzU4NDIsInNjb3BlIjoiIn0.XqNSzcQ__dSn21fwQSWG6flW3Al-72BchsmcB6d9IBFiC8bGmVFfJtFXZl_YO15IXL7ovd4XrKy_8VEtJyDulLgBsquLeAXSVoUHNDM2ZsxV20yJ7X9_Bm37zGpPbCeHM1AuruF5uNYkpi678X7bne9Ad2mNLlgHbA8Kow3Ate_4OYIATdPJ7LBbHUvZvdVJGwZPYqyxcKtmHpU945uI2Zr_lbhgguzNcWmU6ux-fd5weMdXbY8dQrywhtds-X2acvTFY1FTJC0Qe8kNZrIXZiAmuXUjo1hWH7qu_E9Q0DTUfWzM1TLUCAxT5mpi8JjDtoV77_DNFhxbyepD16TVNQ"
+    },
+    "params": {
+      "page": 1,
+      "page_size": 1
+    },
+    "timestamp": "2025-07-21 23:25:06",
+    "status": 500,
+    "response": "<!DOCTYPE html>\n<html>\n\n<head>\n  <meta charset=\"UTF-8\">\n\n  <!-- Google Tag Manager -->\n  <script>(function (w, d, s, l, i) {\n      w[l] = w[l] || []; w[l].push({\n        'gtm.start':\n          new Date().getTime(), event: 'gtm.js'\n      }); var f = d.getElementsByTagName(s)[0],\n        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =\n          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);\n    })(window, document, 'script', 'dataLayer', 'GTM-NVX78QP');</script>\n  <!-- End Google Tag Manager -->\n\n  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n  <title>RD Station Marketing | 502 Erro interno</title>\n\n  <style>\n    @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans&display=swap');\n  </style>\n\n  <link rel=\"stylesheet\" href=\"//d3ndvx6e67vt0s.cloudfront.net/assets/error_page2/stylesheets/error_pages.css\" />\n</head>\n\n<body>\n  <!-- Google Tag Manager (noscript) -->\n  <noscript><iframe src=\"https://www.googletagmanager.com/ns.html?id=GTM-NVX78QP\" height=\"0\" width=\"0\"\n      style=\"display:none;visibility:hidden\"></iframe></noscript>\n  <!-- End Google Tag Manager (noscript) -->\n  <div class=\"text-center\">\n    <a href=\"/\">\n      <img src=\"//d3ndvx6e67vt0s.cloudfront.net/assets/error_page2/images/rdstation-logo-mkt.svg\" class=\"logo\">\n    </a>\n  </div>\n\n  <div id=\"content-outside\" class=\"container\">\n    <section class=\"section-heading\">\n      <img src=\"//d3ndvx6e67vt0s.cloudfront.net/assets/error_page2/images/img-500.svg\" width=\"600\">\n      <h1>Não repare na bagunça!</h1>\n    </section>\n    <section class=\"section-body\">\n      <p>Problemas técnicos são sempre inesperados, mas estamos correndo para voltar a funcionar perfeitamente. Tente de\n        novo em alguns minutos.</p>\n    </section>\n    <section class=\"section-footer\">\n      <a href=\"https://status.rdstation.com.br/\" class=\"btn btn-links-outline\">Consultar status do sistema</a>\n      <a href=\"/\" class=\"btn btn-links\">Ir para o RD Station Marketing</a>\n    </section>\n    <p class=\"support\">Isso não parece certo? Que tal <a\n        href=\"https://ajuda.rdstation.com/s/faleconosco?utm_source=rdstation&utm_medium=referral&utm_id=paginaerro\">reportar\n        o erro</a>?</p>\n    <p class=\"reserved-rights\">﻿©RD Station | Todos os direitos reservados</p>\n  </div>\n</body>\n\n</html>"
+  }
+}
