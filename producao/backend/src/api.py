@@ -46,6 +46,7 @@ from nesting import (
 )
 import ezdxf
 from typing import Union, Dict, List
+from packaide_wrapper import is_available as packaide_available
 
 
 def _age_seconds(value) -> float | None:
@@ -404,6 +405,12 @@ async def gerar_lote_final(request: Request):
         time.sleep(2)
 
     return {"status": "ok", "mensagem": "Arquivos gerados com sucesso."}
+
+
+@app.get("/packaide-status")
+async def packaide_status():
+    """Retorna ``True`` se o motor Packaide está disponível."""
+    return {"packaide": packaide_available()}
 
 
 @app.get("/carregar-lote-final")

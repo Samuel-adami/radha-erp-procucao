@@ -9,17 +9,37 @@ back to a very naive rectangle packing algorithm implemented with
 The wrapper exposes a single function ``pack`` which receives a list of
 pieces (dictionaries with ``Length`` and ``Width``) and returns a list of
 bins with placement information compatible with ``rectpack`` objects.
+
+When ``packaide`` is not installed as a Python package the module attempts
+to load it from ``externals/Packaide`` under the repository root.  If the
+library is still missing a simplified heuristic algorithm is used instead.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable, List, Dict, Tuple
+from pathlib import Path
+import importlib
+import sys
 
 try:  # pragma: no cover - optional dependency
     import packaide  # type: ignore
 except Exception:  # pragma: no cover - import failure handled at runtime
     packaide = None
+    _ext_dir = Path(__file__).resolve().parents[3] / "externals" / "Packaide"
+    if _ext_dir.exists():
+        sys.path.append(str(_ext_dir))
+        try:
+            packaide = importlib.import_module("packaide")  # type: ignore
+        except Exception:
+            packaide = None
+
+PACKAIDE_AVAILABLE = packaide is not None
+
+def is_available() -> bool:
+    """Return ``True`` when the Packaide engine could be imported."""
+    return packaide is not None
 
 from shapely.geometry import box
 from shapely import affinity

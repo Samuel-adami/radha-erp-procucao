@@ -72,6 +72,17 @@ const Nesting = () => {
   const [sobrasDisp, setSobrasDisp] = useState({});
   const [sobrasSel, setSobrasSel] = useState([]);
   const [mostrarSobras, setMostrarSobras] = useState(false);
+  const [packaideOk, setPackaideOk] = useState(null);
+
+  useEffect(() => {
+    fetchComAuth('/packaide-status')
+      .then((d) => {
+        if (d && typeof d.packaide === 'boolean') {
+          setPackaideOk(d.packaide);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const cfg = JSON.parse(localStorage.getItem("nestingConfig") || "{}");
@@ -293,6 +304,13 @@ const Nesting = () => {
   return (
     <div className="p-6 space-y-4">
       <h2 className="text-lg font-semibold">Configuração de Nesting</h2>
+      {packaideOk !== null && (
+        <div
+          className={`p-2 text-sm rounded ${packaideOk ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}
+        >
+          {packaideOk ? 'Otimização usando Packaide' : 'Packaide não disponível'}
+        </div>
+      )}
       <label className="block">
         <span className="text-sm">Pasta do Lote</span>
         <select
