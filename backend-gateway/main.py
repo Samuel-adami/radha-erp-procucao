@@ -43,6 +43,7 @@ PRODUCAO_BACKEND_URL = os.getenv("PRODUCAO_BACKEND_URL", "http://127.0.0.1:8060"
 # de resposta pode ser configurado via PRODUCAO_TIMEOUT.
 PRODUCAO_TIMEOUT = float(os.getenv("PRODUCAO_TIMEOUT", "120"))
 COMERCIAL_BACKEND_URL = os.getenv("COMERCIAL_BACKEND_URL", "http://127.0.0.1:8070")
+FINANCE_BACKEND_URL = os.getenv("FINANCE_BACKEND_URL", "http://127.0.0.1:8080")
 
 
 def create_response(response: httpx.Response):
@@ -160,6 +161,27 @@ async def call_comercial_backend(path: str, request: Request):
             return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
         except httpx.RequestError as e:
             return JSONResponse({"detail": f"Erro de conexão com o backend Comercial: {e}"}, status_code=503)
+
+# Rota para o módulo Financeiro
+@app.api_route("/finance/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
+async def call_finance_backend(path: str, request: Request):
+    async with httpx.AsyncClient() as client:
+        url = f"{FINANCE_BACKEND_URL}/{path}"
+        try:
+            headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                params=request.query_params,
+                content=await request.body(),
+            )
+            response.raise_for_status()
+            return create_response(response)
+        except httpx.HTTPStatusError as e:
+            return JSONResponse({"detail": e.response.text}, status_code=e.response.status_code)
+        except httpx.RequestError as e:
+            return JSONResponse({"detail": f"Erro de conexão com o backend Financeiro: {e}"}, status_code=503)
 
 # Rotas de Autenticação agora processadas localmente
 @app.post("/auth/login")
