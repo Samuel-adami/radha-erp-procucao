@@ -69,6 +69,9 @@ Sobras geradas durante o nesting passam por uma validação adicional:
   irregulares são descartados.
 - Apenas sobras com área igual ou superior a 0,1&nbsp;m² são registradas e
   cortadas quando o parâmetro `cortarSobras` estiver habilitado.
+- Além disso, cada sobra precisa possuir largura mínima de 100&nbsp;mm (em
+  qualquer dimensão). Caso contrário, mesmo atingindo a área mínima, ela é
+  desconsiderada.
 
 ## Fonte de dados
 - **Banco `chapas`**: define tamanhos padrões e se o material possui veio (interfere na rotação das peças).

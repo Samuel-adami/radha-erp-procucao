@@ -19,6 +19,8 @@ from PIL import Image, ImageDraw
 
 # Área mínima aproveitável para registrar sobras (0,1 m² em mm²)
 AREA_MIN_SOBRA = 0.1 * 1000 * 1000
+# Largura mínima para registrar sobras (100 mm)
+MIN_LARGURA_SOBRA = 100
 
 
 def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
@@ -29,6 +31,9 @@ def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
     if g.symmetric_difference(rect).area > tol:
         return None
     if rect.area < AREA_MIN_SOBRA:
+        return None
+    minx, miny, maxx, maxy = rect.bounds
+    if maxx - minx < MIN_LARGURA_SOBRA or maxy - miny < MIN_LARGURA_SOBRA:
         return None
     return rect
 
@@ -69,6 +74,12 @@ def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
                 for y2 in ys[j + 1 :]:
                     r = box(x1, y1, x2, y2)
                     if r.area < AREA_MIN_SOBRA:
+                        continue
+                    minx_r, miny_r, maxx_r, maxy_r = r.bounds
+                    if (
+                        maxx_r - minx_r < MIN_LARGURA_SOBRA
+                        or maxy_r - miny_r < MIN_LARGURA_SOBRA
+                    ):
                         continue
                     if r.within(gb):
                         rects.append(r)
