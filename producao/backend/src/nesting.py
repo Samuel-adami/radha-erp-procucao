@@ -1233,8 +1233,16 @@ def _ops_from_dxf(
     ops: List[Dict] = []
     next_id = 1
     if rotated:
+        from ezdxf.math import Matrix44, Vec2
+        import math
+
+        angle = math.radians(-90)
+        m = Matrix44.axis_rotate(axis="z", angle=angle, center=(ox, oy))
+        m = m @ Matrix44.scale(1, -1, 1, center=(ox, oy))
+
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
-            return ox + ay - oy, oy + ax - ox
+            v = Vec2(ax, ay).transform(m)
+            return v.x, v.y
     else:
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
             return ax, ay
