@@ -75,12 +75,9 @@ def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
 
     rects.sort(key=lambda r: r.area, reverse=True)
     final: List[Polygon] = []
-    union = None
     for r in rects:
-        if union and r.intersects(union):
-            continue
-        final.append(r)
-        union = r if union is None else union.union(r)
+        if not any(r.within(o) for o in final):
+            final.append(r)
     return final
 
 # Fallback templates to ensure `.nc` files always contain the standard headers
@@ -185,14 +182,18 @@ def _is_operacao(cfg: Dict) -> bool:
 
 
 def _rotate_rect_cw(x: float, y: float, w: float, h: float, largura: float) -> tuple:
-    """Rotate rectangle 90 degrees clockwise keeping it inside the plate."""
-    return y, largura - x - w, h, w
+    """Rotate rectangle 270 degrees clockwise so that the rotated plate starts
+    at the lower-left origin."""
+    return y, x, h, w
 
 
 def _rotate_poly_cw(poly: Polygon, largura: float) -> Polygon:
-    """Rotate polygon 90 degrees clockwise relative to the lower-left origin."""
+    """Rotate polygon 270 degrees clockwise keeping coordinates positive with
+    origin at the lower-left."""
     g = affinity.rotate(poly, -90, origin=(0, 0))
-    return affinity.translate(g, yoff=largura)
+    g = affinity.scale(g, yfact=-1, origin=(0, 0))
+    minx, miny, _, _ = g.bounds
+    return affinity.translate(g, xoff=-minx, yoff=-miny)
 
 
 def _rotate_plate_cw(chapa: Dict) -> Dict:
