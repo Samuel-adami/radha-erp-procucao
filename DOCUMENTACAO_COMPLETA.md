@@ -118,6 +118,10 @@ Relacionadas às rotas de produção descritas na seção anterior.
 - **AtendimentoTarefa** – tabela `atendimento_tarefas` (tarefas por atendimento).
 - **CondicaoPagamento** – tabela `condicoes_pagamento` (parcelas e juros).
 - **Template** – tabela `templates` (tipo, título, campos).
+- Cada registro pode opcionalmente ter `arquivo_key` apontando para um
+  documento `.docx` ou `.pdf` salvo no bucket S3. Na geração de arquivos,
+  tokens no formato `[campo]` dentro do documento são substituídos pelos
+  valores definidos em `autoCampo` nos templates visuais.
 - **ProjetoItem** – tabela `projeto_itens` (itens de projeto dentro de tarefas).
 - **GabsterProjetoItem** – tabela `gabster_projeto_itens` para itens importados da API.
   Os registros são gravados ao atualizar uma tarefa de projeto com `programa` igual a `Gabster`.

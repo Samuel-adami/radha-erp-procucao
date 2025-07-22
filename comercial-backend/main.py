@@ -9,6 +9,7 @@ from storage import (
     delete_file,
     get_public_url,
     object_exists,
+    download_stream,
 )
 from datetime import datetime
 import logging
@@ -674,11 +675,39 @@ async def criar_template(request: Request):
     with get_db_connection() as conn:
         new_id = insert_with_id(
             conn,
-            "INSERT INTO templates (tipo, titulo, campos_json) VALUES (%s, %s, %s)",
-            (data.get("tipo"), data.get("titulo"), campos),
+            "INSERT INTO templates (tipo, titulo, campos_json, arquivo_key) VALUES (%s, %s, %s, %s)",
+            (data.get("tipo"), data.get("titulo"), campos, data.get("arquivo_key")),
         )
         conn.commit()
     return {"id": new_id}
+
+
+@app.post("/templates/upload")
+async def upload_template(tipo: str, titulo: str, file: UploadFile = File(...)):
+    """Importar arquivo DOCX ou PDF para um novo template."""
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in {".docx", ".pdf"}:
+        raise HTTPException(status_code=400, detail="Apenas .docx ou .pdf")
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+    try:
+        contents = await file.read()
+        tmp.write(contents)
+        tmp.close()
+        key = f"templates/{tipo}/{titulo}_{int(datetime.utcnow().timestamp())}{ext}"
+        upload_file(tmp.name, key)
+    finally:
+        os.remove(tmp.name)
+
+    with get_db_connection() as conn:
+        new_id = insert_with_id(
+            conn,
+            "INSERT INTO templates (tipo, titulo, campos_json, arquivo_key) VALUES (%s, %s, %s, %s)",
+            (tipo, titulo, json.dumps([]), key),
+        )
+        conn.commit()
+
+    return {"id": new_id, "arquivo_key": key}
 
 
 @app.get("/templates/{template_id}")
@@ -702,14 +731,73 @@ async def obter_template(template_id: int):
         return {"template": item}
 
 
+@app.post("/templates/{template_id}/gerar")
+async def gerar_documento(template_id: int, request: Request):
+    """Gerar documento substituindo tokens [campo]"""
+    data = await request.json()
+    valores: dict = data.get("valores", {})
+
+    with get_db_connection() as conn:
+        row = (
+            conn.exec_driver_sql(
+                "SELECT * FROM templates WHERE id=%s", (template_id,)
+            )
+            .mappings()
+            .fetchone()
+        )
+    if not row:
+        return JSONResponse({"detail": "Template não encontrado"}, status_code=404)
+
+    tpl = dict(row)
+    key = tpl.get("arquivo_key")
+    if not key:
+        raise HTTPException(status_code=400, detail="Template sem arquivo")
+
+    stream = download_stream(key, key)
+    ext = os.path.splitext(key)[1].lower()
+    from io import BytesIO
+
+    if ext == ".docx":
+        from docx import Document
+
+        doc = Document(stream)
+        for p in doc.paragraphs:
+            for placeholder, value in valores.items():
+                token = f"[{placeholder}]"
+                if token in p.text:
+                    for run in p.runs:
+                        if token in run.text:
+                            run.text = run.text.replace(token, str(value))
+
+        output = BytesIO()
+        doc.save(output)
+        output.seek(0)
+        media = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        return StreamingResponse(output, media_type=media)
+
+    elif ext == ".pdf":
+        content = stream.read()
+        try:
+            txt = content.decode("latin-1")
+            for placeholder, value in valores.items():
+                txt = txt.replace(f"[{placeholder}]", str(value))
+            output = BytesIO(txt.encode("latin-1"))
+            return StreamingResponse(output, media_type="application/pdf")
+        except Exception:
+            raise HTTPException(status_code=400, detail="Falha ao gerar PDF")
+
+    else:
+        raise HTTPException(status_code=400, detail="Formato não suportado")
+
+
 @app.put("/templates/{template_id}")
 async def atualizar_template(template_id: int, request: Request):
     data = await request.json()
     campos = json.dumps(data.get("campos", []))
     with get_db_connection() as conn:
         conn.exec_driver_sql(
-            """UPDATE templates SET titulo=%s, tipo=%s, campos_json=%s WHERE id=%s""",
-            (data.get("titulo"), data.get("tipo"), campos, template_id),
+            """UPDATE templates SET titulo=%s, tipo=%s, campos_json=%s, arquivo_key=%s WHERE id=%s""",
+            (data.get("titulo"), data.get("tipo"), campos, data.get("arquivo_key"), template_id),
         )
         conn.commit()
     return {"ok": True}
