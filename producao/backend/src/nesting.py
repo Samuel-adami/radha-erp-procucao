@@ -448,7 +448,7 @@ def _gcode_peca(
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
-            from ezdxf.math import Matrix44, Vec2
+            from ezdxf.math import Matrix44
 
             if rotated:
                 ang = -(rotation_angle or 90)
@@ -460,7 +460,10 @@ def _gcode_peca(
                 )
 
                 def rotacionar_ponto(x: float, y: float) -> tuple:
-                    v = Vec2(x, y).transform(m)
+                    # Vec2 from ezdxf does not provide a ``transform`` method in
+                    # current versions, therefore use Matrix44.transform and
+                    # extract the 2D coordinates from the resulting Vec3.
+                    v = m.transform((x, y, 0))
                     return v.x, v.y
 
             else:
@@ -1237,7 +1240,7 @@ def _ops_from_dxf(
     ops: List[Dict] = []
     next_id = 1
     if rotated:
-        from ezdxf.math import Matrix44, Vec2
+        from ezdxf.math import Matrix44
         import math
 
         angle = math.radians(-90)
@@ -1249,7 +1252,9 @@ def _ops_from_dxf(
         )
 
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
-            v = Vec2(ax, ay).transform(m)
+            # ``Vec2.transform`` is not available; use Matrix44 directly and
+            # drop the z-component after transformation.
+            v = m.transform((ax, ay, 0))
             return v.x, v.y
 
     else:
