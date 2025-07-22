@@ -707,6 +707,7 @@ async def upload_template(tipo: str, titulo: str, file: UploadFile = File(...)):
         )
         conn.commit()
 
+
     return {"id": new_id, "arquivo_key": key, "arquivo_url": get_public_url(key)}
 
 
@@ -746,6 +747,7 @@ async def upload_template_file(template_id: int, file: UploadFile = File(...)):
         conn.commit()
 
     return {"arquivo_key": key, "arquivo_url": get_public_url(key)}
+
 
 
 @app.get("/templates/{template_id}")
