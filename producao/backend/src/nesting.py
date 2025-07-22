@@ -1199,6 +1199,8 @@ def _encontrar_dxt(pasta: Path) -> Optional[Path]:
 
 # Em nesting.py, substitua a função _ops_from_dxf por esta versão:
 
+# Em nesting.py, substitua a função _ops_from_dxf por esta versão final:
+
 def _ops_from_dxf(
     caminho: Path,
     config_layers: Optional[List[Dict]] = None,
@@ -1209,7 +1211,7 @@ def _ops_from_dxf(
     orig_width: Optional[float] = None,
 ) -> List[Dict]:
     """Retorna operações encontradas no DXF em ``caminho``.
-    Versão compatível com ezdxf mais antigo, sem ezdxf.path.from_entity.
+    Versão compatível com ezdxf mais antigo e com correção de rotação dupla.
     """
     if not config_layers:
         return []
@@ -1224,7 +1226,6 @@ def _ops_from_dxf(
     
     comprimento_original = orig_length if rotated and orig_length is not None else 0
     if not rotated:
-        # Tenta obter as dimensões originais a partir da borda_externa
         try:
             from ezdxf.math import BoundingBox
             all_points = []
@@ -1233,13 +1234,11 @@ def _ops_from_dxf(
                     if ent.dxftype() == 'LINE':
                         all_points.extend([ent.dxf.start, ent.dxf.end])
                     elif ent.dxftype() in ('LWPOLYLINE', 'POLYLINE'):
-                        # O método points() é mais universal entre versões
                         all_points.extend(list(ent.points()))
             if all_points:
                 bbox = BoundingBox(all_points)
                 comprimento_original = bbox.size.x
         except Exception:
-            # Fallback se a leitura da borda falhar e orig_length não foi passado
             if orig_length is not None:
                 comprimento_original = orig_length
     
@@ -1257,7 +1256,6 @@ def _ops_from_dxf(
         if not cfg:
             continue
 
-        # Cálculo manual do Bounding Box por tipo de entidade
         points = []
         ent_type = ent.dxftype()
         try:
@@ -1273,13 +1271,11 @@ def _ops_from_dxf(
             elif ent_type in ('LWPOLYLINE', 'POLYLINE'):
                 points.extend(list(ent.points()))
             elif ent_type == 'ARC':
-                # Arcos são mais complexos, usamos uma aproximação com achatamento
                 points.extend(list(ent.flattening(distance=0.1)))
 
             if not points:
                 continue
 
-            # Calcula BBox a partir dos pontos
             xs = [p[0] for p in points]
             ys = [p[1] for p in points]
             local_min_x, local_max_x = min(xs), max(xs)
@@ -1289,20 +1285,16 @@ def _ops_from_dxf(
             altura_op = local_max_y - local_min_y
 
         except Exception:
-            # Pula a entidade se não for possível calcular suas dimensões
             continue
 
         final_x, final_y = local_min_x, local_min_y
         final_w, final_h = largura_op, altura_op
 
         if rotated:
-            # Rotaciona o ponto de origem (canto inferior esquerdo) da operação
             final_x = local_min_y
             final_y = comprimento_original - (local_min_x + largura_op)
-            # Inverte largura e altura da operação
             final_w, final_h = altura_op, largura_op
             
-        # Translada para a posição final na chapa
         final_x += ox
         final_y += oy
 
@@ -1315,12 +1307,11 @@ def _ops_from_dxf(
             "y": final_y,
             "largura": final_w,
             "altura": final_h,
-            "rotacao": 90 if rotated else 0,
+            "rotacao": 0, # <-- MUDANÇA CRÍTICA AQUI!
         })
         next_id += 1
         
     return ops
-
 
 def _calcular_sobras_polys(
     pecas_polys: List[Polygon],
