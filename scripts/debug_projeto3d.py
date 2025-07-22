@@ -20,7 +20,11 @@ def listar_atendimentos():
     with engine.connect() as conn:
         rows = (
             conn.execute(
-                text("SELECT id, cliente, codigo FROM atendimentos ORDER BY id DESC")
+
+                text(
+                    "SELECT id, cliente, codigo FROM atendimentos ORDER BY id DESC"
+                )
+
             )
             .mappings()
             .all()
@@ -32,13 +36,18 @@ def listar_atendimentos():
 def debug_projeto(atendimento_id: int) -> None:
     print(f"\n=== Debug Projeto 3D para Atendimento {atendimento_id} ===")
     with engine.connect() as conn:
-        tarefas = conn.execute(
-            text(
-                "SELECT id, nome, dados FROM atendimento_tarefas "
-                "WHERE atendimento_id=:aid ORDER BY id"
-            ),
-            {"aid": atendimento_id},
-        ).mappings().all()
+        tarefas = (
+            conn.execute(
+                text(
+                    "SELECT id, nome, dados FROM atendimento_tarefas "
+                    "WHERE atendimento_id=:aid ORDER BY id"
+                ),
+                {"aid": atendimento_id},
+            )
+            .mappings()
+            .all()
+        )
+
 
         if not tarefas:
             print("Nenhuma tarefa encontrada para este atendimento.")
@@ -54,20 +63,44 @@ def debug_projeto(atendimento_id: int) -> None:
                     print("Erro ao decodificar JSON dos dados:", exc)
             if dados_json.get("projetos"):
                 print("Conteudo enviado em dados.projetos:")
-                print(json.dumps(dados_json["projetos"], indent=2, ensure_ascii=False))
+
+                print(
+                    json.dumps(
+                        dados_json["projetos"], indent=2, ensure_ascii=False
+                    )
+                )
             else:
                 print("dados.projetos vazio ou ausente")
 
-            itens = conn.execute(
-                text(
-                    "SELECT ambiente, descricao, unitario, quantidade, total "
-                    "FROM projeto_itens WHERE tarefa_id=:tid ORDER BY id"
-                ),
-                {"tid": t["id"]},
-            ).mappings().all()
+            itens = (
+                conn.execute(
+                    text(
+                        "SELECT ambiente, descricao, unitario, quantidade, total "
+                        "FROM projeto_itens WHERE tarefa_id=:tid ORDER BY id"
+                    ),
+                    {"tid": t["id"]},
+                )
+                .mappings()
+                .all()
+            )
+
+            g_itens = (
+                conn.execute(
+                    text(
+                        "SELECT referencia, quantidade, valor "
+                        "FROM gabster_projeto_itens WHERE tarefa_id=:tid ORDER BY pk"
+                    ),
+                    {"tid": t["id"]},
+                )
+                .mappings()
+                .all()
+            )
 
             if itens:
-                print(f"{len(itens)} itens encontrados na tabela projeto_itens:")
+                print(
+                    f"{len(itens)} itens encontrados na tabela projeto_itens:"
+                )
+
                 for it in itens:
                     print(
                         f" - {it['ambiente']}: {it['descricao']} | "
@@ -76,8 +109,26 @@ def debug_projeto(atendimento_id: int) -> None:
             else:
                 print("Nenhum registro em projeto_itens para esta tarefa")
 
+
+            if g_itens:
+                print(
+                    f"{len(g_itens)} itens encontrados na tabela gabster_projeto_itens:"
+                )
+                for gi in g_itens:
+                    ref = gi.get("referencia", "")
+                    qtd = gi.get("quantidade", "")
+                    val = gi.get("valor", "")
+                    print(f" - {ref} | {qtd} x {val}")
+            else:
+                print(
+                    "Nenhum registro em gabster_projeto_itens para esta tarefa"
+                )
+
         # Revisar reconstrução das tarefas como no endpoint /tarefas
-        print("\n--- Resultado da busca em projeto_itens via logica do endpoint ---")
+        print(
+            "\n--- Resultado da busca em projeto_itens via logica do endpoint ---"
+        )
+
         recon = []
         for t in tarefas:
             dados = {}
@@ -86,13 +137,19 @@ def debug_projeto(atendimento_id: int) -> None:
                     dados = json.loads(t["dados"])
                 except Exception:
                     dados = {}
-            itens = conn.execute(
-                text(
-                    "SELECT ambiente, descricao, unitario, quantidade, total "
-                    "FROM projeto_itens WHERE tarefa_id=:tid ORDER BY id"
-                ),
-                {"tid": t["id"]},
-            ).mappings().all()
+
+            itens = (
+                conn.execute(
+                    text(
+                        "SELECT ambiente, descricao, unitario, quantidade, total "
+                        "FROM projeto_itens WHERE tarefa_id=:tid ORDER BY id"
+                    ),
+                    {"tid": t["id"]},
+                )
+                .mappings()
+                .all()
+            )
+
             if itens:
                 projetos = {}
                 for it in itens:
@@ -137,11 +194,11 @@ if __name__ == "__main__":
             print(f"Processando {len(atendimentos)} atendimentos:\n")
             for a in atendimentos:
                 info = f"ID {a['id']}"
-                if a.get('cliente'):
+
+                if a.get("cliente"):
                     info += f" - {a['cliente']}"
-                if a.get('codigo'):
+                if a.get("codigo"):
                     info += f" (codigo {a['codigo']})"
                 print(info)
                 debug_projeto(a["id"])
-
 
