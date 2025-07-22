@@ -441,7 +441,14 @@ def _gcode_peca(
     ops = []
     if block and config_layers:
         try:
-            block_ops = _ops_from_block(block, config_layers, ox, oy, rotated)
+            block_ops = _ops_from_block(
+                block,
+                config_layers,
+                ox,
+                oy,
+                rotated,
+                orig_length,
+            )
             for op in block_ops:
                 layer = op["layer"]
                 cfg = next(
@@ -1188,8 +1195,15 @@ def _ops_from_block(
     ox: float = 0.0,
     oy: float = 0.0,
     rotated: bool = False,
+    orig_length: Optional[float] = None,
 ) -> List[Dict]:
-    """Extrai operações de um ``BlockLayout`` aplicando translação e rotação."""
+    """Extrai operações de um ``BlockLayout`` aplicando translação e rotação.
+
+    Quando ``rotated`` for ``True`` a referência do bloco é ajustada para que o
+    canto inferior esquerdo da peça permaneça na posição ``(ox, oy)`` após a
+    rotação. Para isso é utilizado ``orig_length`` (comprimento original da
+    peça) como deslocamento.
+    """
 
     if not config_layers or block is None:
         return []
@@ -1199,7 +1213,11 @@ def _ops_from_block(
         new_blk = doc.blocks.new(block.name)
         for e in block:
             new_blk.add_entity(e.copy())
-    insert = doc.modelspace().add_blockref(block.name, (ox, oy))
+    if rotated and orig_length:
+        insert_point = (ox, oy + float(orig_length))
+    else:
+        insert_point = (ox, oy)
+    insert = doc.modelspace().add_blockref(block.name, insert_point)
     if rotated:
         insert.dxf.rotation = -90
 
@@ -1290,7 +1308,14 @@ def _ops_from_dxf(
     for ent in doc.modelspace():
         blk.add_entity(ent.copy())
 
-    return _ops_from_block(blk, config_layers, ox, oy, rotated)
+    return _ops_from_block(
+        blk,
+        config_layers,
+        ox,
+        oy,
+        rotated,
+        orig_length,
+    )
 
 
 def _calcular_sobras_polys(
