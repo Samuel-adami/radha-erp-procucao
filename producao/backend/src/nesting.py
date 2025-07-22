@@ -1500,7 +1500,7 @@ def gerar_nesting_preview(
 
             # Agora, "explode" as referências para obter as operações internas JÁ TRANSFORMADAS
             for block_ref in sheet_doc.modelspace().query('INSERT'):
-                for ent in block_ref.explode(destroy=False):
+                for ent in block_ref.explode():
                     layer = str(ent.dxf.layer).lower()
                     if layer in ("borda_externa", "contorno"): continue
                     try:
