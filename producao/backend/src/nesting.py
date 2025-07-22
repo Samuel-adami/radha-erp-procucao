@@ -57,8 +57,9 @@ def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
     xs = {c[0] for c in g.exterior.coords}
     ys = {c[1] for c in g.exterior.coords}
     for ring in g.interiors:
-        xs.update(x for x, _ in ring.coords)
-        ys.update(y for _, y in ring.coords)
+        for c in ring.coords:
+            xs.add(c[0])
+            ys.add(c[1])
 
     minx, miny, maxx, maxy = g.bounds
     xs.update([minx, maxx])
@@ -225,7 +226,7 @@ def _rotate_plate_cw(chapa: Dict) -> Dict:
         nx, ny, nw, nh = _rotate_rect_cw(x, y, w, h, largura)
         op["x"], op["y"], op["largura"], op["altura"] = nx, ny, nw, nh
         if op.get("coords"):
-            op["coords"] = [[cy, cx] for cx, cy in op["coords"]]
+            op["coords"] = [[c[1], c[0]] for c in op["coords"]]
         if isinstance(op.get("polygon"), (Polygon, MultiPolygon)):
             op["polygon"] = _rotate_poly_cw(op["polygon"], largura)
         if "rotacao" in op:
@@ -305,9 +306,9 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
                             xs.append(float(v.dxf.location.x))
                             ys.append(float(v.dxf.location.y))
                     else:
-                        for x, y in ent.get_points("xy"):
-                            xs.append(float(x))
-                            ys.append(float(y))
+                        for pt in ent.get_points("xy"):
+                            xs.append(float(pt[0]))
+                            ys.append(float(pt[1]))
                 elif ent.dxftype() == "CIRCLE":
                     cx = float(ent.dxf.center.x)
                     cy = float(ent.dxf.center.y)
@@ -749,14 +750,20 @@ def _gerar_imagens_chapas(
                 geoms = [poly] if isinstance(poly, Polygon) else list(poly.geoms)
                 for geom in geoms:
                     coords = [
-                        (int(x * escala), altura_img - int(y * escala))
-                        for x, y in geom.exterior.coords
+                        (
+                            int(c[0] * escala),
+                            altura_img - int(c[1] * escala),
+                        )
+                        for c in geom.exterior.coords
                     ]
                     draw.polygon(coords, outline="black")
                     for interior in geom.interiors:
                         coords = [
-                            (int(x * escala), altura_img - int(y * escala))
-                            for x, y in interior.coords
+                            (
+                                int(c[0] * escala),
+                                altura_img - int(c[1] * escala),
+                            )
+                            for c in interior.coords
                         ]
                         draw.polygon(coords, outline="black")
             else:
@@ -1314,8 +1321,8 @@ def _ops_from_dxf(
             else:
                 points = list(ent.get_points("xy"))
             if points:
-                pts = [(float(px) + ox, float(py) + oy) for px, py in points]
-                pts = [rot_point(px, py) for px, py in pts]
+                pts = [(float(p[0]) + ox, float(p[1]) + oy) for p in points]
+                pts = [rot_point(p[0], p[1]) for p in pts]
                 xs = [p[0] for p in pts]
                 ys = [p[1] for p in pts]
                 x = min(xs)
@@ -1571,8 +1578,8 @@ def gerar_nesting_preview(
                                 "largura": maxx - minx,
                                 "altura": maxy - miny,
                                 "coords": [
-                                    [float(cx), float(cy)]
-                                    for cx, cy in g_rect.exterior.coords
+                                    [float(c[0]), float(c[1])]
+                                    for c in g_rect.exterior.coords
                                 ],
                             }
                         )
@@ -1620,8 +1627,8 @@ def gerar_nesting_preview(
                                 "largura": maxx - minx,
                                 "altura": maxy - miny,
                                 "coords": [
-                                    [float(cx), float(cy)]
-                                    for cx, cy in g_rect.exterior.coords
+                                    [float(c[0]), float(c[1])]
+                                    for c in g_rect.exterior.coords
                                 ],
                             }
                         )
