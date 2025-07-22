@@ -28,6 +28,7 @@ def listar_atendimentos():
     return list(rows)
 
 
+
 def debug_projeto(atendimento_id: int) -> None:
     print(f"\n=== Debug Projeto 3D para Atendimento {atendimento_id} ===")
     with engine.connect() as conn:
@@ -116,6 +117,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Debug Projeto 3D")
+
     parser.add_argument(
         "atendimento_id",
         type=int,
@@ -130,6 +132,7 @@ if __name__ == "__main__":
         atendimentos = listar_atendimentos()
         if not atendimentos:
             print("Nenhum atendimento encontrado.")
+
         else:
             print(f"Processando {len(atendimentos)} atendimentos:\n")
             for a in atendimentos:
@@ -140,4 +143,5 @@ if __name__ == "__main__":
                     info += f" (codigo {a['codigo']})"
                 print(info)
                 debug_projeto(a["id"])
+
 
