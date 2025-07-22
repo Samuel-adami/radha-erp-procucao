@@ -1197,6 +1197,8 @@ def _encontrar_dxt(pasta: Path) -> Optional[Path]:
 
 # Em nesting.py, substitua a função _ops_from_dxf pela versão corrigida abaixo:
 
+# Em nesting.py, substitua a função _ops_from_dxf por esta versão:
+
 def _ops_from_dxf(
     caminho: Path,
     config_layers: Optional[List[Dict]] = None,
@@ -1206,6 +1208,9 @@ def _ops_from_dxf(
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
 ) -> List[Dict]:
+    """Retorna operações encontradas no DXF em ``caminho``.
+    Versão compatível com ezdxf mais antigo, sem ezdxf.path.from_entity.
+    """
     if not config_layers:
         return []
     try:
@@ -1217,18 +1222,27 @@ def _ops_from_dxf(
     ops: List[Dict] = []
     next_id = 1
     
-    # ===== LÓGICA DE ROTAÇÃO CORRIGIDA =====
     comprimento_original = orig_length if rotated and orig_length is not None else 0
     if not rotated:
-        # Se não rotacionado, pegamos as medidas do contorno para referência
-        contorno = next((ent for ent in msp if str(ent.dxf.layer).lower() == 'borda_externa'), None)
-        if contorno:
-            try:
-                bbox = ezdxf.path.bbox([ezdxf.path.from_entity(contorno)])
+        # Tenta obter as dimensões originais a partir da borda_externa
+        try:
+            from ezdxf.math import BoundingBox
+            all_points = []
+            for ent in msp:
+                if str(ent.dxf.layer).lower() == 'borda_externa':
+                    if ent.dxftype() == 'LINE':
+                        all_points.extend([ent.dxf.start, ent.dxf.end])
+                    elif ent.dxftype() in ('LWPOLYLINE', 'POLYLINE'):
+                        # O método points() é mais universal entre versões
+                        all_points.extend(list(ent.points()))
+            if all_points:
+                bbox = BoundingBox(all_points)
                 comprimento_original = bbox.size.x
-            except Exception:
-                pass
-
+        except Exception:
+            # Fallback se a leitura da borda falhar e orig_length não foi passado
+            if orig_length is not None:
+                comprimento_original = orig_length
+    
 
     for ent in msp:
         layer = str(ent.dxf.layer)
@@ -1243,15 +1257,41 @@ def _ops_from_dxf(
         if not cfg:
             continue
 
+        # Cálculo manual do Bounding Box por tipo de entidade
+        points = []
+        ent_type = ent.dxftype()
         try:
-            path = ezdxf.path.from_entity(ent)
-            bbox = ezdxf.path.bbox([path])
-        except (RuntimeError, TypeError):
-            continue # Ignora entidades sem caminho ou bbox
+            if ent_type == 'CIRCLE':
+                center = ent.dxf.center
+                radius = ent.dxf.radius
+                points.extend([
+                    (center.x - radius, center.y - radius),
+                    (center.x + radius, center.y + radius)
+                ])
+            elif ent_type == 'LINE':
+                points.extend([ent.dxf.start, ent.dxf.end])
+            elif ent_type in ('LWPOLYLINE', 'POLYLINE'):
+                points.extend(list(ent.points()))
+            elif ent_type == 'ARC':
+                # Arcos são mais complexos, usamos uma aproximação com achatamento
+                points.extend(list(ent.flattening(distance=0.1)))
 
-        local_min_x, local_min_y, _ = bbox.extmin
-        largura_op, altura_op, _ = bbox.size
-        
+            if not points:
+                continue
+
+            # Calcula BBox a partir dos pontos
+            xs = [p[0] for p in points]
+            ys = [p[1] for p in points]
+            local_min_x, local_max_x = min(xs), max(xs)
+            local_min_y, local_max_y = min(ys), max(ys)
+            
+            largura_op = local_max_x - local_min_x
+            altura_op = local_max_y - local_min_y
+
+        except Exception:
+            # Pula a entidade se não for possível calcular suas dimensões
+            continue
+
         final_x, final_y = local_min_x, local_min_y
         final_w, final_h = largura_op, altura_op
 
@@ -1262,7 +1302,7 @@ def _ops_from_dxf(
             # Inverte largura e altura da operação
             final_w, final_h = altura_op, largura_op
             
-        # Translada para a posição na chapa
+        # Translada para a posição final na chapa
         final_x += ox
         final_y += oy
 
@@ -1275,7 +1315,7 @@ def _ops_from_dxf(
             "y": final_y,
             "largura": final_w,
             "altura": final_h,
-            "rotacao": 90 if rotated else 0, # Adiciona info de rotação para o frontend
+            "rotacao": 90 if rotated else 0,
         })
         next_id += 1
         
