@@ -59,6 +59,7 @@ class Template(Base):
     tipo = Column(String)
     titulo = Column(String)
     campos_json = Column(String)
+    arquivo_key = Column(String)
 
 
 class ProjetoItem(Base):

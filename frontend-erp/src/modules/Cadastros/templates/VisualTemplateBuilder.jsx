@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -107,6 +107,9 @@ function VisualTemplateBuilder() {
   const navigate = useNavigate();
   const [titulo, setTitulo] = useState('');
   const [campos, setCampos] = useState([]);
+  const [arquivoKey, setArquivoKey] = useState('');
+  const [arquivoUrl, setArquivoUrl] = useState('');
+  const fileRef = useRef();
   const [editing, setEditing] = useState(null); // { field, index }
 
   useEffect(() => {
@@ -117,6 +120,8 @@ function VisualTemplateBuilder() {
           if (t) {
             setTitulo(t.titulo);
             setCampos(t.campos || []);
+            setArquivoKey(t.arquivo_key || '');
+            setArquivoUrl(t.arquivo_url || '');
           }
         })
         .catch(() => {});
@@ -150,6 +155,24 @@ function VisualTemplateBuilder() {
         return arrayMove(prev, oldIndex, newIndex);
       });
     }
+  };
+
+  const selecionarArquivo = () => {
+    fileRef.current?.click();
+  };
+
+  const enviarArquivo = async e => {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    const form = new FormData();
+    form.append('file', file);
+    const resp = await fetchComAuth(`/comercial/templates/${id}/upload`, {
+      method: 'POST',
+      body: form,
+    });
+    setArquivoKey(resp.arquivo_key || '');
+    setArquivoUrl(resp.arquivo_url || '');
+    e.target.value = '';
   };
 
   const salvarTemplate = async () => {
@@ -214,9 +237,23 @@ function VisualTemplateBuilder() {
         <div className="flex gap-2">
           <Button onClick={salvarTemplate}>Salvar</Button>
           <Button variant="secondary" onClick={() => navigate('..')}>Voltar</Button>
+          {id && (
+            <>
+              <Button variant="secondary" onClick={selecionarArquivo}>Atualizar arquivo</Button>
+              <input ref={fileRef} type="file" accept=".docx,.pdf" className="hidden" onChange={enviarArquivo} />
+            </>
+          )}
         </div>
       </div>
       <div className="w-1/2 border-l pl-2">
+        {arquivoUrl && (
+          <p className="text-sm mb-2">
+            Arquivo atual:{' '}
+            <a className="text-blue-600 underline" href={arquivoUrl} target="_blank" rel="noopener noreferrer">
+              baixar
+            </a>
+          </p>
+        )}
         <div className="p-4 bg-white border rounded" style={{ width: '210mm', minHeight: '297mm' }}>
           <h2 className="text-center font-bold text-xl mb-4">{titulo || 'Título do Template'}</h2>
           <div className="grid grid-cols-3 gap-4">
