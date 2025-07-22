@@ -366,6 +366,8 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
     return pecas
 
 
+# Em nesting.py, substitua a função _gcode_peca pela versão corrigida abaixo:
+
 def _gcode_peca(
     p: Dict,
     ox: float = 0,
@@ -381,10 +383,10 @@ def _gcode_peca(
     rotated: bool = False,
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
-    rotation_angle: int = 0,
+    rotation_angle: int = 0, # Mantido para compatibilidade, mas a lógica usará 'rotated'
 ):
-    # (Sem alteração estrutural — função já estava em bom padrão, só pequenas correções de nomenclatura.)
-    _ = rotation_angle  # parâmetro reservado para uso futuro
+    # (O início da função permanece o mesmo: substituir, buscar_ferramenta, fmt, etc.)
+    # ... (código existente aqui) ...
 
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
@@ -402,8 +404,6 @@ def _gcode_peca(
 
     l = p["Length"]
     w = p["Width"]
-    # A descrição da peça não é mais acrescentada automaticamente para evitar
-    # comentários extras nos códigos gerados.
     linhas: List[str] = []
     z_seg = float(config_maquina.get("zSeguranca", 48)) if config_maquina else 48
     z_pre = float(config_maquina.get("zAntesTrabalho", 20)) if config_maquina else 20
@@ -419,7 +419,8 @@ def _gcode_peca(
     mov_rapida = config_maquina.get("movRapida", "") if config_maquina else ""
     mov_corte_ini = config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
     mov_corte = config_maquina.get("movCorte", "") if config_maquina else ""
-
+    
+    # ... (funções g0, g1_ini, g1 existentes aqui) ...
     def g0(x: float, y: float, z: float) -> str:
         """Return rapid move ensuring all axes are present."""
         if mov_rapida:
@@ -448,28 +449,11 @@ def _gcode_peca(
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
-            from ezdxf.math import Matrix44
-
-            if rotated:
-                ang = -(rotation_angle or 90)
-                m = (
-                    Matrix44.translate(-ox, -oy, 0)
-                    @ Matrix44.z_rotate(math.radians(ang))
-                    @ Matrix44.scale(1, -1, 1)
-                    @ Matrix44.translate(ox, oy, 0)
-                )
-
-                def rotacionar_ponto(x: float, y: float) -> tuple:
-                    # Vec2 from ezdxf does not provide a ``transform`` method in
-                    # current versions, therefore use Matrix44.transform and
-                    # extract the 2D coordinates from the resulting Vec3.
-                    v = m.transform((x, y, 0))
-                    return v.x, v.y
-
-            else:
-
-                def rotacionar_ponto(x: float, y: float) -> tuple:
-                    return x, y
+            
+            # ===== LÓGICA DE ROTAÇÃO CORRIGIDA =====
+            # As dimensões originais são cruciais para a rotação correta.
+            comprimento_original = orig_length if rotated else l
+            largura_original = orig_width if rotated else w
 
             for ent in msp:
                 layer = ent.dxf.layer
@@ -482,57 +466,62 @@ def _gcode_peca(
                     ),
                     None,
                 )
-                if not cfg:
-                    continue
+                if not cfg: continue
+                
                 ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
-                if not ferramenta_cfg:
-                    continue
+                if not ferramenta_cfg: continue
+                
                 prof = float(cfg.get("profundidade", 1))
+
+                # Extrai o ponto central da operação (local, dentro do DXF)
+                local_x, local_y = 0, 0
                 if ent.dxftype() == "CIRCLE":
-                    cx0 = float(ent.dxf.center.x) + ox
-                    cy0 = float(ent.dxf.center.y) + oy
-                    x, y = rotacionar_ponto(cx0, cy0)
-                    ops.append(
-                        {
-                            "tool": ferramenta_cfg,
-                            "x": x,
-                            "y": y,
-                            "prof": prof,
-                            "layer": layer,
-                        }
-                    )
+                    local_x = float(ent.dxf.center.x)
+                    local_y = float(ent.dxf.center.y)
                 elif ent.dxftype() in {"LINE", "LWPOLYLINE", "POLYLINE"}:
                     points = []
                     if ent.dxftype() == "LINE":
                         points = [ent.dxf.start, ent.dxf.end]
                     elif ent.dxftype() == "POLYLINE":
-                        points = [
-                            (float(v.dxf.location.x), float(v.dxf.location.y))
-                            for v in ent.vertices
-                        ]
+                        points = [(v.dxf.location.x, v.dxf.location.y) for v in ent.vertices]
                     else:
                         points = list(ent.get_points("xy"))
-                    xs = [float(p[0]) for p in points]
-                    ys = [float(p[1]) for p in points]
-                    if xs and ys:
-                        x = min(xs)
-                        y = min(ys)
-                        x0 = x + ox
-                        y0 = y + oy
-                        x, y = rotacionar_ponto(x0, y0)
-                        ops.append(
-                            {
-                                "tool": ferramenta_cfg,
-                                "x": x,
-                                "y": y,
-                                "prof": prof,
-                                "layer": layer,
-                            }
-                        )
-        except Exception:
+                    
+                    if not points: continue
+                    xs = [p[0] for p in points]
+                    ys = [p[1] for p in points]
+                    # Usamos o centro da bounding box da operação
+                    local_x = min(xs) + (max(xs) - min(xs)) / 2
+                    local_y = min(ys) + (max(ys) - min(ys)) / 2
+                else:
+                    continue
+
+                final_x, final_y = local_x, local_y
+                if rotated:
+                    # Rotaciona 90 graus no sentido horário em torno da origem (0,0)
+                    # e depois translada para o quadrante positivo.
+                    # Ponto (x, y) rotacionado vira (y, -x).
+                    # Para ajustar ao novo L/A, o novo y é LarguraOriginal - x.
+                    final_x = local_y
+                    final_y = comprimento_original - local_x
+
+                # Translada o ponto local para a posição final na chapa
+                final_x += ox
+                final_y += oy
+                
+                ops.append({
+                    "tool": ferramenta_cfg,
+                    "x": final_x,
+                    "y": final_y,
+                    "prof": prof,
+                    "layer": layer,
+                })
+        except Exception as e:
+            print(f"Erro ao processar DXF em _gcode_peca: {e}")
             pass
 
-    # Operação padrão - contorno (para peça ou sobra)
+    # (O restante da função _gcode_peca permanece o mesmo)
+    # ... (código existente aqui) ...
     ferramenta_padrao = ferramentas[0] if ferramentas else None
     contorno_op = {
         "tool": ferramenta_padrao,
@@ -541,12 +530,7 @@ def _gcode_peca(
         "w": w,
     }
     ops.insert(0, contorno_op)
-
-    # ``troca_tpl`` define o bloco emitido sempre que ocorre mudança de
-    # ferramenta. Ele também é utilizado para a primeira ferramenta da peça.
     troca_tpl = templates.get("troca", "") if templates else ""
-
-    # Ordenar e agrupar operações (para garantir ordem de furos, fresas, contorno)
     if ops and ops[0].get("contorno"):
         contorno_op = ops.pop(0)
     else:
@@ -554,7 +538,6 @@ def _gcode_peca(
 
     furos_ops = [o for o in ops if o.get("tool", {}).get("tipo") == "Broca"]
     fresa_ops = [o for o in ops if o.get("tool", {}).get("tipo") != "Broca"]
-
     furos_ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
 
     if etapa == "furos":
@@ -587,9 +570,6 @@ def _gcode_peca(
                 "YH": config_maquina.get("yHoming", "") if config_maquina else "",
                 "CMD_EXTRA": _expand_cmd_extra(tool),
             }
-            # Sempre utilizar o template de troca de ferramentas, inclusive para
-            # a primeira ferramenta. Isso garante que todos os blocos iniciem
-            # com o mesmo cabeçalho padronizado.
             tpl = troca_tpl
             if tpl:
                 linhas.extend(substituir(tpl, valores).splitlines())
@@ -1215,6 +1195,8 @@ def _encontrar_dxt(pasta: Path) -> Optional[Path]:
     return None
 
 
+# Em nesting.py, substitua a função _ops_from_dxf pela versão corrigida abaixo:
+
 def _ops_from_dxf(
     caminho: Path,
     config_layers: Optional[List[Dict]] = None,
@@ -1224,43 +1206,29 @@ def _ops_from_dxf(
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
 ) -> List[Dict]:
-    """Retorna operações encontradas no DXF em ``caminho``.
-
-    Atualmente apenas círculos, linhas e polilinhas são considerados. O
-    ``ox``/``oy`` é aplicado como offset para posicionar a operação dentro da
-    chapa.
-    """
     if not config_layers:
         return []
     try:
         doc = ezdxf.readfile(caminho)
     except Exception:
         return []
+    
     msp = doc.modelspace()
     ops: List[Dict] = []
     next_id = 1
-    if rotated:
-        from ezdxf.math import Matrix44
-        import math
+    
+    # ===== LÓGICA DE ROTAÇÃO CORRIGIDA =====
+    comprimento_original = orig_length if rotated and orig_length is not None else 0
+    if not rotated:
+        # Se não rotacionado, pegamos as medidas do contorno para referência
+        contorno = next((ent for ent in msp if str(ent.dxf.layer).lower() == 'borda_externa'), None)
+        if contorno:
+            try:
+                bbox = ezdxf.path.bbox([ezdxf.path.from_entity(contorno)])
+                comprimento_original = bbox.size.x
+            except Exception:
+                pass
 
-        angle = math.radians(-90)
-        m = (
-            Matrix44.translate(-ox, -oy, 0)
-            @ Matrix44.z_rotate(angle)
-            @ Matrix44.scale(1, -1, 1)
-            @ Matrix44.translate(ox, oy, 0)
-        )
-
-        def rot_point(ax: float, ay: float) -> tuple[float, float]:
-            # ``Vec2.transform`` is not available; use Matrix44 directly and
-            # drop the z-component after transformation.
-            v = m.transform((ax, ay, 0))
-            return v.x, v.y
-
-    else:
-
-        def rot_point(ax: float, ay: float) -> tuple[float, float]:
-            return ax, ay
 
     for ent in msp:
         layer = str(ent.dxf.layer)
@@ -1274,59 +1242,43 @@ def _ops_from_dxf(
         )
         if not cfg:
             continue
-        if ent.dxftype() == "CIRCLE":
-            r = float(ent.dxf.radius)
-            cx = float(ent.dxf.center.x) + ox
-            cy = float(ent.dxf.center.y) + oy
-            cx, cy = rot_point(cx, cy)
-            ops.append(
-                {
-                    "id": next_id,
-                    "nome": layer,
-                    "tipo": "Operacao",
-                    "layer": layer,
-                    "x": cx - r,
-                    "y": cy - r,
-                    "largura": 2 * r,
-                    "altura": 2 * r,
-                    "rotacao": 0,
-                }
-            )
-            next_id += 1
-        elif ent.dxftype() in {"LINE", "LWPOLYLINE", "POLYLINE"}:
-            points = []
-            if ent.dxftype() == "LINE":
-                points = [ent.dxf.start, ent.dxf.end]
-            elif ent.dxftype() == "POLYLINE":
-                points = [
-                    (float(v.dxf.location.x), float(v.dxf.location.y))
-                    for v in ent.vertices
-                ]
-            else:
-                points = list(ent.get_points("xy"))
-            if points:
-                pts = [(float(px) + ox, float(py) + oy) for px, py in points]
-                pts = [rot_point(px, py) for px, py in pts]
-                xs = [p[0] for p in pts]
-                ys = [p[1] for p in pts]
-                x = min(xs)
-                y = min(ys)
-                w = max(xs) - x
-                h = max(ys) - y
-                ops.append(
-                    {
-                        "id": next_id,
-                        "nome": layer,
-                        "tipo": "Operacao",
-                        "layer": layer,
-                        "x": x,
-                        "y": y,
-                        "largura": w,
-                        "altura": h,
-                        "rotacao": 0,
-                    }
-                )
-                next_id += 1
+
+        try:
+            path = ezdxf.path.from_entity(ent)
+            bbox = ezdxf.path.bbox([path])
+        except (RuntimeError, TypeError):
+            continue # Ignora entidades sem caminho ou bbox
+
+        local_min_x, local_min_y, _ = bbox.extmin
+        largura_op, altura_op, _ = bbox.size
+        
+        final_x, final_y = local_min_x, local_min_y
+        final_w, final_h = largura_op, altura_op
+
+        if rotated:
+            # Rotaciona o ponto de origem (canto inferior esquerdo) da operação
+            final_x = local_min_y
+            final_y = comprimento_original - (local_min_x + largura_op)
+            # Inverte largura e altura da operação
+            final_w, final_h = altura_op, largura_op
+            
+        # Translada para a posição na chapa
+        final_x += ox
+        final_y += oy
+
+        ops.append({
+            "id": next_id,
+            "nome": layer,
+            "tipo": "Operacao",
+            "layer": layer,
+            "x": final_x,
+            "y": final_y,
+            "largura": final_w,
+            "altura": final_h,
+            "rotacao": 90 if rotated else 0, # Adiciona info de rotação para o frontend
+        })
+        next_id += 1
+        
     return ops
 
 
