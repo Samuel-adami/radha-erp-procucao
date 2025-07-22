@@ -132,7 +132,16 @@ if __name__ == "__main__":
         atendimentos = listar_atendimentos()
         if not atendimentos:
             print("Nenhum atendimento encontrado.")
-        for a in atendimentos:
-            debug_projeto(a["id"])
+
+        else:
+            print(f"Processando {len(atendimentos)} atendimentos:\n")
+            for a in atendimentos:
+                info = f"ID {a['id']}"
+                if a.get('cliente'):
+                    info += f" - {a['cliente']}"
+                if a.get('codigo'):
+                    info += f" (codigo {a['codigo']})"
+                print(info)
+                debug_projeto(a["id"])
 
 
