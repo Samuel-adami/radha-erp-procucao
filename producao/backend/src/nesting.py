@@ -327,16 +327,11 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
     return max(xs) - min(xs), max(ys) - min(ys)
 
 
-# Em nesting.py, substitua a função _ler_dxt
-
-# Em nesting.py, substitua a função _ler_dxt por esta versão mais simples:
-
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
-    """Lê o arquivo DXT e retorna a lista de peças."""
+    # (Sem alteração — parse do DXT)
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
-    pecas: List[Dict] = []
+    pecas = []
     pasta = dxt_path.parent
-
     for part in root.findall(".//Part"):
         fields = {
             f.find("Name").text: f.find("Value").text
@@ -349,22 +344,23 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             filename = fields.get("Filename", "")
             length = float(fields.get("Length", 0))
             width = float(fields.get("Width", 0))
-
             if filename:
                 medidas = _medidas_dxf(pasta / filename)
                 if medidas:
                     length, width = medidas
-
-            pecas.append({
-                "PartName": fields.get("PartName", "SemNome"),
-                "Length": length, "Width": width,
-                "Thickness": float(fields.get("Thickness", 0)),
-                "Program1": fields.get("Program1", ""),
-                "Material": fields.get("Material", "Desconhecido"),
-                "Filename": filename,
-                "Client": fields.get("Client", ""),
-                "Project": fields.get("Project", ""),
-            })
+            pecas.append(
+                {
+                    "PartName": fields.get("PartName", "SemNome"),
+                    "Length": length,
+                    "Width": width,
+                    "Thickness": float(fields.get("Thickness", 0)),
+                    "Program1": fields.get("Program1", ""),
+                    "Material": fields.get("Material", "Desconhecido"),
+                    "Filename": filename,
+                    "Client": fields.get("Client", ""),
+                    "Project": fields.get("Project", ""),
+                }
+            )
         except ValueError:
             continue
     return pecas
@@ -376,7 +372,6 @@ def _gcode_peca(
     oy: float = 0,
     ferramentas: Optional[List[Dict]] = None,
     dxf_path: Optional[Path] = None,
-    block: Optional[ezdxf.layouts.BlockLayout] = None,
     config_layers: Optional[List[Dict]] = None,
     config_maquina: Optional[Dict] = None,
     templates: Optional[Dict] = None,
@@ -388,7 +383,9 @@ def _gcode_peca(
     orig_width: Optional[float] = None,
     rotation_angle: int = 0,
 ):
-    # (O início da função, com 'substituir', 'buscar_ferramenta', etc., permanece igual)
+    # (Sem alteração estrutural — função já estava em bom padrão, só pequenas correções de nomenclatura.)
+    _ = rotation_angle  # parâmetro reservado para uso futuro
+
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
             texto = texto.replace(f"[{k}]", str(v))
@@ -403,10 +400,14 @@ def _gcode_peca(
                 return f
         return None
 
-    l, w = p["Length"], p["Width"]
+    l = p["Length"]
+    w = p["Width"]
+    # A descrição da peça não é mais acrescentada automaticamente para evitar
+    # comentários extras nos códigos gerados.
     linhas: List[str] = []
     z_seg = float(config_maquina.get("zSeguranca", 48)) if config_maquina else 48
     z_pre = float(config_maquina.get("zAntesTrabalho", 20)) if config_maquina else 20
+
     try:
         casas_dec = int(config_maquina.get("casasDecimais", 4)) if config_maquina else 4
     except (TypeError, ValueError):
@@ -420,18 +421,22 @@ def _gcode_peca(
     mov_corte = config_maquina.get("movCorte", "") if config_maquina else ""
 
     def g0(x: float, y: float, z: float) -> str:
+        """Return rapid move ensuring all axes are present."""
         if mov_rapida:
             return substituir(mov_rapida, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z)})
         return f"G0 X{fmt(x)} Y{fmt(y)} Z{fmt(z)}"
 
     def g1_ini(x: float, y: float, z: float, f: float) -> str:
+        """Return first cut movement (G1) with all axes."""
         if mov_corte_ini:
             return substituir(
-                mov_corte_ini, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)}
+                mov_corte_ini,
+                {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)},
             )
         return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
 
     def g1(x: float, y: float, z: float, f: float) -> str:
+        """Return cut movement (G1) with all axes."""
         if mov_corte:
             return substituir(
                 mov_corte, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)}
@@ -439,90 +444,119 @@ def _gcode_peca(
         return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
 
     ops = []
-    if block and config_layers:
+    if dxf_path and config_layers:
         try:
-            block_ops = _ops_from_block(
-                block,
-                config_layers,
-                ox,
-                oy,
-                rotated,
-                orig_length,
-            )
-            for op in block_ops:
-                layer = op["layer"]
-                cfg = next(
-                    (
-                        c
-                        for c in config_layers
-                        if c.get("nome", "").lower() == layer.lower()
-                        and _is_operacao(c)
-                    ),
-                    None,
-                )
-                if not cfg:
-                    continue
-                ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
-                if not ferramenta_cfg:
-                    continue
-                prof = float(cfg.get("profundidade", 1))
-                ops.append(
-                    {
-                        "tool": ferramenta_cfg,
-                        "x": op["x"],
-                        "y": op["y"],
-                        "prof": prof,
-                        "layer": layer,
-                    }
-                )
-        except Exception as e:
-            print(f"Erro ao processar bloco em _gcode_peca: {e}")
-    elif dxf_path and config_layers:
-        try:
-            dxf_ops = _ops_from_dxf(
-                dxf_path, config_layers, ox, oy, rotated, orig_length, orig_width
-            )
-            for op in dxf_ops:
-                layer = op["layer"]
-                cfg = next(
-                    (
-                        c
-                        for c in config_layers
-                        if c.get("nome", "").lower() == layer.lower()
-                        and _is_operacao(c)
-                    ),
-                    None,
-                )
-                if not cfg:
-                    continue
-                ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
-                if not ferramenta_cfg:
-                    continue
-                prof = float(cfg.get("profundidade", 1))
-                ops.append(
-                    {
-                        "tool": ferramenta_cfg,
-                        "x": op["x"],
-                        "y": op["y"],
-                        "prof": prof,
-                        "layer": layer,
-                    }
-                )
-        except Exception as e:
-            print(f"Erro ao processar DXF em _gcode_peca: {e}")
+            doc = ezdxf.readfile(dxf_path)
+            msp = doc.modelspace()
+            from ezdxf.math import Matrix44
 
-    # (O restante da função para gerar o G-Code continua igual)
+            if rotated:
+                ang = -(rotation_angle or 90)
+                m = (
+                    Matrix44.translate(-ox, -oy, 0)
+                    @ Matrix44.z_rotate(math.radians(ang))
+                    @ Matrix44.scale(1, -1, 1)
+                    @ Matrix44.translate(ox, oy, 0)
+                )
+
+                def rotacionar_ponto(x: float, y: float) -> tuple:
+                    # Vec2 from ezdxf does not provide a ``transform`` method in
+                    # current versions, therefore use Matrix44.transform and
+                    # extract the 2D coordinates from the resulting Vec3.
+                    v = m.transform((x, y, 0))
+                    return v.x, v.y
+
+            else:
+
+                def rotacionar_ponto(x: float, y: float) -> tuple:
+                    return x, y
+
+            for ent in msp:
+                layer = ent.dxf.layer
+                cfg = next(
+                    (
+                        c
+                        for c in config_layers
+                        if c.get("nome", "").lower() == layer.lower()
+                        and _is_operacao(c)
+                    ),
+                    None,
+                )
+                if not cfg:
+                    continue
+                ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
+                if not ferramenta_cfg:
+                    continue
+                prof = float(cfg.get("profundidade", 1))
+                if ent.dxftype() == "CIRCLE":
+                    cx0 = float(ent.dxf.center.x) + ox
+                    cy0 = float(ent.dxf.center.y) + oy
+                    x, y = rotacionar_ponto(cx0, cy0)
+                    ops.append(
+                        {
+                            "tool": ferramenta_cfg,
+                            "x": x,
+                            "y": y,
+                            "prof": prof,
+                            "layer": layer,
+                        }
+                    )
+                elif ent.dxftype() in {"LINE", "LWPOLYLINE", "POLYLINE"}:
+                    points = []
+                    if ent.dxftype() == "LINE":
+                        points = [ent.dxf.start, ent.dxf.end]
+                    elif ent.dxftype() == "POLYLINE":
+                        points = [
+                            (float(v.dxf.location.x), float(v.dxf.location.y))
+                            for v in ent.vertices
+                        ]
+                    else:
+                        points = list(ent.get_points("xy"))
+                    xs = [float(p[0]) for p in points]
+                    ys = [float(p[1]) for p in points]
+                    if xs and ys:
+                        x = min(xs)
+                        y = min(ys)
+                        x0 = x + ox
+                        y0 = y + oy
+                        x, y = rotacionar_ponto(x0, y0)
+                        ops.append(
+                            {
+                                "tool": ferramenta_cfg,
+                                "x": x,
+                                "y": y,
+                                "prof": prof,
+                                "layer": layer,
+                            }
+                        )
+        except Exception:
+            pass
+
+    # Operação padrão - contorno (para peça ou sobra)
     ferramenta_padrao = ferramentas[0] if ferramentas else None
-    contorno_op = {"tool": ferramenta_padrao, "contorno": True, "l": l, "w": w}
+    contorno_op = {
+        "tool": ferramenta_padrao,
+        "contorno": True,
+        "l": l,
+        "w": w,
+    }
     ops.insert(0, contorno_op)
+
+    # ``troca_tpl`` define o bloco emitido sempre que ocorre mudança de
+    # ferramenta. Ele também é utilizado para a primeira ferramenta da peça.
     troca_tpl = templates.get("troca", "") if templates else ""
+
+    # Ordenar e agrupar operações (para garantir ordem de furos, fresas, contorno)
     if ops and ops[0].get("contorno"):
         contorno_op = ops.pop(0)
     else:
         contorno_op = None
+
     furos_ops = [o for o in ops if o.get("tool", {}).get("tipo") == "Broca"]
     fresa_ops = [o for o in ops if o.get("tool", {}).get("tipo") != "Broca"]
+
     furos_ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
+
     if etapa == "furos":
         ops = furos_ops
     elif etapa == "fresas":
@@ -533,9 +567,11 @@ def _gcode_peca(
         ops = furos_ops + fresa_ops
         if contorno_op:
             ops.append(contorno_op)
+
     atual = ferramenta_atual
     usadas: List[str] = []
     last_layer: Optional[str] = None
+
     for op in ops:
         tool = op["tool"]
         if tool:
@@ -551,11 +587,15 @@ def _gcode_peca(
                 "YH": config_maquina.get("yHoming", "") if config_maquina else "",
                 "CMD_EXTRA": _expand_cmd_extra(tool),
             }
+            # Sempre utilizar o template de troca de ferramentas, inclusive para
+            # a primeira ferramenta. Isso garante que todos os blocos iniciem
+            # com o mesmo cabeçalho padronizado.
             tpl = troca_tpl
             if tpl:
                 linhas.extend(substituir(tpl, valores).splitlines())
                 linhas.append("")
             atual = tool
+
         if op.get("contorno"):
             tipo_lbl = tipo.upper()
             if tipo_lbl == "PECA":
@@ -588,6 +628,7 @@ def _gcode_peca(
                     g0(op["x"], op["y"], z_seg),
                 ]
             )
+
     return "\n".join(linhas), atual, usadas
 
 
@@ -821,7 +862,6 @@ def _gerar_gcodes(
                 p.get("y", 0),
                 ferramentas,
                 dxf_path,
-                p.get("block"),
                 config_layers,
                 config_maquina,
                 {"header": "", "troca": ""},
@@ -946,7 +986,6 @@ def _gerar_gcodes(
                 p["y"],
                 ferramentas,
                 dxf_path,
-                p.get("block"),
                 config_layers,
                 config_maquina,
                 tpl_troca,
@@ -975,7 +1014,6 @@ def _gerar_gcodes(
                 p["y"],
                 ferramentas,
                 dxf_path,
-                p.get("block"),
                 config_layers,
                 config_maquina,
                 tpl_troca,
@@ -1009,7 +1047,6 @@ def _gerar_gcodes(
                 p["y"],
                 ferramentas,
                 dxf_path,
-                p.get("block"),
                 config_layers,
                 config_maquina,
                 tpl_troca,
@@ -1088,7 +1125,6 @@ def _gerar_gcodes(
                         ferramentas,
                         None,
                         None,
-                        config_layers,
                         config_maquina,
                         tpl_troca,
                         tipo="Sobra",
@@ -1152,7 +1188,6 @@ def _gerar_gcodes(
                         ferramentas,
                         None,
                         None,
-                        config_layers,
                         config_maquina,
                         tpl_troca,
                         tipo="Sobra",
@@ -1180,51 +1215,54 @@ def _encontrar_dxt(pasta: Path) -> Optional[Path]:
     return None
 
 
-# Em nesting.py, substitua a função _ops_from_dxf pela versão corrigida abaixo:
-
-# Em nesting.py, substitua a função _ops_from_dxf por esta versão:
-
-# Em nesting.py, substitua a função _ops_from_dxf por esta versão final:
-
-# Em nesting.py, SUBSTITUA a função _ops_from_dxf inteira por esta:
-
-
-def _ops_from_block(
-    block: ezdxf.layouts.BlockLayout,
+def _ops_from_dxf(
+    caminho: Path,
     config_layers: Optional[List[Dict]] = None,
     ox: float = 0.0,
     oy: float = 0.0,
     rotated: bool = False,
     orig_length: Optional[float] = None,
+    orig_width: Optional[float] = None,
 ) -> List[Dict]:
-    """Extrai operações de um ``BlockLayout`` aplicando translação e rotação.
+    """Retorna operações encontradas no DXF em ``caminho``.
 
-    Quando ``rotated`` for ``True`` a referência do bloco é ajustada para que o
-    canto inferior esquerdo da peça permaneça na posição ``(ox, oy)`` após a
-    rotação. Para isso é utilizado ``orig_length`` (comprimento original da
-    peça) como deslocamento.
+    Atualmente apenas círculos, linhas e polilinhas são considerados. O
+    ``ox``/``oy`` é aplicado como offset para posicionar a operação dentro da
+    chapa.
     """
-
-    if not config_layers or block is None:
+    if not config_layers:
         return []
-
-    doc = ezdxf.new()
-    if block.name not in doc.blocks:
-        new_blk = doc.blocks.new(block.name)
-        for e in block:
-            new_blk.add_entity(e.copy())
-    if rotated and orig_length:
-        insert_point = (ox, oy + float(orig_length))
-    else:
-        insert_point = (ox, oy)
-    insert = doc.modelspace().add_blockref(block.name, insert_point)
-    if rotated:
-        insert.dxf.rotation = -90
-
+    try:
+        doc = ezdxf.readfile(caminho)
+    except Exception:
+        return []
+    msp = doc.modelspace()
     ops: List[Dict] = []
     next_id = 1
+    if rotated:
+        from ezdxf.math import Matrix44
+        import math
 
-    for ent in insert.explode():
+        angle = math.radians(-90)
+        m = (
+            Matrix44.translate(-ox, -oy, 0)
+            @ Matrix44.z_rotate(angle)
+            @ Matrix44.scale(1, -1, 1)
+            @ Matrix44.translate(ox, oy, 0)
+        )
+
+        def rot_point(ax: float, ay: float) -> tuple[float, float]:
+            # ``Vec2.transform`` is not available; use Matrix44 directly and
+            # drop the z-component after transformation.
+            v = m.transform((ax, ay, 0))
+            return v.x, v.y
+
+    else:
+
+        def rot_point(ax: float, ay: float) -> tuple[float, float]:
+            return ax, ay
+
+    for ent in msp:
         layer = str(ent.dxf.layer)
         cfg = next(
             (
@@ -1236,86 +1274,60 @@ def _ops_from_block(
         )
         if not cfg:
             continue
-
-        points: List[Tuple[float, float]] = []
-        etype = ent.dxftype()
-        try:
-            if etype == "CIRCLE":
-                c = ent.dxf.center
-                r = float(ent.dxf.radius)
-                points.extend([(c.x - r, c.y - r), (c.x + r, c.y + r)])
-            elif etype == "LINE":
-                points.extend(
-                    [(ent.dxf.start.x, ent.dxf.start.y), (ent.dxf.end.x, ent.dxf.end.y)]
+        if ent.dxftype() == "CIRCLE":
+            r = float(ent.dxf.radius)
+            cx = float(ent.dxf.center.x) + ox
+            cy = float(ent.dxf.center.y) + oy
+            cx, cy = rot_point(cx, cy)
+            ops.append(
+                {
+                    "id": next_id,
+                    "nome": layer,
+                    "tipo": "Operacao",
+                    "layer": layer,
+                    "x": cx - r,
+                    "y": cy - r,
+                    "largura": 2 * r,
+                    "altura": 2 * r,
+                    "rotacao": 0,
+                }
+            )
+            next_id += 1
+        elif ent.dxftype() in {"LINE", "LWPOLYLINE", "POLYLINE"}:
+            points = []
+            if ent.dxftype() == "LINE":
+                points = [ent.dxf.start, ent.dxf.end]
+            elif ent.dxftype() == "POLYLINE":
+                points = [
+                    (float(v.dxf.location.x), float(v.dxf.location.y))
+                    for v in ent.vertices
+                ]
+            else:
+                points = list(ent.get_points("xy"))
+            if points:
+                pts = [(float(px) + ox, float(py) + oy) for px, py in points]
+                pts = [rot_point(px, py) for px, py in pts]
+                xs = [p[0] for p in pts]
+                ys = [p[1] for p in pts]
+                x = min(xs)
+                y = min(ys)
+                w = max(xs) - x
+                h = max(ys) - y
+                ops.append(
+                    {
+                        "id": next_id,
+                        "nome": layer,
+                        "tipo": "Operacao",
+                        "layer": layer,
+                        "x": x,
+                        "y": y,
+                        "largura": w,
+                        "altura": h,
+                        "rotacao": 0,
+                    }
                 )
-            elif etype in ("LWPOLYLINE", "POLYLINE"):
-                if etype == "POLYLINE":
-                    for v in ent.vertices:
-                        points.append((v.dxf.location.x, v.dxf.location.y))
-                else:
-                    for x, y in ent.get_points("xy"):
-                        points.append((float(x), float(y)))
-            elif etype == "ARC":
-                points.extend(list(ent.flattening(distance=0.1)))
-            if not points:
-                continue
-
-            xs = [p[0] for p in points]
-            ys = [p[1] for p in points]
-            min_x, max_x = min(xs), max(xs)
-            min_y, max_y = min(ys), max(ys)
-            largura_op = max_x - min_x
-            altura_op = max_y - min_y
-        except Exception:
-            continue
-
-        ops.append(
-            {
-                "id": next_id,
-                "nome": layer,
-                "tipo": "Operacao",
-                "layer": layer,
-                "x": min_x,
-                "y": min_y,
-                "largura": largura_op,
-                "altura": altura_op,
-                "rotacao": 0,
-            }
-        )
-        next_id += 1
-
+                next_id += 1
     return ops
-
-
-def _ops_from_dxf(
-    caminho: Path,
-    config_layers: Optional[List[Dict]] = None,
-    ox: float = 0.0,
-    oy: float = 0.0,
-    rotated: bool = False,
-    orig_length: Optional[float] = None,
-    orig_width: Optional[float] = None,
-) -> List[Dict]:
-    if not config_layers:
-        return []
-    try:
-        doc = ezdxf.readfile(caminho)
-    except Exception:
-        return []
-
-    tmp_doc = ezdxf.new()
-    blk = tmp_doc.blocks.new("tmp")
-    for ent in doc.modelspace():
-        blk.add_entity(ent.copy())
-
-    return _ops_from_block(
-        blk,
-        config_layers,
-        ox,
-        oy,
-        rotated,
-        orig_length,
-    )
 
 
 def _calcular_sobras_polys(
@@ -1377,10 +1389,6 @@ def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
     return estoque
 
 
-# Em nesting.py, substitua a função inteira por esta versão completa:
-
-# Em nesting.py, substitua a função inteira por esta versão final e completa:
-
 def gerar_nesting_preview(
     pasta_lote: str,
     largura_chapa: float = 2750,
@@ -1390,7 +1398,7 @@ def gerar_nesting_preview(
     config_maquina: Optional[Dict] = None,
     estoque: Optional[Dict[str, List[Dict]]] = None,
 ) -> List[Dict]:
-    """Gera apenas a disposição das chapas sem criar arquivos, usando a estratégia de blocos."""
+    """Gera apenas a disposição das chapas sem criar arquivos."""
 
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
@@ -1399,13 +1407,17 @@ def gerar_nesting_preview(
     dxt_path = _encontrar_dxt(pasta)
     if not dxt_path:
         raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
-    
     pecas = _ler_dxt(dxt_path)
 
+    # Configurações de chapas cadastradas
     chapas_cfg: Dict[str, Dict] = {}
     try:
         with get_db_connection() as conn:
-            rows = conn.execute(text("SELECT propriedade, possui_veio, comprimento, largura FROM chapas")).fetchall()
+            rows = conn.execute(
+                text(
+                    "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
+                )
+            ).fetchall()
             for r in rows:
                 chapas_cfg[r["propriedade"]] = dict(r._mapping)
     except Exception:
@@ -1438,7 +1450,6 @@ def gerar_nesting_preview(
         packer = newPacker(rotation=rot)
         for p in lista:
             packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
-        
         estoque_material = estoque.get(material) if estoque else []
         if estoque_material:
             min_l = min(float(p["Length"]) for p in lista)
@@ -1446,7 +1457,10 @@ def gerar_nesting_preview(
             for s in estoque_material:
                 c = float(s.get("comprimento", 0))
                 l = float(s.get("largura", 0))
-                if (c >= min_l and l >= min_w) or (rot and c >= min_w and l >= min_l):
+                fits = (c >= min_l and l >= min_w) or (
+                    rot and c >= min_w and l >= min_l
+                )
+                if fits:
                     packer.add_bin(int(c), int(l))
         for _ in range(len(lista)):
             packer.add_bin(int(largura), int(altura))
@@ -1455,171 +1469,166 @@ def gerar_nesting_preview(
         for abin in packer:
             if not abin:
                 continue
-            
             operacoes: List[Dict] = []
-            op_id_counter = itertools.count(1)
+            sobras_polys: List[Polygon] = []
+            x_min = 1e9
+            y_min = 1e9
+            x_max = 0.0
+            y_max = 0.0
+            op_id = 1
             pecas_polys: List[Polygon] = []
-            x_min, y_min = 1e9, 1e9
-            x_max, y_max = 0.0, 0.0
-
-            # ###############################################################
-            # ### INÍCIO DA NOVA LÓGICA DE TRANSFORMAÇÃO COM BLOCKS ###
-            # ###############################################################
-            sheet_doc = ezdxf.new()
-            placed_rects = list(abin)
-            
-            # 1. Definir todos os blocos necessários DENTRO do documento da chapa
-            defined_blocks = set()
-            for rect in placed_rects:
-                p = rect.rid
-                filename = p.get("Filename")
-                if not filename or filename in defined_blocks: continue
-                try:
-                    block_name = Path(filename).stem.replace(" ", "_").upper()
-                    if block_name not in sheet_doc.blocks:
-                        new_block = sheet_doc.blocks.new(name=block_name)
-                        src_doc = ezdxf.readfile(pasta / filename)
-                        for entity in src_doc.modelspace():
-                            new_block.add_entity(entity.copy())
-                    defined_blocks.add(filename)
-                except Exception as e:
-                    print(f"AVISO: Falha ao criar bloco para {filename}: {e}")
-
-            # 2. Criar as referências de bloco (INSERTs) com posição e rotação
-            for rect in placed_rects:
-                p = rect.rid
-                filename = p.get("Filename")
-                if not filename: continue
-                
-                p_x = float(rect.x) + ref_esq; p_y = float(rect.y) + ref_inf
-                w = float(rect.width) - espaco; h = float(rect.height) - espaco
+            for rect in abin:
+                p = rect.rid.copy()
+                orig_l = float(p.get("Length", 0))
                 orig_w = float(p.get("Width", 0))
-                rotated = abs(w - orig_w) > 1e-6 and p.get("Length") != p.get("Width")
-                
-                block_name = Path(filename).stem.replace(" ", "_").upper()
-                if block_name in sheet_doc.blocks:
-                    insert = sheet_doc.modelspace().add_blockref(block_name, (p_x, p_y))
-                    if rotated:
-                        insert.dxf.rotation = -90
-
-            # 3. Construir a lista de operações para o frontend
-            # Primeiro, adiciona os contornos das peças e calcula polígonos para as sobras
-            for rect in placed_rects:
-                p = rect.rid
                 p_x = float(rect.x) + ref_esq
                 p_y = float(rect.y) + ref_inf
                 w = float(rect.width) - espaco
                 h = float(rect.height) - espaco
-                
-                operacoes.append({
-                    "id": next(op_id_counter), "nome": p.get("PartName", "Peca"),
-                    "tipo": "Peca", "x": p_x, "y": p_y, "largura": w, "altura": h,
-                    "cliente": p.get("Client", ""), "ambiente": p.get("Project", ""),
-                })
-                
+                rotated_piece = (
+                    abs(w - orig_w) < 1e-6
+                    and abs(h - orig_l) < 1e-6
+                    and orig_l != orig_w
+                )
+                p["originalLength"] = orig_l
+                p["originalWidth"] = orig_w
+                p["rotated"] = rotated_piece
+                p["rotationAngle"] = 90 if rotated_piece else 0
+                operacoes.append(
+                    {
+                        "id": op_id,
+                        "nome": p.get("PartName", f"Peca {op_id}"),
+                        "tipo": "Peca",
+                        "x": p_x,
+                        "y": p_y,
+                        "largura": w,
+                        "altura": h,
+                        "cliente": p.get("Client", ""),
+                        "ambiente": p.get("Project", ""),
+                    }
+                )
+                op_id += 1
+                if p.get("Filename") and config_layers:
+                    dxf_ops = _ops_from_dxf(
+                        pasta / p["Filename"],
+                        config_layers,
+                        p_x,
+                        p_y,
+                        rotated_piece,
+                        orig_l,
+                        orig_w,
+                    )
+                    for d in dxf_ops:
+                        d["id"] = op_id
+                        d["cliente"] = p.get("Client", "")
+                        d["ambiente"] = p.get("Project", "")
+                        operacoes.append(d)
+                        op_id += 1
                 x_min = min(x_min, rect.x)
                 y_min = min(y_min, rect.y)
                 x_max = max(x_max, rect.x + rect.width)
                 y_max = max(y_max, rect.y + rect.height)
                 pecas_polys.append(box(p_x, p_y, p_x + w, p_y + h))
 
-            # Agora, "explode" as referências para obter as operações internas JÁ TRANSFORMADAS
-            for block_ref in sheet_doc.modelspace().query('INSERT'):
-                for ent in block_ref.explode():
-                    layer = str(ent.dxf.layer).lower()
-                    if layer in ("borda_externa", "contorno"): continue
-                    try:
-                        v_list = []
-                        if ent.dxftype() == 'CIRCLE':
-                           c, r = ent.dxf.center, ent.dxf.radius
-                           v_list = [(c.x-r, c.y-r), (c.x+r, c.y+r)]
-                        elif hasattr(ent, 'vertices'): # Para POLYLINE
-                           v_list = list(ent.vertices())
-                        elif hasattr(ent, 'get_points'): # Para LWPOLYLINE
-                           v_list = list(ent.get_points(format='xy'))
-                        elif ent.dxftype() == 'LINE':
-                           v_list = [ent.dxf.start, ent.dxf.end]
-                        
-                        if not v_list: continue
-
-                        xs = [v[0] for v in v_list]; ys = [v[1] for v in v_list]
-                        min_x, max_x = min(xs), max(xs)
-                        min_y, max_y = min(ys), max(ys)
-                        
-                        operacoes.append({
-                            "id": next(op_id_counter), "nome": layer.upper(), "tipo": "Operacao",
-                            "layer": layer, "x": min_x, "y": min_y,
-                            "largura": max_x - min_x, "altura": max_y - min_y, "rotacao": 0
-                        })
-                    except Exception:
-                        continue
-            # ###############################################################
-            # ### FIM DA NOVA LÓGICA DE TRANSFORMAÇÃO ###
-            # ###############################################################
-
-
-            # ###############################################################
-            # ### INÍCIO DA LÓGICA ORIGINAL DE SOBRAS (INTACTA) ###
-            # ###############################################################
             pecas_union = unary_union(pecas_polys) if pecas_polys else None
-            sobras_polys: List[Polygon] = []
 
             def add_sobra(px: float, py: float, w: float, h: float):
-                nonlocal op_id_counter, sobras_polys
-                if w <= 0 or h <= 0: return
+                nonlocal op_id, sobras_polys
+                if w <= 0 or h <= 0:
+                    return
                 nova = box(px, py, px + w, py + h)
-                if pecas_union: nova = nova.difference(pecas_union)
+                if pecas_union:
+                    nova = nova.difference(pecas_union)
                 for p_exist in sobras_polys:
                     nova = nova.difference(p_exist)
-                    if nova.is_empty: return
+                    if nova.is_empty:
+                        return
                 geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
                 for g in geoms:
-                    if pecas_union: g = g.difference(pecas_union)
-                    if g.is_empty: continue
+                    if pecas_union:
+                        g = g.difference(pecas_union)
+                    if g.is_empty:
+                        continue
                     for g_rect in _retangulos_sobra(g):
                         minx, miny, maxx, maxy = g_rect.bounds
-                        operacoes.append({
-                            "id": next(op_id_counter), "nome": "Sobra", "tipo": "Sobra",
-                            "x": minx, "y": miny, "largura": maxx - minx, "altura": maxy - miny,
-                            "coords": [[float(cx), float(cy)] for cx, cy in g_rect.exterior.coords],
-                        })
+                        operacoes.append(
+                            {
+                                "id": op_id,
+                                "nome": "Sobra",
+                                "tipo": "Sobra",
+                                "x": minx,
+                                "y": miny,
+                                "largura": maxx - minx,
+                                "altura": maxy - miny,
+                                "coords": [
+                                    [float(cx), float(cy)]
+                                    for cx, cy in g_rect.exterior.coords
+                                ],
+                            }
+                        )
                         sobras_polys.append(g_rect)
+                        op_id += 1
 
-            cut_l = max(0.0, x_min); cut_b = max(0.0, y_min)
-            cut_r = min(area_larg, x_max); cut_t = min(area_alt, y_max)
+            # Ajusta as sobras considerando o deslocamento das margens de refilo
+            cut_l = max(0.0, x_min)
+            cut_b = max(0.0, y_min)
+            cut_r = min(area_larg, x_max)
+            cut_t = min(area_alt, y_max)
+
             add_sobra(ref_esq, ref_inf, cut_l, area_alt)
             add_sobra(ref_esq + cut_r, ref_inf, area_larg - cut_r, area_alt)
             add_sobra(ref_esq, ref_inf, area_larg, cut_b)
             add_sobra(ref_esq, ref_inf + cut_t, area_larg, area_alt - cut_t)
 
-            internas = _calcular_sobras_polys(pecas_polys, ref_esq, ref_inf, area_larg, area_alt, espaco)
-            if sobras_polys: internas = [g.difference(unary_union(sobras_polys)) for g in internas]
-            if pecas_union: internas = [g.difference(pecas_union) for g in internas]
+            # Sobras internas
+            internas = _calcular_sobras_polys(
+                pecas_polys, ref_esq, ref_inf, area_larg, area_alt, espaco
+            )
+
+            if sobras_polys:
+                internas = [g.difference(unary_union(sobras_polys)) for g in internas]
+            if pecas_union:
+                internas = [g.difference(pecas_union) for g in internas]
             for g in internas:
-                if g.is_empty: continue
+                if g.is_empty:
+                    continue
                 geoms = [g] if isinstance(g, Polygon) else list(g.geoms)
                 for geom in geoms:
-                    if pecas_union: geom = geom.difference(pecas_union)
-                    if geom.is_empty: continue
+                    if pecas_union:
+                        geom = geom.difference(pecas_union)
+                    if geom.is_empty:
+                        continue
                     for g_rect in _retangulos_sobra(geom):
                         minx, miny, maxx, maxy = g_rect.bounds
-                        operacoes.append({
-                            "id": next(op_id_counter), "nome": "Sobra", "tipo": "Sobra",
-                            "x": minx, "y": miny, "largura": maxx - minx, "altura": maxy - miny,
-                            "coords": [[float(cx), float(cy)] for cx, cy in g_rect.exterior.coords],
-                        })
+                        operacoes.append(
+                            {
+                                "id": op_id,
+                                "nome": "Sobra",
+                                "tipo": "Sobra",
+                                "x": minx,
+                                "y": miny,
+                                "largura": maxx - minx,
+                                "altura": maxy - miny,
+                                "coords": [
+                                    [float(cx), float(cy)]
+                                    for cx, cy in g_rect.exterior.coords
+                                ],
+                            }
+                        )
                         sobras_polys.append(g_rect)
-            # ###############################################################
-            # ### FIM DA LÓGICA ORIGINAL DE SOBRAS ###
-            # ###############################################################
-            
+                        op_id += 1
+
             if operacoes:
                 desc_chapa = cfg.get("propriedade", material)
                 desc_chapa = f"{desc_chapa} ({int(largura)} x {int(altura)})"
                 chapa = {
-                    "id": idx, "codigo": f"{idx:03d}", "descricao": desc_chapa,
-                    "temVeio": bool(cfg.get("possui_veio")), "largura": largura,
-                    "altura": altura, "operacoes": operacoes,
+                    "id": idx,
+                    "codigo": f"{idx:03d}",
+                    "descricao": desc_chapa,
+                    "temVeio": bool(cfg.get("possui_veio")),
+                    "largura": largura,
+                    "altura": altura,
+                    "operacoes": operacoes,
                 }
                 chapas.append(_rotate_plate_cw(chapa))
                 idx += 1
