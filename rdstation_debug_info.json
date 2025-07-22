@@ -14,6 +14,15 @@
     }
   ],
   "token_status": "valid",
+  "access_token_claims": {
+    "iss": "https://api.rd.services",
+    "sub": "Geozt4v7ueFbVfLiX4HtrowSVOZp8VTd4OIcwXD1BlM@clients",
+    "aud": "https://app.rdstation.com.br/api/v2/",
+    "app_name": "Radha ERP",
+    "exp": 1753222242,
+    "iat": 1753135842,
+    "scope": ""
+  },
   "refresh_attempt": {
     "endpoint": "https://api.rd.services/auth/token",
     "body": {
@@ -24,9 +33,50 @@
     "headers": {
       "Content-Type": "application/json"
     },
-    "timestamp": "2025-07-21 23:25:06",
+    "timestamp": "2025-07-22 01:00:35",
     "status": 200,
-    "response": "{\"access_token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5yZC5zZXJ2aWNlcyIsInN1YiI6Ikdlb3p0NHY3dWVGYlZmTGlYNEh0cm93U1ZPWnA4VlRkNE9JY3dYRDFCbE1AY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vYXBwLnJkc3RhdGlvbi5jb20uYnIvYXBpL3YyLyIsImFwcF9uYW1lIjoiUmFkaGEgRVJQIiwiZXhwIjoxNzUzMjIyMjQyLCJpYXQiOjE3NTMxMzU4NDIsInNjb3BlIjoiIn0.XqNSzcQ__dSn21fwQSWG6flW3Al-72BchsmcB6d9IBFiC8bGmVFfJtFXZl_YO15IXL7ovd4XrKy_8VEtJyDulLgBsquLeAXSVoUHNDM2ZsxV20yJ7X9_Bm37zGpPbCeHM1AuruF5uNYkpi678X7bne9Ad2mNLlgHbA8Kow3Ate_4OYIATdPJ7LBbHUvZvdVJGwZPYqyxcKtmHpU945uI2Zr_lbhgguzNcWmU6ux-fd5weMdXbY8dQrywhtds-X2acvTFY1FTJC0Qe8kNZrIXZiAmuXUjo1hWH7qu_E9Q0DTUfWzM1TLUCAxT5mpi8JjDtoV77_DNFhxbyepD16TVNQ\",\"expires_in\":86400,\"refresh_token\":\"q5Q6ur5umKFLnw3IW90JiTy4ImO0nApuYiDEr-C7Gac\"}"
+    "request_url": "https://api.rd.services/auth/token",
+    "request_headers": {
+      "host": "api.rd.services",
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate, zstd",
+      "connection": "keep-alive",
+      "user-agent": "python-httpx/0.28.1",
+      "content-length": "165",
+      "content-type": "application/json"
+    },
+    "response_headers": {
+      "date": "Tue, 22 Jul 2025 01:00:36 GMT",
+      "content-type": "application/json; charset=utf-8",
+      "transfer-encoding": "chunked",
+      "connection": "keep-alive",
+      "vary": "Accept,Accept-Encoding",
+      "etag": "W/\"1c185097a1fc54a0d16b0277513299b8\"",
+      "cache-control": "max-age=0, private, must-revalidate",
+      "set-cookie": "__rdsid=65e805889d2680f6a5fecde5abf2a4bb; path=/; expires=Wed, 23 Jul 2025 01:00:36 GMT; HttpOnly; secure; SameSite=Lax",
+      "x-request-id": "0b8832b6c9a67f54fcfaf2973fc01773",
+      "x-runtime": "0.185983",
+      "strict-transport-security": "max-age=31536000; includeSubDomains",
+      "x-frame-options": "SAMEORIGIN",
+      "x-content-type-options": "nosniff",
+      "x-xss-protection": "1; mode=block",
+      "x-download-options": "noopen",
+      "x-permitted-cross-domain-policies": "none",
+      "referrer-policy": "unsafe-url",
+      "expect-ct": "enforce, max-age=86400",
+      "content-encoding": "gzip",
+      "x-robots-tag": "noindex, nofollow, noindex, nofollow"
+    },
+    "response": "{\"access_token\":\"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5yZC5zZXJ2aWNlcyIsInN1YiI6Ikdlb3p0NHY3dWVGYlZmTGlYNEh0cm93U1ZPWnA4VlRkNE9JY3dYRDFCbE1AY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vYXBwLnJkc3RhdGlvbi5jb20uYnIvYXBpL3YyLyIsImFwcF9uYW1lIjoiUmFkaGEgRVJQIiwiZXhwIjoxNzUzMjIyMjQyLCJpYXQiOjE3NTMxMzU4NDIsInNjb3BlIjoiIn0.XqNSzcQ__dSn21fwQSWG6flW3Al-72BchsmcB6d9IBFiC8bGmVFfJtFXZl_YO15IXL7ovd4XrKy_8VEtJyDulLgBsquLeAXSVoUHNDM2ZsxV20yJ7X9_Bm37zGpPbCeHM1AuruF5uNYkpi678X7bne9Ad2mNLlgHbA8Kow3Ate_4OYIATdPJ7LBbHUvZvdVJGwZPYqyxcKtmHpU945uI2Zr_lbhgguzNcWmU6ux-fd5weMdXbY8dQrywhtds-X2acvTFY1FTJC0Qe8kNZrIXZiAmuXUjo1hWH7qu_E9Q0DTUfWzM1TLUCAxT5mpi8JjDtoV77_DNFhxbyepD16TVNQ\",\"expires_in\":86400,\"refresh_token\":\"q5Q6ur5umKFLnw3IW90JiTy4ImO0nApuYiDEr-C7Gac\"}",
+    "decoded_token": {
+      "iss": "https://api.rd.services",
+      "sub": "Geozt4v7ueFbVfLiX4HtrowSVOZp8VTd4OIcwXD1BlM@clients",
+      "aud": "https://app.rdstation.com.br/api/v2/",
+      "app_name": "Radha ERP",
+      "exp": 1753222242,
+      "iat": 1753135842,
+      "scope": ""
+    }
   },
   "fetch_attempt": {
     "endpoint": "https://api.rd.services/platform/contacts",
@@ -37,8 +87,24 @@
       "page": 1,
       "page_size": 1
     },
-    "timestamp": "2025-07-21 23:25:06",
+    "timestamp": "2025-07-22 01:00:36",
     "status": 500,
+    "request_url": "https://api.rd.services/platform/contacts?page=1&page_size=1",
+    "request_headers": {
+      "host": "api.rd.services",
+      "accept": "*/*",
+      "accept-encoding": "gzip, deflate, zstd",
+      "connection": "keep-alive",
+      "user-agent": "python-httpx/0.28.1",
+      "authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FwaS5yZC5zZXJ2aWNlcyIsInN1YiI6Ikdlb3p0NHY3dWVGYlZmTGlYNEh0cm93U1ZPWnA4VlRkNE9JY3dYRDFCbE1AY2xpZW50cyIsImF1ZCI6Imh0dHBzOi8vYXBwLnJkc3RhdGlvbi5jb20uYnIvYXBpL3YyLyIsImFwcF9uYW1lIjoiUmFkaGEgRVJQIiwiZXhwIjoxNzUzMjIyMjQyLCJpYXQiOjE3NTMxMzU4NDIsInNjb3BlIjoiIn0.XqNSzcQ__dSn21fwQSWG6flW3Al-72BchsmcB6d9IBFiC8bGmVFfJtFXZl_YO15IXL7ovd4XrKy_8VEtJyDulLgBsquLeAXSVoUHNDM2ZsxV20yJ7X9_Bm37zGpPbCeHM1AuruF5uNYkpi678X7bne9Ad2mNLlgHbA8Kow3Ate_4OYIATdPJ7LBbHUvZvdVJGwZPYqyxcKtmHpU945uI2Zr_lbhgguzNcWmU6ux-fd5weMdXbY8dQrywhtds-X2acvTFY1FTJC0Qe8kNZrIXZiAmuXUjo1hWH7qu_E9Q0DTUfWzM1TLUCAxT5mpi8JjDtoV77_DNFhxbyepD16TVNQ",
+      "cookie": "__rdsid=65e805889d2680f6a5fecde5abf2a4bb"
+    },
+    "response_headers": {
+      "date": "Tue, 22 Jul 2025 01:00:36 GMT",
+      "content-type": "*/*",
+      "transfer-encoding": "chunked",
+      "connection": "close"
+    },
     "response": "<!DOCTYPE html>\n<html>\n\n<head>\n  <meta charset=\"UTF-8\">\n\n  <!-- Google Tag Manager -->\n  <script>(function (w, d, s, l, i) {\n      w[l] = w[l] || []; w[l].push({\n        'gtm.start':\n          new Date().getTime(), event: 'gtm.js'\n      }); var f = d.getElementsByTagName(s)[0],\n        j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =\n          'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);\n    })(window, document, 'script', 'dataLayer', 'GTM-NVX78QP');</script>\n  <!-- End Google Tag Manager -->\n\n  <meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n  <title>RD Station Marketing | 502 Erro interno</title>\n\n  <style>\n    @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans&display=swap');\n  </style>\n\n  <link rel=\"stylesheet\" href=\"//d3ndvx6e67vt0s.cloudfront.net/assets/error_page2/stylesheets/error_pages.css\" />\n</head>\n\n<body>\n  <!-- Google Tag Manager (noscript) -->\n  <noscript><iframe src=\"https://www.googletagmanager.com/ns.html?id=GTM-NVX78QP\" height=\"0\" width=\"0\"\n      style=\"display:none;visibility:hidden\"></iframe></noscript>\n  <!-- End Google Tag Manager (noscript) -->\n  <div class=\"text-center\">\n    <a href=\"/\">\n      <img src=\"//d3ndvx6e67vt0s.cloudfront.net/assets/error_page2/images/rdstation-logo-mkt.svg\" class=\"logo\">\n    </a>\n  </div>\n\n  <div id=\"content-outside\" class=\"container\">\n    <section class=\"section-heading\">\n      <img src=\"//d3ndvx6e67vt0s.cloudfront.net/assets/error_page2/images/img-500.svg\" width=\"600\">\n      <h1>Não repare na bagunça!</h1>\n    </section>\n    <section class=\"section-body\">\n      <p>Problemas técnicos são sempre inesperados, mas estamos correndo para voltar a funcionar perfeitamente. Tente de\n        novo em alguns minutos.</p>\n    </section>\n    <section class=\"section-footer\">\n      <a href=\"https://status.rdstation.com.br/\" class=\"btn btn-links-outline\">Consultar status do sistema</a>\n      <a href=\"/\" class=\"btn btn-links\">Ir para o RD Station Marketing</a>\n    </section>\n    <p class=\"support\">Isso não parece certo? Que tal <a\n        href=\"https://ajuda.rdstation.com/s/faleconosco?utm_source=rdstation&utm_medium=referral&utm_id=paginaerro\">reportar\n        o erro</a>?</p>\n    <p class=\"reserved-rights\">﻿©RD Station | Todos os direitos reservados</p>\n  </div>\n</body>\n\n</html>"
   }
 }
