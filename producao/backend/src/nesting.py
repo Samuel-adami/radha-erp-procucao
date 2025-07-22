@@ -1389,7 +1389,7 @@ def gerar_nesting_preview(
     altura_chapa: float = 1850,
     ferramentas: Optional[List[Dict]] = None,
     config_layers: Optional[List[Dict]] = None,
-    config_maquina: Optional[Dict]] = None,
+    config_maquina: Optional[Dict] = None,
     estoque: Optional[Dict[str, List[Dict]]] = None,
 ) -> List[Dict]:
     """Gera apenas a disposição das chapas sem criar arquivos, usando a estratégia de blocos."""
