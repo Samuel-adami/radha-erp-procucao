@@ -329,14 +329,13 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
 
 # Em nesting.py, substitua a função _ler_dxt
 
+# Em nesting.py, substitua a função _ler_dxt por esta versão mais simples:
+
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
-    """Lê o arquivo DXT e prepara as peças com blocos DXF em memória."""
+    """Lê o arquivo DXT e retorna a lista de peças."""
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
     pecas: List[Dict] = []
     pasta = dxt_path.parent
-    
-    # Cache para armazenar documentos DXF já processados com seus blocos
-    block_docs_cache: Dict[str, ezdxf.document.Drawing] = {}
 
     for part in root.findall(".//Part"):
         fields = {
@@ -351,31 +350,10 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             length = float(fields.get("Length", 0))
             width = float(fields.get("Width", 0))
 
-            block_doc = None
             if filename:
                 medidas = _medidas_dxf(pasta / filename)
                 if medidas:
                     length, width = medidas
-
-                # Se o bloco para este arquivo ainda não foi criado, crie-o
-                if filename not in block_docs_cache:
-                    try:
-                        src_doc = ezdxf.readfile(pasta / filename)
-                        # O documento que armazena o bloco é o próprio documento da peça
-                        block_doc = ezdxf.new()
-                        block_name = Path(filename).stem.replace(" ", "_")
-                        
-                        # Define o bloco dentro do seu próprio documento
-                        new_block = block_doc.blocks.new(name=block_name)
-                        for entity in src_doc.modelspace():
-                            new_block.add_entity(entity.copy())
-                        
-                        block_docs_cache[filename] = block_doc
-                    except Exception as e:
-                        print(f"AVISO: Falha ao processar DXF para bloco: {filename} - {e}")
-                        block_docs_cache[filename] = None # Marca como falha para não tentar de novo
-                
-                block_doc = block_docs_cache.get(filename)
 
             pecas.append({
                 "PartName": fields.get("PartName", "SemNome"),
@@ -386,17 +364,10 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
                 "Filename": filename,
                 "Client": fields.get("Client", ""),
                 "Project": fields.get("Project", ""),
-                # Armazena o documento inteiro que contém o bloco
-                "block_doc": block_doc, 
             })
         except ValueError:
             continue
     return pecas
-
-
-# Em nesting.py, substitua a função _gcode_peca pela versão corrigida abaixo:
-
-# Em nesting.py, SUBSTITUA a função _gcode_peca inteira por esta:
 
 
 def _gcode_peca(
@@ -1383,6 +1354,8 @@ def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
 
 # Em nesting.py, substitua a função inteira por esta versão completa:
 
+# Em nesting.py, substitua a função inteira por esta versão final e completa:
+
 def gerar_nesting_preview(
     pasta_lote: str,
     largura_chapa: float = 2750,
@@ -1402,7 +1375,6 @@ def gerar_nesting_preview(
     if not dxt_path:
         raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
     
-    # _ler_dxt agora retorna as peças com 'block_doc'
     pecas = _ler_dxt(dxt_path)
 
     chapas_cfg: Dict[str, Dict] = {}
@@ -1449,8 +1421,7 @@ def gerar_nesting_preview(
             for s in estoque_material:
                 c = float(s.get("comprimento", 0))
                 l = float(s.get("largura", 0))
-                fits = (c >= min_l and l >= min_w) or (rot and c >= min_w and l >= min_l)
-                if fits:
+                if (c >= min_l and l >= min_w) or (rot and c >= min_w and l >= min_l):
                     packer.add_bin(int(c), int(l))
         for _ in range(len(lista)):
             packer.add_bin(int(largura), int(altura))
@@ -1466,34 +1437,48 @@ def gerar_nesting_preview(
             x_min, y_min = 1e9, 1e9
             x_max, y_max = 0.0, 0.0
 
-            # --- LÓGICA DE TRANSFORMAÇÃO COM BLOCKS ---
+            # ###############################################################
+            # ### INÍCIO DA NOVA LÓGICA DE TRANSFORMAÇÃO COM BLOCKS ###
+            # ###############################################################
             sheet_doc = ezdxf.new()
             placed_rects = list(abin)
-
-            # 1. Adiciona definições de bloco e cria referências (INSERTs)
+            
+            # 1. Definir todos os blocos necessários DENTRO do documento da chapa
+            defined_blocks = set()
             for rect in placed_rects:
                 p = rect.rid
-                block_doc = p.get("block_doc")
-                if not block_doc or not block_doc.blocks: continue
+                filename = p.get("Filename")
+                if not filename or filename in defined_blocks: continue
+                try:
+                    block_name = Path(filename).stem.replace(" ", "_").upper()
+                    if block_name not in sheet_doc.blocks:
+                        new_block = sheet_doc.blocks.new(name=block_name)
+                        src_doc = ezdxf.readfile(pasta / filename)
+                        for entity in src_doc.modelspace():
+                            new_block.add_entity(entity.copy())
+                    defined_blocks.add(filename)
+                except Exception as e:
+                    print(f"AVISO: Falha ao criar bloco para {filename}: {e}")
 
-                block_name = block_doc.blocks[0].name
+            # 2. Criar as referências de bloco (INSERTs) com posição e rotação
+            for rect in placed_rects:
+                p = rect.rid
+                filename = p.get("Filename")
+                if not filename: continue
                 
-                importer = ezdxf.importer.Importer(block_doc, sheet_doc)
-                importer.import_block(block_name)
-                importer.finalize()
-
-                p_x = float(rect.x) + ref_esq
-                p_y = float(rect.y) + ref_inf
-                w = float(rect.width) - espaco
-                h = float(rect.height) - espaco
+                p_x = float(rect.x) + ref_esq; p_y = float(rect.y) + ref_inf
+                w = float(rect.width) - espaco; h = float(rect.height) - espaco
                 orig_w = float(p.get("Width", 0))
                 rotated = abs(w - orig_w) > 1e-6 and p.get("Length") != p.get("Width")
+                
+                block_name = Path(filename).stem.replace(" ", "_").upper()
+                if block_name in sheet_doc.blocks:
+                    insert = sheet_doc.modelspace().add_blockref(block_name, (p_x, p_y))
+                    if rotated:
+                        insert.dxf.rotation = -90
 
-                insert = sheet_doc.modelspace().add_blockref(block_name, (p_x, p_y))
-                if rotated:
-                    insert.dxf.rotation = -90
-
-            # 2. Adiciona as operações de contorno (tipo "Peca") e calcula polígonos
+            # 3. Construir a lista de operações para o frontend
+            # Primeiro, adiciona os contornos das peças e calcula polígonos para as sobras
             for rect in placed_rects:
                 p = rect.rid
                 p_x = float(rect.x) + ref_esq
@@ -1507,47 +1492,50 @@ def gerar_nesting_preview(
                     "cliente": p.get("Client", ""), "ambiente": p.get("Project", ""),
                 })
                 
-                # Recalcula as variáveis necessárias para a lógica de sobras
                 x_min = min(x_min, rect.x)
                 y_min = min(y_min, rect.y)
                 x_max = max(x_max, rect.x + rect.width)
                 y_max = max(y_max, rect.y + rect.height)
                 pecas_polys.append(box(p_x, p_y, p_x + w, p_y + h))
 
-            # 3. Explode as referências para obter operações internas transformadas
+            # Agora, "explode" as referências para obter as operações internas JÁ TRANSFORMADAS
             for block_ref in sheet_doc.modelspace().query('INSERT'):
                 for ent in block_ref.explode(destroy=False):
                     layer = str(ent.dxf.layer).lower()
                     if layer in ("borda_externa", "contorno"): continue
-                    
                     try:
-                        points = []
+                        v_list = []
                         if ent.dxftype() == 'CIRCLE':
                            c, r = ent.dxf.center, ent.dxf.radius
-                           points = [(c.x-r, c.y-r), (c.x+r, c.y+r)]
-                        elif hasattr(ent, 'vertices'):
-                           points = list(ent.vertices())
-                        elif hasattr(ent, 'get_points'):
-                           points = list(ent.get_points(format='xy'))
+                           v_list = [(c.x-r, c.y-r), (c.x+r, c.y+r)]
+                        elif hasattr(ent, 'vertices'): # Para POLYLINE
+                           v_list = list(ent.vertices())
+                        elif hasattr(ent, 'get_points'): # Para LWPOLYLINE
+                           v_list = list(ent.get_points(format='xy'))
                         elif ent.dxftype() == 'LINE':
-                           points = [ent.dxf.start, ent.dxf.end]
-                        else:
-                            continue
+                           v_list = [ent.dxf.start, ent.dxf.end]
+                        
+                        if not v_list: continue
 
-                        xs = [pt[0] for pt in points]; ys = [pt[1] for pt in points]
+                        xs = [v[0] for v in v_list]; ys = [v[1] for v in v_list]
                         min_x, max_x = min(xs), max(xs)
                         min_y, max_y = min(ys), max(ys)
                         
                         operacoes.append({
                             "id": next(op_id_counter), "nome": layer.upper(), "tipo": "Operacao",
                             "layer": layer, "x": min_x, "y": min_y,
-                            "largura": max_x - min_x, "altura": max_y - min_y,
-                            "rotacao": 0
+                            "largura": max_x - min_x, "altura": max_y - min_y, "rotacao": 0
                         })
                     except Exception:
                         continue
-            
-            # --- LÓGICA ORIGINAL DE SOBRAS (MANTIDA) ---
+            # ###############################################################
+            # ### FIM DA NOVA LÓGICA DE TRANSFORMAÇÃO ###
+            # ###############################################################
+
+
+            # ###############################################################
+            # ### INÍCIO DA LÓGICA ORIGINAL DE SOBRAS (INTACTA) ###
+            # ###############################################################
             pecas_union = unary_union(pecas_polys) if pecas_polys else None
             sobras_polys: List[Polygon] = []
 
@@ -1596,6 +1584,9 @@ def gerar_nesting_preview(
                             "coords": [[float(cx), float(cy)] for cx, cy in g_rect.exterior.coords],
                         })
                         sobras_polys.append(g_rect)
+            # ###############################################################
+            # ### FIM DA LÓGICA ORIGINAL DE SOBRAS ###
+            # ###############################################################
             
             if operacoes:
                 desc_chapa = cfg.get("propriedade", material)
