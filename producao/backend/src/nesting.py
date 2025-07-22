@@ -327,14 +327,16 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
     return max(xs) - min(xs), max(ys) - min(ys)
 
 
-def _ler_dxt(dxt_path: Path) -> List[Dict]:
-    """Lê o arquivo DXT e prepara as peças com blocos DXF."""
+# Em nesting.py, substitua a função _ler_dxt
 
+def _ler_dxt(dxt_path: Path) -> List[Dict]:
+    """Lê o arquivo DXT e prepara as peças com blocos DXF em memória."""
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
     pecas: List[Dict] = []
     pasta = dxt_path.parent
-
-    blocks: Dict[str, Tuple[ezdxf.EzDXF, ezdxf.layouts.BlockLayout]] = {}
+    
+    # Cache para armazenar documentos DXF já processados com seus blocos
+    block_docs_cache: Dict[str, ezdxf.document.Drawing] = {}
 
     for part in root.findall(".//Part"):
         fields = {
@@ -349,46 +351,46 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             length = float(fields.get("Length", 0))
             width = float(fields.get("Width", 0))
 
-            block = None
             block_doc = None
-
             if filename:
                 medidas = _medidas_dxf(pasta / filename)
                 if medidas:
                     length, width = medidas
 
-                if filename not in blocks:
+                # Se o bloco para este arquivo ainda não foi criado, crie-o
+                if filename not in block_docs_cache:
                     try:
                         src_doc = ezdxf.readfile(pasta / filename)
-                        tmp_doc = ezdxf.new()
-                        name = f"peca_{len(blocks)+1}"
-                        blk = tmp_doc.blocks.new(name)
-                        for ent in src_doc.modelspace():
-                            blk.add_entity(ent.copy())
-                        blocks[filename] = (tmp_doc, blk)
-                    except Exception:
-                        blocks[filename] = (None, None)
+                        # O documento que armazena o bloco é o próprio documento da peça
+                        block_doc = ezdxf.new()
+                        block_name = Path(filename).stem.replace(" ", "_")
+                        
+                        # Define o bloco dentro do seu próprio documento
+                        new_block = block_doc.blocks.new(name=block_name)
+                        for entity in src_doc.modelspace():
+                            new_block.add_entity(entity.copy())
+                        
+                        block_docs_cache[filename] = block_doc
+                    except Exception as e:
+                        print(f"AVISO: Falha ao processar DXF para bloco: {filename} - {e}")
+                        block_docs_cache[filename] = None # Marca como falha para não tentar de novo
+                
+                block_doc = block_docs_cache.get(filename)
 
-                block_doc, block = blocks.get(filename, (None, None))
-
-            pecas.append(
-                {
-                    "PartName": fields.get("PartName", "SemNome"),
-                    "Length": length,
-                    "Width": width,
-                    "Thickness": float(fields.get("Thickness", 0)),
-                    "Program1": fields.get("Program1", ""),
-                    "Material": fields.get("Material", "Desconhecido"),
-                    "Filename": filename,
-                    "Client": fields.get("Client", ""),
-                    "Project": fields.get("Project", ""),
-                    "block": block,
-                    "block_doc": block_doc,
-                }
-            )
+            pecas.append({
+                "PartName": fields.get("PartName", "SemNome"),
+                "Length": length, "Width": width,
+                "Thickness": float(fields.get("Thickness", 0)),
+                "Program1": fields.get("Program1", ""),
+                "Material": fields.get("Material", "Desconhecido"),
+                "Filename": filename,
+                "Client": fields.get("Client", ""),
+                "Project": fields.get("Project", ""),
+                # Armazena o documento inteiro que contém o bloco
+                "block_doc": block_doc, 
+            })
         except ValueError:
             continue
-
     return pecas
 
 
@@ -1379,16 +1381,18 @@ def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
     return estoque
 
 
+# Em nesting.py, substitua a função inteira por esta versão completa:
+
 def gerar_nesting_preview(
     pasta_lote: str,
     largura_chapa: float = 2750,
     altura_chapa: float = 1850,
     ferramentas: Optional[List[Dict]] = None,
     config_layers: Optional[List[Dict]] = None,
-    config_maquina: Optional[Dict] = None,
+    config_maquina: Optional[Dict]] = None,
     estoque: Optional[Dict[str, List[Dict]]] = None,
 ) -> List[Dict]:
-    """Gera apenas a disposição das chapas sem criar arquivos."""
+    """Gera apenas a disposição das chapas sem criar arquivos, usando a estratégia de blocos."""
 
     pasta = Path(pasta_lote)
     if not pasta.is_dir():
@@ -1397,17 +1401,14 @@ def gerar_nesting_preview(
     dxt_path = _encontrar_dxt(pasta)
     if not dxt_path:
         raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
+    
+    # _ler_dxt agora retorna as peças com 'block_doc'
     pecas = _ler_dxt(dxt_path)
 
-    # Configurações de chapas cadastradas
     chapas_cfg: Dict[str, Dict] = {}
     try:
         with get_db_connection() as conn:
-            rows = conn.execute(
-                text(
-                    "SELECT propriedade, possui_veio, comprimento, largura FROM chapas"
-                )
-            ).fetchall()
+            rows = conn.execute(text("SELECT propriedade, possui_veio, comprimento, largura FROM chapas")).fetchall()
             for r in rows:
                 chapas_cfg[r["propriedade"]] = dict(r._mapping)
     except Exception:
@@ -1440,6 +1441,7 @@ def gerar_nesting_preview(
         packer = newPacker(rotation=rot)
         for p in lista:
             packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
+        
         estoque_material = estoque.get(material) if estoque else []
         if estoque_material:
             min_l = min(float(p["Length"]) for p in lista)
@@ -1447,9 +1449,7 @@ def gerar_nesting_preview(
             for s in estoque_material:
                 c = float(s.get("comprimento", 0))
                 l = float(s.get("largura", 0))
-                fits = (c >= min_l and l >= min_w) or (
-                    rot and c >= min_w and l >= min_l
-                )
+                fits = (c >= min_l and l >= min_w) or (rot and c >= min_w and l >= min_l)
                 if fits:
                     packer.add_bin(int(c), int(l))
         for _ in range(len(lista)):
@@ -1459,164 +1459,151 @@ def gerar_nesting_preview(
         for abin in packer:
             if not abin:
                 continue
+            
             operacoes: List[Dict] = []
-            sobras_polys: List[Polygon] = []
-            x_min = 1e9
-            y_min = 1e9
-            x_max = 0.0
-            y_max = 0.0
-            op_id = 1
+            op_id_counter = itertools.count(1)
             pecas_polys: List[Polygon] = []
-            for rect in abin:
-                p = rect.rid.copy()
-                orig_l = float(p.get("Length", 0))
-                orig_w = float(p.get("Width", 0))
+            x_min, y_min = 1e9, 1e9
+            x_max, y_max = 0.0, 0.0
+
+            # --- LÓGICA DE TRANSFORMAÇÃO COM BLOCKS ---
+            sheet_doc = ezdxf.new()
+            placed_rects = list(abin)
+
+            # 1. Adiciona definições de bloco e cria referências (INSERTs)
+            for rect in placed_rects:
+                p = rect.rid
+                block_doc = p.get("block_doc")
+                if not block_doc or not block_doc.blocks: continue
+
+                block_name = block_doc.blocks[0].name
+                
+                importer = ezdxf.importer.Importer(block_doc, sheet_doc)
+                importer.import_block(block_name)
+                importer.finalize()
+
                 p_x = float(rect.x) + ref_esq
                 p_y = float(rect.y) + ref_inf
                 w = float(rect.width) - espaco
                 h = float(rect.height) - espaco
-                rotated_piece = (
-                    abs(w - orig_w) < 1e-6
-                    and abs(h - orig_l) < 1e-6
-                    and orig_l != orig_w
-                )
-                p["originalLength"] = orig_l
-                p["originalWidth"] = orig_w
-                p["rotated"] = rotated_piece
-                p["rotationAngle"] = 90 if rotated_piece else 0
-                operacoes.append(
-                    {
-                        "id": op_id,
-                        "nome": p.get("PartName", f"Peca {op_id}"),
-                        "tipo": "Peca",
-                        "x": p_x,
-                        "y": p_y,
-                        "largura": w,
-                        "altura": h,
-                        "cliente": p.get("Client", ""),
-                        "ambiente": p.get("Project", ""),
-                    }
-                )
-                op_id += 1
-                if p.get("block") and config_layers:
-                    dxf_ops = _ops_from_block(
-                        p["block"],
-                        config_layers,
-                        p_x,
-                        p_y,
-                        rotated_piece,
-                    )
-                    for d in dxf_ops:
-                        d["id"] = op_id
-                        d["cliente"] = p.get("Client", "")
-                        d["ambiente"] = p.get("Project", "")
-                        operacoes.append(d)
-                        op_id += 1
+                orig_w = float(p.get("Width", 0))
+                rotated = abs(w - orig_w) > 1e-6 and p.get("Length") != p.get("Width")
+
+                insert = sheet_doc.modelspace().add_blockref(block_name, (p_x, p_y))
+                if rotated:
+                    insert.dxf.rotation = -90
+
+            # 2. Adiciona as operações de contorno (tipo "Peca") e calcula polígonos
+            for rect in placed_rects:
+                p = rect.rid
+                p_x = float(rect.x) + ref_esq
+                p_y = float(rect.y) + ref_inf
+                w = float(rect.width) - espaco
+                h = float(rect.height) - espaco
+                
+                operacoes.append({
+                    "id": next(op_id_counter), "nome": p.get("PartName", "Peca"),
+                    "tipo": "Peca", "x": p_x, "y": p_y, "largura": w, "altura": h,
+                    "cliente": p.get("Client", ""), "ambiente": p.get("Project", ""),
+                })
+                
+                # Recalcula as variáveis necessárias para a lógica de sobras
                 x_min = min(x_min, rect.x)
                 y_min = min(y_min, rect.y)
                 x_max = max(x_max, rect.x + rect.width)
                 y_max = max(y_max, rect.y + rect.height)
                 pecas_polys.append(box(p_x, p_y, p_x + w, p_y + h))
 
+            # 3. Explode as referências para obter operações internas transformadas
+            for block_ref in sheet_doc.modelspace().query('INSERT'):
+                for ent in block_ref.explode(destroy=False):
+                    layer = str(ent.dxf.layer).lower()
+                    if layer in ("borda_externa", "contorno"): continue
+                    
+                    try:
+                        points = []
+                        if ent.dxftype() == 'CIRCLE':
+                           c, r = ent.dxf.center, ent.dxf.radius
+                           points = [(c.x-r, c.y-r), (c.x+r, c.y+r)]
+                        elif hasattr(ent, 'vertices'):
+                           points = list(ent.vertices())
+                        elif hasattr(ent, 'get_points'):
+                           points = list(ent.get_points(format='xy'))
+                        elif ent.dxftype() == 'LINE':
+                           points = [ent.dxf.start, ent.dxf.end]
+                        else:
+                            continue
+
+                        xs = [pt[0] for pt in points]; ys = [pt[1] for pt in points]
+                        min_x, max_x = min(xs), max(xs)
+                        min_y, max_y = min(ys), max(ys)
+                        
+                        operacoes.append({
+                            "id": next(op_id_counter), "nome": layer.upper(), "tipo": "Operacao",
+                            "layer": layer, "x": min_x, "y": min_y,
+                            "largura": max_x - min_x, "altura": max_y - min_y,
+                            "rotacao": 0
+                        })
+                    except Exception:
+                        continue
+            
+            # --- LÓGICA ORIGINAL DE SOBRAS (MANTIDA) ---
             pecas_union = unary_union(pecas_polys) if pecas_polys else None
+            sobras_polys: List[Polygon] = []
 
             def add_sobra(px: float, py: float, w: float, h: float):
-                nonlocal op_id, sobras_polys
-                if w <= 0 or h <= 0:
-                    return
+                nonlocal op_id_counter, sobras_polys
+                if w <= 0 or h <= 0: return
                 nova = box(px, py, px + w, py + h)
-                if pecas_union:
-                    nova = nova.difference(pecas_union)
+                if pecas_union: nova = nova.difference(pecas_union)
                 for p_exist in sobras_polys:
                     nova = nova.difference(p_exist)
-                    if nova.is_empty:
-                        return
+                    if nova.is_empty: return
                 geoms = [nova] if isinstance(nova, Polygon) else list(nova.geoms)
                 for g in geoms:
-                    if pecas_union:
-                        g = g.difference(pecas_union)
-                    if g.is_empty:
-                        continue
+                    if pecas_union: g = g.difference(pecas_union)
+                    if g.is_empty: continue
                     for g_rect in _retangulos_sobra(g):
                         minx, miny, maxx, maxy = g_rect.bounds
-                        operacoes.append(
-                            {
-                                "id": op_id,
-                                "nome": "Sobra",
-                                "tipo": "Sobra",
-                                "x": minx,
-                                "y": miny,
-                                "largura": maxx - minx,
-                                "altura": maxy - miny,
-                                "coords": [
-                                    [float(cx), float(cy)]
-                                    for cx, cy in g_rect.exterior.coords
-                                ],
-                            }
-                        )
+                        operacoes.append({
+                            "id": next(op_id_counter), "nome": "Sobra", "tipo": "Sobra",
+                            "x": minx, "y": miny, "largura": maxx - minx, "altura": maxy - miny,
+                            "coords": [[float(cx), float(cy)] for cx, cy in g_rect.exterior.coords],
+                        })
                         sobras_polys.append(g_rect)
-                        op_id += 1
 
-            # Ajusta as sobras considerando o deslocamento das margens de refilo
-            cut_l = max(0.0, x_min)
-            cut_b = max(0.0, y_min)
-            cut_r = min(area_larg, x_max)
-            cut_t = min(area_alt, y_max)
-
+            cut_l = max(0.0, x_min); cut_b = max(0.0, y_min)
+            cut_r = min(area_larg, x_max); cut_t = min(area_alt, y_max)
             add_sobra(ref_esq, ref_inf, cut_l, area_alt)
             add_sobra(ref_esq + cut_r, ref_inf, area_larg - cut_r, area_alt)
             add_sobra(ref_esq, ref_inf, area_larg, cut_b)
             add_sobra(ref_esq, ref_inf + cut_t, area_larg, area_alt - cut_t)
 
-            # Sobras internas
-            internas = _calcular_sobras_polys(
-                pecas_polys, ref_esq, ref_inf, area_larg, area_alt, espaco
-            )
-
-            if sobras_polys:
-                internas = [g.difference(unary_union(sobras_polys)) for g in internas]
-            if pecas_union:
-                internas = [g.difference(pecas_union) for g in internas]
+            internas = _calcular_sobras_polys(pecas_polys, ref_esq, ref_inf, area_larg, area_alt, espaco)
+            if sobras_polys: internas = [g.difference(unary_union(sobras_polys)) for g in internas]
+            if pecas_union: internas = [g.difference(pecas_union) for g in internas]
             for g in internas:
-                if g.is_empty:
-                    continue
+                if g.is_empty: continue
                 geoms = [g] if isinstance(g, Polygon) else list(g.geoms)
                 for geom in geoms:
-                    if pecas_union:
-                        geom = geom.difference(pecas_union)
-                    if geom.is_empty:
-                        continue
+                    if pecas_union: geom = geom.difference(pecas_union)
+                    if geom.is_empty: continue
                     for g_rect in _retangulos_sobra(geom):
                         minx, miny, maxx, maxy = g_rect.bounds
-                        operacoes.append(
-                            {
-                                "id": op_id,
-                                "nome": "Sobra",
-                                "tipo": "Sobra",
-                                "x": minx,
-                                "y": miny,
-                                "largura": maxx - minx,
-                                "altura": maxy - miny,
-                                "coords": [
-                                    [float(cx), float(cy)]
-                                    for cx, cy in g_rect.exterior.coords
-                                ],
-                            }
-                        )
+                        operacoes.append({
+                            "id": next(op_id_counter), "nome": "Sobra", "tipo": "Sobra",
+                            "x": minx, "y": miny, "largura": maxx - minx, "altura": maxy - miny,
+                            "coords": [[float(cx), float(cy)] for cx, cy in g_rect.exterior.coords],
+                        })
                         sobras_polys.append(g_rect)
-                        op_id += 1
-
+            
             if operacoes:
                 desc_chapa = cfg.get("propriedade", material)
                 desc_chapa = f"{desc_chapa} ({int(largura)} x {int(altura)})"
                 chapa = {
-                    "id": idx,
-                    "codigo": f"{idx:03d}",
-                    "descricao": desc_chapa,
-                    "temVeio": bool(cfg.get("possui_veio")),
-                    "largura": largura,
-                    "altura": altura,
-                    "operacoes": operacoes,
+                    "id": idx, "codigo": f"{idx:03d}", "descricao": desc_chapa,
+                    "temVeio": bool(cfg.get("possui_veio")), "largura": largura,
+                    "altura": altura, "operacoes": operacoes,
                 }
                 chapas.append(_rotate_plate_cw(chapa))
                 idx += 1
