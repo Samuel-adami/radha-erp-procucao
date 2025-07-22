@@ -15,6 +15,20 @@ connect_args = {"options": f"-c search_path={schema}"} if schema else {}
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
 
+def listar_atendimentos():
+    """Retorna lista de atendimentos disponíveis."""
+    with engine.connect() as conn:
+        rows = (
+            conn.execute(
+                text("SELECT id, cliente, codigo FROM atendimentos ORDER BY id DESC")
+            )
+            .mappings()
+            .all()
+        )
+    return list(rows)
+
+
+
 def debug_projeto(atendimento_id: int) -> None:
     print(f"\n=== Debug Projeto 3D para Atendimento {atendimento_id} ===")
     with engine.connect() as conn:
@@ -103,8 +117,22 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Debug Projeto 3D")
-    parser.add_argument("atendimento_id", type=int, help="ID do atendimento")
+
+    parser.add_argument(
+        "atendimento_id",
+        type=int,
+        nargs="?",
+        help="ID do atendimento (opcional; se omitido processa todos)",
+    )
     args = parser.parse_args()
 
-    debug_projeto(args.atendimento_id)
+    if args.atendimento_id is not None:
+        debug_projeto(args.atendimento_id)
+    else:
+        atendimentos = listar_atendimentos()
+        if not atendimentos:
+            print("Nenhum atendimento encontrado.")
+        for a in atendimentos:
+            debug_projeto(a["id"])
+
 
