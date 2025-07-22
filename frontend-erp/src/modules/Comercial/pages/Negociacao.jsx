@@ -6,6 +6,7 @@ import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
 const currency = v => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const normalize = str => (str || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').trim().toLowerCase();
 
 function Negociacao() {
   const { id, tarefaId } = useParams();
@@ -46,10 +47,11 @@ function Negociacao() {
       try { dadosProj = proj && proj.dados ? JSON.parse(proj.dados) : {}; } catch (e) { /* ignore */ }
       try { dadosNeg = orcAtual && orcAtual.dados ? JSON.parse(orcAtual.dados) : {}; } catch (e) { /* ignore */ }
       const projs = (at.atendimento.projetos || '').split(',').map(p => p.trim()).filter(Boolean);
-      const listaAmb = projs.map(a => ({
-        nome: a,
-        valor: dadosProj.projetos?.[a]?.total || dadosProj.projetos?.[a]?.valor || 0
-      }));
+      const getValorAmb = nome => {
+        const chave = Object.keys(dadosProj.projetos || {}).find(k => normalize(k) === normalize(nome));
+        return dadosProj.projetos?.[chave || nome]?.total || dadosProj.projetos?.[chave || nome]?.valor || 0;
+      };
+      const listaAmb = projs.map(a => ({ nome: a, valor: getValorAmb(a) }));
       setAmbientes(listaAmb);
       setSelecionados(listaAmb.reduce((acc, a) => ({ ...acc, [a.nome]: true }), {}));
       if (dadosNeg.pontuacao) setPontuacao(String(dadosNeg.pontuacao));

@@ -24,9 +24,8 @@ export default function ListagemProjeto() {
       const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
       if (!orc) return;
       let dados = {};
-
       try {
-        dados = orc.dados ? JSON.parse(orc.dados) : {};
+        dados = typeof orc.dados === 'string' ? JSON.parse(orc.dados) : orc.dados || {};
       } catch {
         // ignore parse errors
       }

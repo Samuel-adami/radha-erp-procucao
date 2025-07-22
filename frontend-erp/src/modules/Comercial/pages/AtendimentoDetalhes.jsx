@@ -181,7 +181,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             [amb]: { codigo, ...dadosAmb },
           },
         };
-        setDados(novos);
+        setDados(() => novos);
         await salvarProjeto(novos);
         alert('Importação realizada com sucesso');
       } catch (err) {
@@ -210,7 +210,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
             [amb]: { arquivo: file.name, ...dadosAmb },
           },
         };
-        setDados(novos);
+        setDados(() => novos);
         await salvarProjeto(novos);
         alert('Importação realizada com sucesso');
       } catch (err) {
