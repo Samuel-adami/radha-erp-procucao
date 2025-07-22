@@ -25,7 +25,11 @@ class TokenData(BaseModel):
 async def rd_login():
     if not CLIENT_ID or not REDIRECT_URI:
         raise HTTPException(status_code=500, detail="Integração RD Station não configurada")
-    url = f"{AUTH_URL}?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
+    scope = "contacts"
+    url = (
+        f"{AUTH_URL}?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}"
+        f"&response_type=code&scope={scope}"
+    )
     return RedirectResponse(url)
 
 
