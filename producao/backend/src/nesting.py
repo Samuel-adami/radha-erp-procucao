@@ -228,6 +228,8 @@ def _rotate_plate_cw(chapa: Dict) -> Dict:
             op["coords"] = [[cy, cx] for cx, cy in op["coords"]]
         if isinstance(op.get("polygon"), (Polygon, MultiPolygon)):
             op["polygon"] = _rotate_poly_cw(op["polygon"], largura)
+        if "rotacao" in op:
+            op["rotacao"] = (op.get("rotacao", 0) + 90) % 360
     chapa["largura"], chapa["altura"] = altura, largura
     return chapa
 
@@ -241,6 +243,8 @@ def _rotate_placa_cw(placa: List[Dict], largura: float) -> List[Dict]:
         p["x"], p["y"], p["Length"], p["Width"] = nx, ny, nl, nw
         if isinstance(p.get("polygon"), (Polygon, MultiPolygon)):
             p["polygon"] = _rotate_poly_cw(p["polygon"], largura)
+        if "rotacao" in p:
+            p["rotacao"] = (p.get("rotacao", 0) + 90) % 360
     return placa
 
 
@@ -444,7 +448,8 @@ def _gcode_peca(
         return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
 
     ops = []
-    if dxf_path and config_layers:
+    default_tool = ferramentas[0] if ferramentas else None
+    if dxf_path:
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
@@ -473,21 +478,25 @@ def _gcode_peca(
 
             for ent in msp:
                 layer = ent.dxf.layer
-                cfg = next(
-                    (
-                        c
-                        for c in config_layers
-                        if c.get("nome", "").lower() == layer.lower()
-                        and _is_operacao(c)
-                    ),
-                    None,
-                )
-                if not cfg:
-                    continue
-                ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
+                cfg = None
+                if config_layers:
+                    cfg = next(
+                        (
+                            c
+                            for c in config_layers
+                            if c.get("nome", "").lower() == layer.lower()
+                            and _is_operacao(c)
+                        ),
+                        None,
+                    )
+                if cfg:
+                    ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", "")) or default_tool
+                    prof = float(cfg.get("profundidade", 1))
+                else:
+                    ferramenta_cfg = default_tool
+                    prof = 1.0
                 if not ferramenta_cfg:
                     continue
-                prof = float(cfg.get("profundidade", 1))
                 if ent.dxftype() == "CIRCLE":
                     cx0 = float(ent.dxf.center.x) + ox
                     cy0 = float(ent.dxf.center.y) + oy
@@ -1223,6 +1232,7 @@ def _ops_from_dxf(
     rotated: bool = False,
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
+    include_unknown: bool = True,
 ) -> List[Dict]:
     """Retorna operações encontradas no DXF em ``caminho``.
 
@@ -1230,8 +1240,7 @@ def _ops_from_dxf(
     ``ox``/``oy`` é aplicado como offset para posicionar a operação dentro da
     chapa.
     """
-    if not config_layers:
-        return []
+    config_layers = config_layers or []
     try:
         doc = ezdxf.readfile(caminho)
     except Exception:
@@ -1272,7 +1281,7 @@ def _ops_from_dxf(
             ),
             None,
         )
-        if not cfg:
+        if not cfg and not include_unknown:
             continue
         if ent.dxftype() == "CIRCLE":
             r = float(ent.dxf.radius)
@@ -1289,7 +1298,7 @@ def _ops_from_dxf(
                     "y": cy - r,
                     "largura": 2 * r,
                     "altura": 2 * r,
-                    "rotacao": 0,
+                    "rotacao": 90 if rotated else 0,
                 }
             )
             next_id += 1
@@ -1323,7 +1332,7 @@ def _ops_from_dxf(
                         "y": y,
                         "largura": w,
                         "altura": h,
-                        "rotacao": 0,
+                        "rotacao": 90 if rotated else 0,
                     }
                 )
                 next_id += 1
@@ -1505,6 +1514,7 @@ def gerar_nesting_preview(
                         "altura": h,
                         "cliente": p.get("Client", ""),
                         "ambiente": p.get("Project", ""),
+                        "rotacao": 90 if rotated_piece else 0,
                     }
                 )
                 op_id += 1
