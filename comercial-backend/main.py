@@ -707,7 +707,47 @@ async def upload_template(tipo: str, titulo: str, file: UploadFile = File(...)):
         )
         conn.commit()
 
-    return {"id": new_id, "arquivo_key": key}
+
+    return {"id": new_id, "arquivo_key": key, "arquivo_url": get_public_url(key)}
+
+
+@app.post("/templates/{template_id}/upload")
+async def upload_template_file(template_id: int, file: UploadFile = File(...)):
+    """Anexar ou substituir o arquivo de um template existente."""
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext not in {".docx", ".pdf"}:
+        raise HTTPException(status_code=400, detail="Apenas .docx ou .pdf")
+
+    with get_db_connection() as conn:
+        row = (
+            conn.exec_driver_sql(
+                "SELECT tipo, titulo FROM templates WHERE id=%s", (template_id,),
+            )
+            .mappings()
+            .fetchone()
+        )
+    if not row:
+        return JSONResponse({"detail": "Template não encontrado"}, status_code=404)
+
+    key = f"templates/{row['tipo']}/{row['titulo']}_{int(datetime.utcnow().timestamp())}{ext}"
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=ext)
+    try:
+        tmp.write(await file.read())
+        tmp.close()
+        upload_file(tmp.name, key)
+    finally:
+        os.remove(tmp.name)
+
+    with get_db_connection() as conn:
+        conn.exec_driver_sql(
+            "UPDATE templates SET arquivo_key=%s WHERE id=%s",
+            (key, template_id),
+        )
+        conn.commit()
+
+    return {"arquivo_key": key, "arquivo_url": get_public_url(key)}
+
 
 
 @app.get("/templates/{template_id}")
@@ -728,6 +768,8 @@ async def obter_template(template_id: int):
                 item["campos"] = json.loads(item["campos_json"])
             except Exception:
                 item["campos"] = []
+        if item.get("arquivo_key"):
+            item["arquivo_url"] = get_public_url(item["arquivo_key"])
         return {"template": item}
 
 
