@@ -12,7 +12,7 @@ RDSTATION_REDIRECT_URI=<url de callback>
 ```
 
 ## Autenticação
-1. Acesse `/rd/login` estando autenticado no sistema. Você será redirecionado para a página de autorização da RD Station.
+1. Acesse `/rd/login` estando autenticado no sistema. Esse endpoint monta a URL de autorização com `scope=contacts` e você será redirecionado para a página da RD Station.
 2. Após conceder acesso, a RD Station redireciona para `RDSTATION_REDIRECT_URI`, que deve apontar para `/rd/callback`. Essa rota troca o `code` pelos tokens e armazena tudo na tabela `rdstation_tokens`.
 3. O backend renova automaticamente o `access_token` usando o `refresh_token` quando necessário.
    Uma tarefa de fundo (`auto_refresh_tokens`) verifica periodicamente se os
@@ -43,6 +43,7 @@ DELETE FROM rdstation_tokens WHERE account_id='default';
 ```
 
 Depois acesse novamente `/rd/login` para realizar uma nova autorização.
+Certifique-se de que a página de autorização exiba o escopo **contacts**. Caso o token gerado não contenha esse escopo ou a propriedade `aud` continue apontando para a API antiga, repita o processo de remoção e autorização.
 
 ## Diagnóstico da integração
 Para coletar informações detalhadas sobre as variáveis de ambiente e tokens salvos, execute:
