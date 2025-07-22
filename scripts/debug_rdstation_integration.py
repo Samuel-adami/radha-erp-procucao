@@ -8,6 +8,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from sqlalchemy import text
 import httpx
+from jose import jwt
 
 # Adiciona o backend ao path para importar modulos existentes
 BACKEND_DIR = Path(__file__).resolve().parents[1] / "marketing-digital-ia" / "backend"
@@ -48,6 +49,13 @@ async def main() -> None:
         expires_in = token.get("expires_at", 0) - int(time.time())
         info["token_status"] = "expired" if expires_in <= 0 else "valid"
 
+        access_token = token.get("access_token")
+        if access_token:
+            try:
+                info["access_token_claims"] = jwt.get_unverified_claims(access_token)
+            except Exception as exc:  # pragma: no cover - debug only
+                info["access_token_claims_error"] = str(exc)
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             # ------- Refresh Token -------
             refresh_payload = {
@@ -68,9 +76,20 @@ async def main() -> None:
                 refresh_info.update(
                     {
                         "status": resp.status_code,
+                        "request_url": str(resp.request.url),
+                        "request_headers": dict(resp.request.headers),
+                        "response_headers": dict(resp.headers),
                         "response": resp.text,
                     }
                 )
+                if resp.status_code == 200:
+                    try:
+                        data = resp.json()
+                        refresh_info["decoded_token"] = jwt.get_unverified_claims(
+                            data.get("access_token", "")
+                        )
+                    except Exception as exc:  # pragma: no cover - debug only
+                        refresh_info["decoded_token_error"] = str(exc)
             except Exception as exc:
                 refresh_info["error"] = str(exc)
             info["refresh_attempt"] = refresh_info
@@ -90,6 +109,9 @@ async def main() -> None:
                 fetch_info.update(
                     {
                         "status": resp.status_code,
+                        "request_url": str(resp.request.url),
+                        "request_headers": dict(resp.request.headers),
+                        "response_headers": dict(resp.headers),
                         "response": resp.text,
                     }
                 )
