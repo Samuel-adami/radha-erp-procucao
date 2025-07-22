@@ -749,14 +749,20 @@ def _gerar_imagens_chapas(
                 geoms = [poly] if isinstance(poly, Polygon) else list(poly.geoms)
                 for geom in geoms:
                     coords = [
-                        (int(x * escala), altura_img - int(y * escala))
-                        for x, y in geom.exterior.coords
+                        (
+                            int(c[0] * escala),
+                            altura_img - int(c[1] * escala),
+                        )
+                        for c in geom.exterior.coords
                     ]
                     draw.polygon(coords, outline="black")
                     for interior in geom.interiors:
                         coords = [
-                            (int(x * escala), altura_img - int(y * escala))
-                            for x, y in interior.coords
+                            (
+                                int(c[0] * escala),
+                                altura_img - int(c[1] * escala),
+                            )
+                            for c in interior.coords
                         ]
                         draw.polygon(coords, outline="black")
             else:
