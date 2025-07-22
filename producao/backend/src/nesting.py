@@ -94,6 +94,7 @@ def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
         union = r if union is None else union.union(r)
     return final
 
+
 # Fallback templates to ensure `.nc` files always contain the standard headers
 # and footers even quando a configuração da máquina estiver ausente ou vazia.
 DEFAULT_INTRO = (
@@ -215,7 +216,12 @@ def _rotate_plate_cw(chapa: Dict) -> Dict:
     largura = chapa.get("largura", 0)
     altura = chapa.get("altura", 0)
     for op in chapa.get("operacoes", []):
-        x, y, w, h = op.get("x", 0), op.get("y", 0), op.get("largura", 0), op.get("altura", 0)
+        x, y, w, h = (
+            op.get("x", 0),
+            op.get("y", 0),
+            op.get("largura", 0),
+            op.get("altura", 0),
+        )
         nx, ny, nw, nh = _rotate_rect_cw(x, y, w, h, largura)
         op["x"], op["y"], op["largura"], op["altura"] = nx, ny, nw, nh
         if op.get("coords"):
@@ -379,6 +385,7 @@ def _gcode_peca(
 ):
     # (Sem alteração estrutural — função já estava em bom padrão, só pequenas correções de nomenclatura.)
     _ = rotation_angle  # parâmetro reservado para uso futuro
+
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
             texto = texto.replace(f"[{k}]", str(v))
@@ -409,19 +416,14 @@ def _gcode_peca(
     def fmt(val: float) -> str:
         return f"{float(val):.{casas_dec}f}"
 
-
     mov_rapida = config_maquina.get("movRapida", "") if config_maquina else ""
-    mov_corte_ini = (
-        config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
-    )
+    mov_corte_ini = config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
     mov_corte = config_maquina.get("movCorte", "") if config_maquina else ""
 
     def g0(x: float, y: float, z: float) -> str:
         """Return rapid move ensuring all axes are present."""
         if mov_rapida:
-            return substituir(
-                mov_rapida, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z)}
-            )
+            return substituir(mov_rapida, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z)})
         return f"G0 X{fmt(x)} Y{fmt(y)} Z{fmt(z)}"
 
     def g1_ini(x: float, y: float, z: float, f: float) -> str:
@@ -450,15 +452,22 @@ def _gcode_peca(
 
             if rotated:
                 ang = -(rotation_angle or 90)
-                m = Matrix44.axis_rotate(angle=math.radians(ang), axis="z", center=(ox, oy))
-                m = m @ Matrix44.scale(1, -1, 1, center=(ox, oy))
+                m = (
+                    Matrix44.translate(-ox, -oy, 0)
+                    @ Matrix44.z_rotate(math.radians(ang))
+                    @ Matrix44.scale(1, -1, 1)
+                    @ Matrix44.translate(ox, oy, 0)
+                )
 
                 def rotacionar_ponto(x: float, y: float) -> tuple:
                     v = Vec2(x, y).transform(m)
                     return v.x, v.y
+
             else:
+
                 def rotacionar_ponto(x: float, y: float) -> tuple:
                     return x, y
+
             for ent in msp:
                 layer = ent.dxf.layer
                 cfg = next(
@@ -583,7 +592,6 @@ def _gcode_peca(
                 linhas.extend(substituir(tpl, valores).splitlines())
                 linhas.append("")
             atual = tool
-
 
         if op.get("contorno"):
             tipo_lbl = tipo.upper()
@@ -1063,12 +1071,8 @@ def _gerar_gcodes(
         # absolutas das peças.
         x_min = min((p["x"] - ref_esq for p in pecas), default=0)
         y_min = min((p["y"] - ref_inf for p in pecas), default=0)
-        x_max = max(
-            (p["x"] - ref_esq + p["Length"] + espaco for p in pecas), default=0
-        )
-        y_max = max(
-            (p["y"] - ref_inf + p["Width"] + espaco for p in pecas), default=0
-        )
+        x_max = max((p["x"] - ref_esq + p["Length"] + espaco for p in pecas), default=0)
+        y_max = max((p["y"] - ref_inf + p["Width"] + espaco for p in pecas), default=0)
 
         pecas_polys = [
             box(p["x"], p["y"], p["x"] + p["Length"], p["y"] + p["Width"])
@@ -1237,13 +1241,19 @@ def _ops_from_dxf(
         import math
 
         angle = math.radians(-90)
-        m = Matrix44.axis_rotate(axis="z", angle=angle, center=(ox, oy))
-        m = m @ Matrix44.scale(1, -1, 1, center=(ox, oy))
+        m = (
+            Matrix44.translate(-ox, -oy, 0)
+            @ Matrix44.z_rotate(angle)
+            @ Matrix44.scale(1, -1, 1)
+            @ Matrix44.translate(ox, oy, 0)
+        )
 
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
             v = Vec2(ax, ay).transform(m)
             return v.x, v.y
+
     else:
+
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
             return ax, ay
 
@@ -1416,9 +1426,6 @@ def gerar_nesting_preview(
     if estoque is None:
         estoque = _carregar_estoque(list(pecas_por_material.keys()))
 
-
-
-
     chapas: List[Dict] = []
     idx = 1
     espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
@@ -1445,9 +1452,8 @@ def gerar_nesting_preview(
             for s in estoque_material:
                 c = float(s.get("comprimento", 0))
                 l = float(s.get("largura", 0))
-                fits = (
-                    (c >= min_l and l >= min_w)
-                    or (rot and c >= min_w and l >= min_l)
+                fits = (c >= min_l and l >= min_w) or (
+                    rot and c >= min_w and l >= min_l
                 )
                 if fits:
                     packer.add_bin(int(c), int(l))
@@ -1550,7 +1556,8 @@ def gerar_nesting_preview(
                                 "largura": maxx - minx,
                                 "altura": maxy - miny,
                                 "coords": [
-                                    [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
+                                    [float(cx), float(cy)]
+                                    for cx, cy in g_rect.exterior.coords
                                 ],
                             }
                         )
@@ -1598,7 +1605,8 @@ def gerar_nesting_preview(
                                 "largura": maxx - minx,
                                 "altura": maxy - miny,
                                 "coords": [
-                                    [float(cx), float(cy)] for cx, cy in g_rect.exterior.coords
+                                    [float(cx), float(cy)]
+                                    for cx, cy in g_rect.exterior.coords
                                 ],
                             }
                         )
@@ -1662,7 +1670,6 @@ def gerar_nesting(
     if estoque is None:
         estoque = _carregar_estoque(list(pecas_por_material.keys()))
 
-
     espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
     ref_inf = _cfg_val(config_maquina, "refiloInferior", "refilo_inferior")
     ref_sup = _cfg_val(config_maquina, "refiloSuperior", "refilo_superior")
@@ -1687,9 +1694,8 @@ def gerar_nesting(
             for s in estoque_material:
                 c = float(s.get("comprimento", 0))
                 l = float(s.get("largura", 0))
-                fits = (
-                    (c >= min_l and l >= min_w)
-                    or (rot and c >= min_w and l >= min_l)
+                fits = (c >= min_l and l >= min_w) or (
+                    rot and c >= min_w and l >= min_l
                 )
                 if fits:
                     packer.add_bin(int(c), int(l))
