@@ -20,14 +20,17 @@ def listar_atendimentos():
     with engine.connect() as conn:
         rows = (
             conn.execute(
+
                 text(
                     "SELECT id, cliente, codigo FROM atendimentos ORDER BY id DESC"
                 )
+
             )
             .mappings()
             .all()
         )
     return list(rows)
+
 
 
 def debug_projeto(atendimento_id: int) -> None:
@@ -45,6 +48,7 @@ def debug_projeto(atendimento_id: int) -> None:
             .all()
         )
 
+
         if not tarefas:
             print("Nenhuma tarefa encontrada para este atendimento.")
             return
@@ -59,6 +63,7 @@ def debug_projeto(atendimento_id: int) -> None:
                     print("Erro ao decodificar JSON dos dados:", exc)
             if dados_json.get("projetos"):
                 print("Conteudo enviado em dados.projetos:")
+
                 print(
                     json.dumps(
                         dados_json["projetos"], indent=2, ensure_ascii=False
@@ -95,6 +100,7 @@ def debug_projeto(atendimento_id: int) -> None:
                 print(
                     f"{len(itens)} itens encontrados na tabela projeto_itens:"
                 )
+
                 for it in itens:
                     print(
                         f" - {it['ambiente']}: {it['descricao']} | "
@@ -102,6 +108,7 @@ def debug_projeto(atendimento_id: int) -> None:
                     )
             else:
                 print("Nenhum registro em projeto_itens para esta tarefa")
+
 
             if g_itens:
                 print(
@@ -121,6 +128,7 @@ def debug_projeto(atendimento_id: int) -> None:
         print(
             "\n--- Resultado da busca em projeto_itens via logica do endpoint ---"
         )
+
         recon = []
         for t in tarefas:
             dados = {}
@@ -129,6 +137,7 @@ def debug_projeto(atendimento_id: int) -> None:
                     dados = json.loads(t["dados"])
                 except Exception:
                     dados = {}
+
             itens = (
                 conn.execute(
                     text(
@@ -140,6 +149,7 @@ def debug_projeto(atendimento_id: int) -> None:
                 .mappings()
                 .all()
             )
+
             if itens:
                 projetos = {}
                 for it in itens:
@@ -164,6 +174,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Debug Projeto 3D")
+
     parser.add_argument(
         "atendimento_id",
         type=int,
@@ -178,13 +189,16 @@ if __name__ == "__main__":
         atendimentos = listar_atendimentos()
         if not atendimentos:
             print("Nenhum atendimento encontrado.")
+
         else:
             print(f"Processando {len(atendimentos)} atendimentos:\n")
             for a in atendimentos:
                 info = f"ID {a['id']}"
+
                 if a.get("cliente"):
                     info += f" - {a['cliente']}"
                 if a.get("codigo"):
                     info += f" (codigo {a['codigo']})"
                 print(info)
                 debug_projeto(a["id"])
+

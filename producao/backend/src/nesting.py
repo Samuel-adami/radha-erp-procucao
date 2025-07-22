@@ -368,6 +368,8 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
 
 # Em nesting.py, substitua a função _gcode_peca pela versão corrigida abaixo:
 
+# Em nesting.py, SUBSTITUA a função _gcode_peca inteira por esta:
+
 def _gcode_peca(
     p: Dict,
     ox: float = 0,
@@ -383,11 +385,9 @@ def _gcode_peca(
     rotated: bool = False,
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
-    rotation_angle: int = 0, # Mantido para compatibilidade, mas a lógica usará 'rotated'
+    rotation_angle: int = 0,
 ):
-    # (O início da função permanece o mesmo: substituir, buscar_ferramenta, fmt, etc.)
-    # ... (código existente aqui) ...
-
+    # (O início da função, com 'substituir', 'buscar_ferramenta', etc., permanece igual)
     def substituir(texto: str, valores: dict) -> str:
         for k, v in valores.items():
             texto = texto.replace(f"[{k}]", str(v))
@@ -395,53 +395,32 @@ def _gcode_peca(
         return texto
 
     def buscar_ferramenta(nome: str) -> Optional[Dict]:
-        if not ferramentas:
-            return None
+        if not ferramentas: return None
         for f in ferramentas:
-            if str(f.get("codigo")) == str(nome) or f.get("descricao") == nome:
-                return f
+            if str(f.get("codigo")) == str(nome) or f.get("descricao") == nome: return f
         return None
 
-    l = p["Length"]
-    w = p["Width"]
+    l, w = p["Length"], p["Width"]
     linhas: List[str] = []
     z_seg = float(config_maquina.get("zSeguranca", 48)) if config_maquina else 48
     z_pre = float(config_maquina.get("zAntesTrabalho", 20)) if config_maquina else 20
-
     try:
         casas_dec = int(config_maquina.get("casasDecimais", 4)) if config_maquina else 4
     except (TypeError, ValueError):
         casas_dec = 4
 
-    def fmt(val: float) -> str:
-        return f"{float(val):.{casas_dec}f}"
-
+    def fmt(val: float) -> str: return f"{float(val):.{casas_dec}f}"
     mov_rapida = config_maquina.get("movRapida", "") if config_maquina else ""
     mov_corte_ini = config_maquina.get("primeiraMovCorte", "") if config_maquina else ""
     mov_corte = config_maquina.get("movCorte", "") if config_maquina else ""
-    
-    # ... (funções g0, g1_ini, g1 existentes aqui) ...
     def g0(x: float, y: float, z: float) -> str:
-        """Return rapid move ensuring all axes are present."""
-        if mov_rapida:
-            return substituir(mov_rapida, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z)})
+        if mov_rapida: return substituir(mov_rapida, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z)})
         return f"G0 X{fmt(x)} Y{fmt(y)} Z{fmt(z)}"
-
     def g1_ini(x: float, y: float, z: float, f: float) -> str:
-        """Return first cut movement (G1) with all axes."""
-        if mov_corte_ini:
-            return substituir(
-                mov_corte_ini,
-                {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)},
-            )
+        if mov_corte_ini: return substituir(mov_corte_ini, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)})
         return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
-
     def g1(x: float, y: float, z: float, f: float) -> str:
-        """Return cut movement (G1) with all axes."""
-        if mov_corte:
-            return substituir(
-                mov_corte, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)}
-            )
+        if mov_corte: return substituir(mov_corte, {"X": fmt(x), "Y": fmt(y), "Z": fmt(z), "F": fmt(f)})
         return f"G1 X{fmt(x)} Y{fmt(y)} Z{fmt(z)} F{fmt(f)}"
 
     ops = []
@@ -450,165 +429,82 @@ def _gcode_peca(
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
             
-            # ===== LÓGICA DE ROTAÇÃO CORRIGIDA =====
-            # As dimensões originais são cruciais para a rotação correta.
             comprimento_original = orig_length if rotated else l
             largura_original = orig_width if rotated else w
 
             for ent in msp:
                 layer = ent.dxf.layer
-                cfg = next(
-                    (
-                        c
-                        for c in config_layers
-                        if c.get("nome", "").lower() == layer.lower()
-                        and _is_operacao(c)
-                    ),
-                    None,
-                )
+                cfg = next((c for c in config_layers if c.get("nome", "").lower() == layer.lower() and _is_operacao(c)), None)
                 if not cfg: continue
-                
                 ferramenta_cfg = buscar_ferramenta(cfg.get("ferramenta", ""))
                 if not ferramenta_cfg: continue
-                
                 prof = float(cfg.get("profundidade", 1))
-
-                # Extrai o ponto central da operação (local, dentro do DXF)
                 local_x, local_y = 0, 0
                 if ent.dxftype() == "CIRCLE":
-                    local_x = float(ent.dxf.center.x)
-                    local_y = float(ent.dxf.center.y)
+                    local_x, local_y = float(ent.dxf.center.x), float(ent.dxf.center.y)
                 elif ent.dxftype() in {"LINE", "LWPOLYLINE", "POLYLINE"}:
-                    points = []
-                    if ent.dxftype() == "LINE":
-                        points = [ent.dxf.start, ent.dxf.end]
-                    elif ent.dxftype() == "POLYLINE":
-                        points = [(v.dxf.location.x, v.dxf.location.y) for v in ent.vertices]
-                    else:
-                        points = list(ent.get_points("xy"))
-                    
+                    points = list(ent.points()) if ent.dxftype() in ('LWPOLYLINE', 'POLYLINE') else [ent.dxf.start, ent.dxf.end]
                     if not points: continue
-                    xs = [p[0] for p in points]
-                    ys = [p[1] for p in points]
-                    # Usamos o centro da bounding box da operação
-                    local_x = min(xs) + (max(xs) - min(xs)) / 2
-                    local_y = min(ys) + (max(ys) - min(ys)) / 2
-                else:
-                    continue
+                    xs, ys = [p[0] for p in points], [p[1] for p in points]
+                    local_x, local_y = min(xs) + (max(xs) - min(xs)) / 2, min(ys) + (max(ys) - min(ys)) / 2
+                else: continue
 
                 final_x, final_y = local_x, local_y
                 if rotated:
-                    # Rotaciona 90 graus no sentido horário em torno da origem (0,0)
-                    # e depois translada para o quadrante positivo.
-                    # Ponto (x, y) rotacionado vira (y, -x).
-                    # Para ajustar ao novo L/A, o novo y é LarguraOriginal - x.
-                    final_x = local_y
-                    final_y = comprimento_original - local_x
+                    # ===== NOVA LÓGICA DE ROTAÇÃO (ANTI-HORÁRIA) =====
+                    # Transformação (x,y) -> (W-y, x)
+                    final_x = largura_original - local_y
+                    final_y = local_x
 
-                # Translada o ponto local para a posição final na chapa
                 final_x += ox
                 final_y += oy
-                
-                ops.append({
-                    "tool": ferramenta_cfg,
-                    "x": final_x,
-                    "y": final_y,
-                    "prof": prof,
-                    "layer": layer,
-                })
+                ops.append({"tool": ferramenta_cfg, "x": final_x, "y": final_y, "prof": prof, "layer": layer})
         except Exception as e:
             print(f"Erro ao processar DXF em _gcode_peca: {e}")
             pass
 
-    # (O restante da função _gcode_peca permanece o mesmo)
-    # ... (código existente aqui) ...
+    # (O restante da função para gerar o G-Code continua igual)
     ferramenta_padrao = ferramentas[0] if ferramentas else None
-    contorno_op = {
-        "tool": ferramenta_padrao,
-        "contorno": True,
-        "l": l,
-        "w": w,
-    }
+    contorno_op = {"tool": ferramenta_padrao, "contorno": True, "l": l, "w": w}
     ops.insert(0, contorno_op)
     troca_tpl = templates.get("troca", "") if templates else ""
-    if ops and ops[0].get("contorno"):
-        contorno_op = ops.pop(0)
-    else:
-        contorno_op = None
-
+    if ops and ops[0].get("contorno"): contorno_op = ops.pop(0)
+    else: contorno_op = None
     furos_ops = [o for o in ops if o.get("tool", {}).get("tipo") == "Broca"]
     fresa_ops = [o for o in ops if o.get("tool", {}).get("tipo") != "Broca"]
     furos_ops.sort(key=lambda o: (o.get("y", 0), o.get("x", 0)))
-
-    if etapa == "furos":
-        ops = furos_ops
-    elif etapa == "fresas":
-        ops = fresa_ops
-    elif etapa == "contorno":
-        ops = [contorno_op] if contorno_op else []
+    if etapa == "furos": ops = furos_ops
+    elif etapa == "fresas": ops = fresa_ops
+    elif etapa == "contorno": ops = [contorno_op] if contorno_op else []
     else:
         ops = furos_ops + fresa_ops
-        if contorno_op:
-            ops.append(contorno_op)
-
+        if contorno_op: ops.append(contorno_op)
     atual = ferramenta_atual
     usadas: List[str] = []
     last_layer: Optional[str] = None
-
     for op in ops:
         tool = op["tool"]
         if tool:
             desc = f"{tool.get('codigo')} - {tool.get('descricao','')}"
-            if desc not in usadas:
-                usadas.append(desc)
+            if desc not in usadas: usadas.append(desc)
         if tool and tool != atual:
-            valores = {
-                "T": tool.get("codigo", ""),
-                "TOOL_DESCRIPTION": tool.get("descricao", ""),
-                "ZH": config_maquina.get("zHoming", "") if config_maquina else "",
-                "XH": config_maquina.get("xHoming", "") if config_maquina else "",
-                "YH": config_maquina.get("yHoming", "") if config_maquina else "",
-                "CMD_EXTRA": _expand_cmd_extra(tool),
-            }
+            valores = {"T": tool.get("codigo", ""), "TOOL_DESCRIPTION": tool.get("descricao", ""), "ZH": config_maquina.get("zHoming", "") if config_maquina else "", "XH": config_maquina.get("xHoming", "") if config_maquina else "", "YH": config_maquina.get("yHoming", "") if config_maquina else "", "CMD_EXTRA": _expand_cmd_extra(tool)}
             tpl = troca_tpl
             if tpl:
                 linhas.extend(substituir(tpl, valores).splitlines())
                 linhas.append("")
             atual = tool
-
         if op.get("contorno"):
             tipo_lbl = tipo.upper()
-            if tipo_lbl == "PECA":
-                tipo_lbl = "PECAS"
-            elif tipo_lbl == "SOBRA":
-                tipo_lbl = "SOBRAS"
+            if tipo_lbl == "PECA": tipo_lbl = "PECAS"
+            elif tipo_lbl == "SOBRA": tipo_lbl = "SOBRAS"
             linhas.append(f"({tipo_lbl} - {int(round(l))} x {int(round(w))})")
-            linhas.extend(
-                [
-                    g0(ox, oy, z_seg),
-                    g0(ox, oy, z_pre),
-                    "(Step:1/1)",
-                    g1_ini(ox + l, oy, 0.2, 3500.0),
-                    g1(ox + l, oy + w, 0.2, 7000.0),
-                    g1(ox, oy + w, 0.2, 7000.0),
-                    g1(ox, oy, 0.2, 7000.0),
-                    g0(ox, oy, z_seg),
-                ]
-            )
+            linhas.extend([g0(ox, oy, z_seg), g0(ox, oy, z_pre), "(Step:1/1)", g1_ini(ox + l, oy, 0.2, 3500.0), g1(ox + l, oy + w, 0.2, 7000.0), g1(ox, oy + w, 0.2, 7000.0), g1(ox, oy, 0.2, 7000.0), g0(ox, oy, z_seg)])
         else:
             if op["layer"] != last_layer:
                 linhas.append(f"({op['layer']})")
                 last_layer = op["layer"]
-            linhas.extend(
-                [
-                    g0(op["x"], op["y"], z_seg),
-                    g0(op["x"], op["y"], z_pre),
-                    "(Step:1/1)",
-                    g1_ini(op["x"], op["y"], op["prof"], 5000.0),
-                    g0(op["x"], op["y"], z_seg),
-                ]
-            )
-
+            linhas.extend([g0(op["x"], op["y"], z_seg), g0(op["x"], op["y"], z_pre), "(Step:1/1)", g1_ini(op["x"], op["y"], op["prof"], 5000.0), g0(op["x"], op["y"], z_seg)])
     return "\n".join(linhas), atual, usadas
 
 
@@ -1197,6 +1093,12 @@ def _encontrar_dxt(pasta: Path) -> Optional[Path]:
 
 # Em nesting.py, substitua a função _ops_from_dxf pela versão corrigida abaixo:
 
+# Em nesting.py, substitua a função _ops_from_dxf por esta versão:
+
+# Em nesting.py, substitua a função _ops_from_dxf por esta versão final:
+
+# Em nesting.py, SUBSTITUA a função _ops_from_dxf inteira por esta:
+
 def _ops_from_dxf(
     caminho: Path,
     config_layers: Optional[List[Dict]] = None,
@@ -1206,82 +1108,63 @@ def _ops_from_dxf(
     orig_length: Optional[float] = None,
     orig_width: Optional[float] = None,
 ) -> List[Dict]:
-    if not config_layers:
-        return []
-    try:
-        doc = ezdxf.readfile(caminho)
-    except Exception:
-        return []
+    if not config_layers: return []
+    try: doc = ezdxf.readfile(caminho)
+    except Exception: return []
     
     msp = doc.modelspace()
     ops: List[Dict] = []
     next_id = 1
     
-    # ===== LÓGICA DE ROTAÇÃO CORRIGIDA =====
     comprimento_original = orig_length if rotated and orig_length is not None else 0
-    if not rotated:
-        # Se não rotacionado, pegamos as medidas do contorno para referência
-        contorno = next((ent for ent in msp if str(ent.dxf.layer).lower() == 'borda_externa'), None)
-        if contorno:
-            try:
-                bbox = ezdxf.path.bbox([ezdxf.path.from_entity(contorno)])
-                comprimento_original = bbox.size.x
-            except Exception:
-                pass
-
+    largura_original = orig_width if rotated and orig_width is not None else 0
 
     for ent in msp:
         layer = str(ent.dxf.layer)
-        cfg = next(
-            (
-                c
-                for c in config_layers
-                if c.get("nome", "").lower() == layer.lower() and _is_operacao(c)
-            ),
-            None,
-        )
-        if not cfg:
-            continue
+        cfg = next((c for c in config_layers if c.get("nome", "").lower() == layer.lower() and _is_operacao(c)), None)
+        if not cfg: continue
 
+        points = []
+        ent_type = ent.dxftype()
         try:
-            path = ezdxf.path.from_entity(ent)
-            bbox = ezdxf.path.bbox([path])
-        except (RuntimeError, TypeError):
-            continue # Ignora entidades sem caminho ou bbox
+            if ent_type == 'CIRCLE':
+                center = ent.dxf.center; radius = ent.dxf.radius
+                points.extend([(center.x - radius, center.y - radius), (center.x + radius, center.y + radius)])
+            elif ent_type == 'LINE':
+                points.extend([ent.dxf.start, ent.dxf.end])
+            elif ent_type in ('LWPOLYLINE', 'POLYLINE'):
+                points.extend(list(ent.points()))
+            elif ent_type == 'ARC':
+                points.extend(list(ent.flattening(distance=0.1)))
+            if not points: continue
+            
+            xs, ys = [p[0] for p in points], [p[1] for p in points]
+            local_min_x, local_max_x = min(xs), max(xs)
+            local_min_y, local_max_y = min(ys), max(ys)
+            largura_op, altura_op = local_max_x - local_min_x, local_max_y - local_min_y
+        except Exception: continue
 
-        local_min_x, local_min_y, _ = bbox.extmin
-        largura_op, altura_op, _ = bbox.size
-        
         final_x, final_y = local_min_x, local_min_y
         final_w, final_h = largura_op, altura_op
 
         if rotated:
-            # Rotaciona o ponto de origem (canto inferior esquerdo) da operação
-            final_x = local_min_y
-            final_y = comprimento_original - (local_min_x + largura_op)
-            # Inverte largura e altura da operação
+            # ===== NOVA LÓGICA DE ROTAÇÃO (ANTI-HORÁRIA) PARA BBOX =====
+            # Transformação (x,y) -> (W-y_max, x_min)
+            final_x = largura_original - local_max_y
+            final_y = local_min_x
             final_w, final_h = altura_op, largura_op
             
-        # Translada para a posição na chapa
         final_x += ox
         final_y += oy
 
         ops.append({
-            "id": next_id,
-            "nome": layer,
-            "tipo": "Operacao",
-            "layer": layer,
-            "x": final_x,
-            "y": final_y,
-            "largura": final_w,
-            "altura": final_h,
-            "rotacao": 90 if rotated else 0, # Adiciona info de rotação para o frontend
+            "id": next_id, "nome": layer, "tipo": "Operacao", "layer": layer,
+            "x": final_x, "y": final_y, "largura": final_w, "altura": final_h,
+            "rotacao": 0,
         })
         next_id += 1
         
     return ops
-
-
 def _calcular_sobras_polys(
     pecas_polys: List[Polygon],
     ref_esq: float,
