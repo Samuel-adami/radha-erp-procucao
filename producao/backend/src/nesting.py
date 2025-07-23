@@ -334,10 +334,12 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
-    # (Sem alteração — parse do DXT)
+    """Parse DXT and return piece metadata with cached DXF dimensions."""
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
     pecas = []
     pasta = dxt_path.parent
+    medidas_cache: Dict[str, Optional[Tuple[float, float]]] = {}
+
     for part in root.findall(".//Part"):
         fields = {
             f.find("Name").text: f.find("Value").text
@@ -350,10 +352,14 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             filename = fields.get("Filename", "")
             length = float(fields.get("Length", 0))
             width = float(fields.get("Width", 0))
+
             if filename:
-                medidas = _medidas_dxf(pasta / filename)
+                if filename not in medidas_cache:
+                    medidas_cache[filename] = _medidas_dxf(pasta / filename)
+                medidas = medidas_cache.get(filename)
                 if medidas:
                     length, width = medidas
+
             pecas.append(
                 {
                     "PartName": fields.get("PartName", "SemNome"),
@@ -413,37 +419,52 @@ def _entity_polygon(ent) -> Optional[Polygon]:
 
 
 def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
-    """Parse DXT and attach shapely polygons for each piece."""
-    pecas = _ler_dxt_polygons(dxt_path)
+    """Parse DXT and attach shapely polygons for each piece.
+
+    This function now reuses DXF data for pieces that reference the same file,
+    significantly reducing processing time and avoiding timeouts during nesting
+    execution.
+    """
+    pecas = _ler_dxt(dxt_path)
     pasta = dxt_path.parent
+    poly_cache: Dict[str, Optional[Polygon]] = {}
+
     for p in pecas:
-        poly = None
-        if p.get("Filename"):
-            try:
-                doc = ezdxf.readfile(pasta / p["Filename"])
-                msp = doc.modelspace()
-                contornos: List[Polygon] = []
-                furos: List[Polygon] = []
-                for ent in msp:
-                    layer = str(ent.dxf.layer).lower()
-                    poly_ent = _entity_polygon(ent)
-                    if not poly_ent:
-                        continue
-                    if layer in {"borda_externa", "contorno"}:
-                        contornos.append(poly_ent)
-                    elif layer.startswith("furo") or layer.startswith("usinar"):
-                        furos.append(poly_ent)
-                if contornos:
-                    poly = unary_union(contornos)
-                    for f in furos:
-                        poly = poly.difference(f)
-                    if isinstance(poly, MultiPolygon):
-                        poly = max(poly.geoms, key=lambda g: g.area)
-            except Exception:
-                poly = None
+        poly: Optional[Polygon] = None
+        filename = p.get("Filename")
+        if filename:
+            if filename not in poly_cache:
+                try:
+                    doc = ezdxf.readfile(pasta / filename)
+                    msp = doc.modelspace()
+                    contornos: List[Polygon] = []
+                    furos: List[Polygon] = []
+                    for ent in msp:
+                        layer = str(ent.dxf.layer).lower()
+                        poly_ent = _entity_polygon(ent)
+                        if not poly_ent:
+                            continue
+                        if layer in {"borda_externa", "contorno"}:
+                            contornos.append(poly_ent)
+                        elif layer.startswith("furo") or layer.startswith("usinar"):
+                            furos.append(poly_ent)
+                    if contornos:
+                        p_union: Polygon = unary_union(contornos)
+                        for f in furos:
+                            p_union = p_union.difference(f)
+                        if isinstance(p_union, MultiPolygon):
+                            p_union = max(p_union.geoms, key=lambda g: g.area)
+                        poly_cache[filename] = p_union
+                    else:
+                        poly_cache[filename] = None
+                except Exception:
+                    poly_cache[filename] = None
+            poly = poly_cache.get(filename)
+
         if poly is None:
             poly = box(0, 0, p["Length"], p["Width"])
         p["polygon"] = poly
+
     return pecas
 
 
