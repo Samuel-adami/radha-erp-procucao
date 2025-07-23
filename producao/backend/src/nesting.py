@@ -1574,19 +1574,25 @@ def _calcular_sobras_polys(
 def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
     """Retorna sobras cadastradas no estoque para os materiais informados."""
     estoque: Dict[str, List[Dict]] = {}
+    if not materiais:
+        return estoque
     try:
         with get_db_connection() as conn:
-            for mat in materiais:
-                rows = (
-                    conn.exec_driver_sql(
-                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE descricao ILIKE {PLACEHOLDER}",
-                        (f"%{mat}%",),
-                    )
-                    .mappings()
-                    .all()
+            pads = [f"%{m}%" for m in materiais]
+            rows = (
+                conn.exec_driver_sql(
+                    f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE descricao ILIKE ANY ({PLACEHOLDER})",
+                    (pads,),
                 )
-                if rows:
-                    estoque[mat] = [dict(r) for r in rows]
+                .mappings()
+                .all()
+            )
+            for r in rows:
+                desc = (r.get("descricao") or "").lower()
+                for m in materiais:
+                    if m.lower() in desc:
+                        estoque.setdefault(m, []).append(dict(r))
+                        break
     except Exception:
         pass
     return estoque
