@@ -28,6 +28,10 @@ MIN_LARGURA_SOBRA = 100
 DXF_DIMENSIONS_CACHE: Dict[Path, Optional[Tuple[float, float]]] = {}
 DXF_POLYGON_CACHE: Dict[Path, Optional[Polygon]] = {}
 
+# Backwards compatibility: old code imported `medidas_cache`
+medidas_cache = DXF_DIMENSIONS_CACHE
+
+
 
 def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
     """Return a rectangular polygon if ``g`` already forms a rectangle."""
