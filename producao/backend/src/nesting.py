@@ -1592,7 +1592,7 @@ def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
             )
             for r in rows:
 
-                desc = (r.get(\"descricao\") or \"\").lower()
+                desc = (r.get("descricao") or "").lower()
 
                 for m in materiais:
                     if m.lower() in desc:
