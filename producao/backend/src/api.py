@@ -1368,6 +1368,44 @@ async def listar_chapas_estoque(descricao: str | None = None):
         return {"erro": str(e)}
 
 
+@app.post("/chapas-estoque-batch")
+async def listar_chapas_estoque_batch(request: Request):
+    """Lista o estoque de chapas para vários materiais de uma só vez."""
+    dados = await request.json()
+    materiais: list[str] | None = dados.get("materiais")
+    if not materiais:
+        return {}
+    try:
+        with get_db_connection() as conn:
+            pads = [f"%{m}%" for m in materiais]
+            conds = " OR ".join([f"ce.descricao ILIKE {PLACEHOLDER}" for _ in materiais])
+            sql = (
+                "SELECT ce.id, ce.chapa_id, ce.descricao, ce.comprimento, ce.largura, ce.m2, "
+                "COALESCE(c.custo_m2, ce.custo_m2) AS custo_m2, "
+                "ce.m2 * COALESCE(c.custo_m2, ce.custo_m2) AS custo_total, "
+                "ce.origem, ce.reservada "
+                f"FROM {SCHEMA_PREFIX}chapas_estoque ce "
+                f"LEFT JOIN {SCHEMA_PREFIX}chapas c ON c.id = ce.chapa_id "
+                f"WHERE {conds}"
+            )
+            rows = (
+                conn.exec_driver_sql(sql, tuple(pads))
+                .mappings()
+                .all()
+            )
+
+            estoque: dict[str, list[dict]] = {m: [] for m in materiais}
+            for r in rows:
+                desc = (r.get("descricao") or "").lower()
+                for m in materiais:
+                    if m.lower() in desc:
+                        estoque[m].append(dict(r))
+                        break
+            return estoque
+    except Exception as e:
+        return {"erro": str(e)}
+
+
 @app.post("/chapas-estoque")
 async def salvar_chapa_estoque(request: Request):
     """Cria ou atualiza um item de estoque."""
