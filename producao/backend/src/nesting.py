@@ -245,6 +245,30 @@ def _rotate_plate_cw(chapa: Dict) -> Dict:
     return chapa
 
 
+def _serialize_chapas(chapas: List[Dict]) -> List[Dict]:
+    """Convert Shapely polygons within operations to simple coordinate lists.
+
+    This avoids issues when encoding the data to JSON for API responses.
+    """
+
+    for chapa in chapas:
+        for op in chapa.get("operacoes", []):
+            poly = op.pop("polygon", None)
+            if isinstance(poly, (Polygon, MultiPolygon)):
+                if isinstance(poly, Polygon):
+                    op["coords"] = [
+                        [float(x), float(y)] for x, y in poly.exterior.coords
+                    ]
+                else:
+                    coords: List[List[float]] = []
+                    for g in poly.geoms:
+                        coords.extend(
+                            [[float(x), float(y)] for x, y in g.exterior.coords]
+                        )
+                    op["coords"] = coords
+    return chapas
+
+
 def _rotate_placa_cw(placa: List[Dict], largura: float) -> List[Dict]:
     """Rotate coordinates of each piece on a plate clockwise."""
     for p in placa:
@@ -1832,7 +1856,7 @@ def gerar_nesting_preview(
                 chapas.append(_rotate_plate_cw(chapa))
                 idx += 1
 
-    return chapas
+    return _serialize_chapas(chapas)
 
 
 def gerar_nesting(
@@ -1938,4 +1962,4 @@ def gerar_nesting(
         config_maquina,
         sobras,
     )
-    return str(pasta_saida), sobras, chapas
+    return str(pasta_saida), sobras, _serialize_chapas(chapas)
