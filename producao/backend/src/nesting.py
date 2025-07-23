@@ -27,8 +27,10 @@ MIN_LARGURA_SOBRA = 100
 # a single request. Keys are absolute paths to the DXF files.
 DXF_DIMENSIONS_CACHE: Dict[Path, Optional[Tuple[float, float]]] = {}
 DXF_POLYGON_CACHE: Dict[Path, Optional[Polygon]] = {}
+
 # Backwards compatibility: old code imported `medidas_cache`
 medidas_cache = DXF_DIMENSIONS_CACHE
+
 
 
 def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
@@ -353,6 +355,7 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
     pecas = []
     pasta = dxt_path.parent
 
+
     for part in root.findall(".//Part"):
         fields = {
             f.find("Name").text: f.find("Value").text
@@ -367,7 +370,9 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             width = float(fields.get("Width", 0))
 
             if filename:
-                medidas = _medidas_dxf(pasta / filename)
+                if filename not in medidas_cache:
+                    medidas_cache[filename] = _medidas_dxf(pasta / filename)
+                medidas = medidas_cache.get(filename)
                 if medidas:
                     length, width = medidas
 
@@ -430,23 +435,28 @@ def _entity_polygon(ent) -> Optional[Polygon]:
 
 
 def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
+
     """Parse DXT and attach shapely polygons for each piece.
 
     This function now reuses DXF data for pieces that reference the same file,
     significantly reducing processing time and avoiding timeouts during nesting
     execution.
     """
+
     pecas = _ler_dxt(dxt_path)
     pasta = dxt_path.parent
+
 
     for p in pecas:
         poly: Optional[Polygon] = None
         filename = p.get("Filename")
         if filename:
+
             path = (pasta / filename).resolve()
             if path not in DXF_POLYGON_CACHE:
                 try:
                     doc = ezdxf.readfile(path)
+
                     msp = doc.modelspace()
                     contornos: List[Polygon] = []
                     furos: List[Polygon] = []
@@ -465,12 +475,14 @@ def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
                             p_union = p_union.difference(f)
                         if isinstance(p_union, MultiPolygon):
                             p_union = max(p_union.geoms, key=lambda g: g.area)
+
                         DXF_POLYGON_CACHE[path] = p_union
                     else:
                         DXF_POLYGON_CACHE[path] = None
                 except Exception:
                     DXF_POLYGON_CACHE[path] = None
             poly = DXF_POLYGON_CACHE.get(path)
+
 
         if poly is None:
             poly = box(0, 0, p["Length"], p["Width"])
