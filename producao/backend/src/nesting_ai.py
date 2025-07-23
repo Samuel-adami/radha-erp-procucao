@@ -56,6 +56,7 @@ def _arranjar_poligonos_ia(
     packer.pack()
 
     placas: List[List[Dict]] = []
+
     # Inicializa lista de placas com a quantidade de bins utilizados
     num_bins = len(packer.bin_list())
     placas = [[] for _ in range(num_bins)]
@@ -92,4 +93,5 @@ def _arranjar_poligonos_ia(
 
     # Remove placas vazias
     placas = [p for p in placas if p]
+
     return placas
