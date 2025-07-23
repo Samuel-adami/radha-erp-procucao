@@ -15,6 +15,7 @@ from rectpack import newPacker
 import ezdxf
 import math
 from ezdxf.math import ConstructionArc
+from shapely.geometry import Point
 from PIL import Image, ImageDraw
 
 # Área mínima aproveitável para registrar sobras (0,1 m² em mm²)
@@ -369,6 +370,148 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
         except ValueError:
             continue
     return pecas
+
+
+def _entity_polygon(ent) -> Optional[Polygon]:
+    """Return a shapely polygon approximation of a DXF entity."""
+    try:
+        if ent.dxftype() in {"LWPOLYLINE", "POLYLINE"}:
+            if ent.dxftype() == "POLYLINE":
+                pts = [(float(v.dxf.location.x), float(v.dxf.location.y)) for v in ent.vertices]
+            else:
+                pts = [(float(p[0]), float(p[1])) for p in ent.get_points("xy")]
+            if len(pts) >= 3:
+                return Polygon(pts)
+        elif ent.dxftype() == "LINE":
+            start = ent.dxf.start
+            end = ent.dxf.end
+            return Polygon([(start.x, start.y), (end.x, end.y)])
+        elif ent.dxftype() == "CIRCLE":
+            cx = float(ent.dxf.center.x)
+            cy = float(ent.dxf.center.y)
+            r = float(ent.dxf.radius)
+            return Point(cx, cy).buffer(r, resolution=32)
+        elif ent.dxftype() == "ARC":
+            c = ent.dxf.center
+            r = float(ent.dxf.radius)
+            a0 = math.radians(float(ent.dxf.start_angle))
+            a1 = math.radians(float(ent.dxf.end_angle))
+            if a1 < a0:
+                a1 += 2 * math.pi
+            steps = max(8, int(r))
+            pts = [
+                (
+                    c.x + r * math.cos(a0 + (a1 - a0) * i / steps),
+                    c.y + r * math.sin(a0 + (a1 - a0) * i / steps),
+                )
+                for i in range(steps + 1)
+            ]
+            return Polygon(pts)
+    except Exception:
+        return None
+    return None
+
+
+def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
+    """Parse DXT and attach shapely polygons for each piece."""
+    pecas = _ler_dxt_polygons(dxt_path)
+    pasta = dxt_path.parent
+    for p in pecas:
+        poly = None
+        if p.get("Filename"):
+            try:
+                doc = ezdxf.readfile(pasta / p["Filename"])
+                msp = doc.modelspace()
+                contornos: List[Polygon] = []
+                furos: List[Polygon] = []
+                for ent in msp:
+                    layer = str(ent.dxf.layer).lower()
+                    poly_ent = _entity_polygon(ent)
+                    if not poly_ent:
+                        continue
+                    if layer in {"borda_externa", "contorno"}:
+                        contornos.append(poly_ent)
+                    elif layer.startswith("furo") or layer.startswith("usinar"):
+                        furos.append(poly_ent)
+                if contornos:
+                    poly = unary_union(contornos)
+                    for f in furos:
+                        poly = poly.difference(f)
+                    if isinstance(poly, MultiPolygon):
+                        poly = max(poly.geoms, key=lambda g: g.area)
+            except Exception:
+                poly = None
+        if poly is None:
+            poly = box(0, 0, p["Length"], p["Width"])
+        p["polygon"] = poly
+    return pecas
+
+
+def _arranjar_poligonos(
+    pecas: List[Dict],
+    largura: float,
+    altura: float,
+    espaco: float = 0.0,
+    rotacionar: bool = True,
+) -> List[List[Dict]]:
+    """Arranje peças como polígonos dentro da chapa usando um algoritmo simples."""
+
+    restantes = sorted(pecas, key=lambda p: p.get("polygon").area if p.get("polygon") else 0, reverse=True)
+    chapas: List[List[Dict]] = []
+    grid = max(10.0, espaco or 10.0)
+
+    while restantes:
+        placa: List[Dict] = []
+        placa_union: Optional[Polygon] = None
+        i = 0
+        while i < len(restantes):
+            p = restantes[i]
+            poly_orig: Polygon = p.get("polygon")
+            colocado = False
+            for ang in ([0, 90] if rotacionar else [0]):
+                g = affinity.rotate(poly_orig, ang, origin=(0, 0))
+                minx, miny, maxx, maxy = g.bounds
+                w = maxx - minx
+                h = maxy - miny
+                y = 0.0
+                while y + h <= altura:
+                    x = 0.0
+                    while x + w <= largura:
+                        desloc = affinity.translate(g, x - minx, y - miny)
+                        if placa_union and desloc.buffer(espaco / 2).intersects(placa_union.buffer(espaco / 2)):
+                            x += grid
+                            continue
+                        if desloc.bounds[2] <= largura and desloc.bounds[3] <= altura:
+                            new_p = p.copy()
+                            new_p.update(
+                                {
+                                    "x": x,
+                                    "y": y,
+                                    "Length": w,
+                                    "Width": h,
+                                    "polygon": desloc,
+                                    "rotated": ang != 0,
+                                    "rotationAngle": ang,
+                                }
+                            )
+                            placa.append(new_p)
+                            placa_union = desloc if placa_union is None else placa_union.union(desloc)
+                            restantes.pop(i)
+                            colocado = True
+                            break
+                        x += grid
+                    if colocado:
+                        break
+                    y += grid
+                if colocado:
+                    break
+            if not colocado:
+                i += 1
+        if placa:
+            chapas.append(placa)
+        else:
+            break
+    return chapas
 
 
 def _gcode_peca(
@@ -1423,7 +1566,7 @@ def gerar_nesting_preview(
     dxt_path = _encontrar_dxt(pasta)
     if not dxt_path:
         raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
-    pecas = _ler_dxt(dxt_path)
+    pecas = _ler_dxt_polygons(dxt_path)
 
     # Configurações de chapas cadastradas
     chapas_cfg: Dict[str, Dict] = {}
@@ -1463,27 +1606,10 @@ def gerar_nesting_preview(
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
 
-        packer = newPacker(rotation=rot)
-        for p in lista:
-            packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
-        estoque_material = estoque.get(material) if estoque else []
-        if estoque_material:
-            min_l = min(float(p["Length"]) for p in lista)
-            min_w = min(float(p["Width"]) for p in lista)
-            for s in estoque_material:
-                c = float(s.get("comprimento", 0))
-                l = float(s.get("largura", 0))
-                fits = (c >= min_l and l >= min_w) or (
-                    rot and c >= min_w and l >= min_l
-                )
-                if fits:
-                    packer.add_bin(int(c), int(l))
-        for _ in range(len(lista)):
-            packer.add_bin(int(largura), int(altura))
-        packer.pack()
+        chapas_polys = _arranjar_poligonos(lista, largura, altura, espaco, rot)
 
-        for abin in packer:
-            if not abin:
+        for placa in chapas_polys:
+            if not placa:
                 continue
             operacoes: List[Dict] = []
             sobras_polys: List[Polygon] = []
@@ -1493,23 +1619,14 @@ def gerar_nesting_preview(
             y_max = 0.0
             op_id = 1
             pecas_polys: List[Polygon] = []
-            for rect in abin:
-                p = rect.rid.copy()
-                orig_l = float(p.get("Length", 0))
-                orig_w = float(p.get("Width", 0))
-                p_x = float(rect.x) + ref_esq
-                p_y = float(rect.y) + ref_inf
-                w = float(rect.width) - espaco
-                h = float(rect.height) - espaco
-                rotated_piece = (
-                    abs(w - orig_w) < 1e-6
-                    and abs(h - orig_l) < 1e-6
-                    and orig_l != orig_w
-                )
-                p["originalLength"] = orig_l
-                p["originalWidth"] = orig_w
-                p["rotated"] = rotated_piece
-                p["rotationAngle"] = 90 if rotated_piece else 0
+            for p in placa:
+                orig_l = float(p.get("originalLength", p.get("Length", 0)))
+                orig_w = float(p.get("originalWidth", p.get("Width", 0)))
+                p_x = float(p.get("x", 0)) + ref_esq
+                p_y = float(p.get("y", 0)) + ref_inf
+                w = float(p.get("Length", 0))
+                h = float(p.get("Width", 0))
+                rotated_piece = bool(p.get("rotated"))
                 operacoes.append(
                     {
                         "id": op_id,
@@ -1522,6 +1639,7 @@ def gerar_nesting_preview(
                         "cliente": p.get("Client", ""),
                         "ambiente": p.get("Project", ""),
                         "rotacao": 90 if rotated_piece else 0,
+                        "polygon": affinity.translate(p.get("polygon"), xoff=ref_esq, yoff=ref_inf),
                     }
                 )
                 op_id += 1
@@ -1541,11 +1659,13 @@ def gerar_nesting_preview(
                         d["ambiente"] = p.get("Project", "")
                         operacoes.append(d)
                         op_id += 1
-                x_min = min(x_min, rect.x)
-                y_min = min(y_min, rect.y)
-                x_max = max(x_max, rect.x + rect.width)
-                y_max = max(y_max, rect.y + rect.height)
-                pecas_polys.append(box(p_x, p_y, p_x + w, p_y + h))
+                x_min = min(x_min, p_x)
+                y_min = min(y_min, p_y)
+                x_max = max(x_max, p_x + w)
+                y_max = max(y_max, p_y + h)
+                pecas_polys.append(
+                    affinity.translate(p.get("polygon"), xoff=ref_esq, yoff=ref_inf)
+                )
 
             pecas_union = unary_union(pecas_polys) if pecas_polys else None
 
@@ -1669,7 +1789,7 @@ def gerar_nesting(
     if not dxt_path:
         raise FileNotFoundError("Arquivo DXT não encontrado na pasta do lote")
 
-    pecas = _ler_dxt(dxt_path)
+    pecas = _ler_dxt_polygons(dxt_path)
 
     # Carregar configuracoes de chapas
     chapas_cfg: Dict[str, Dict] = {}
@@ -1706,48 +1826,12 @@ def gerar_nesting(
         rot = False if cfg.get("possui_veio") else True
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
-        packer = newPacker(rotation=rot)
-        for p in lista:
-            packer.add_rect(int(p["Length"] + espaco), int(p["Width"] + espaco), rid=p)
-        estoque_material = estoque.get(material) if estoque else []
-        if estoque_material:
-            min_l = min(float(p["Length"]) for p in lista)
-            min_w = min(float(p["Width"]) for p in lista)
-            for s in estoque_material:
-                c = float(s.get("comprimento", 0))
-                l = float(s.get("largura", 0))
-                fits = (c >= min_l and l >= min_w) or (
-                    rot and c >= min_w and l >= min_l
-                )
-                if fits:
-                    packer.add_bin(int(c), int(l))
-        for _ in range(len(lista)):
-            packer.add_bin(int(largura), int(altura))
-        packer.pack()
-
-        for abin in packer:
-            if not abin:
-                continue
-            placa = []
-            for rect in abin:
-                piece = rect.rid.copy()
-                orig_l = float(piece.get("Length", 0))
-                orig_w = float(piece.get("Width", 0))
-                piece["x"] = float(rect.x) + ref_esq
-                piece["y"] = float(rect.y) + ref_inf
-                piece["Length"] = float(rect.width) - espaco
-                piece["Width"] = float(rect.height) - espaco
-                piece["Material"] = material
-                rotated_piece = (
-                    abs(rect.width - orig_w) < 1e-6
-                    and abs(rect.height - orig_l) < 1e-6
-                    and orig_l != orig_w
-                )
-                piece["originalLength"] = orig_l
-                piece["originalWidth"] = orig_w
-                piece["rotated"] = rotated_piece
-                piece["rotationAngle"] = 90 if rotated_piece else 0
-                placa.append(piece)
+        chapas_polys = _arranjar_poligonos(lista, largura, altura, espaco, rot)
+        for placa in chapas_polys:
+            for p in placa:
+                p["x"] += ref_esq
+                p["y"] += ref_inf
+                p["Material"] = material
             if placa:
                 chapas.append(_rotate_placa_cw(placa, largura))
 
