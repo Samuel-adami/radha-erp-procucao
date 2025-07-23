@@ -419,12 +419,14 @@ def _entity_polygon(ent) -> Optional[Polygon]:
 
 
 def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
+
     """Parse DXT and attach shapely polygons for each piece.
 
     This function now reuses DXF data for pieces that reference the same file,
     significantly reducing processing time and avoiding timeouts during nesting
     execution.
     """
+
     pecas = _ler_dxt(dxt_path)
     pasta = dxt_path.parent
     poly_cache: Dict[str, Optional[Polygon]] = {}
