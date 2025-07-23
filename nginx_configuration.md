@@ -123,6 +123,13 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # Operações de nesting podem demorar e exceder o
+        # timeout padrão de 60s do Nginx, resultando em erro 504.
+        # Esses limites estendidos evitam o problema sem
+        # alterar a lógica da aplicação.
+        proxy_connect_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
     }
     # Se tiver outras rotas de API, adicione aqui
 }
