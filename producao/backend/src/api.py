@@ -1378,6 +1378,7 @@ async def listar_chapas_estoque_batch(request: Request):
     try:
         with get_db_connection() as conn:
             pads = [f"%{m}%" for m in materiais]
+
             conds = " OR ".join([f"ce.descricao ILIKE {PLACEHOLDER}" for _ in materiais])
             sql = (
                 "SELECT ce.id, ce.chapa_id, ce.descricao, ce.comprimento, ce.largura, ce.m2, "
@@ -1390,6 +1391,7 @@ async def listar_chapas_estoque_batch(request: Request):
             )
             rows = (
                 conn.exec_driver_sql(sql, tuple(pads))
+
                 .mappings()
                 .all()
             )
