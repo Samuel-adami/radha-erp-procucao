@@ -23,6 +23,13 @@ AREA_MIN_SOBRA = 0.1 * 1000 * 1000
 # Largura mínima para registrar sobras (100 mm)
 MIN_LARGURA_SOBRA = 100
 
+# Caches to avoid re-reading the same DXF files multiple times during
+# a single request. Keys are absolute paths to the DXF files.
+DXF_DIMENSIONS_CACHE: Dict[Path, Optional[Tuple[float, float]]] = {}
+DXF_POLYGON_CACHE: Dict[Path, Optional[Polygon]] = {}
+# Backwards compatibility: old code imported `medidas_cache`
+medidas_cache = DXF_DIMENSIONS_CACHE
+
 
 def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
     """Return a rectangular polygon if ``g`` already forms a rectangle."""
@@ -286,10 +293,14 @@ def _invert_x(x: float, width: float, chapa_width: float) -> float:
 
 
 def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
-    # (Sem alteração — mesma função de extração de medidas do DXF)
+    """Return DXF outer dimensions using a global cache."""
+    path = path.resolve()
+    if path in DXF_DIMENSIONS_CACHE:
+        return DXF_DIMENSIONS_CACHE[path]
     try:
         doc = ezdxf.readfile(path)
     except Exception:
+        DXF_DIMENSIONS_CACHE[path] = None
         return None
     msp = doc.modelspace()
     xs: List[float] = []
@@ -329,15 +340,19 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
             except Exception:
                 continue
     if not xs or not ys:
+        DXF_DIMENSIONS_CACHE[path] = None
         return None
-    return max(xs) - min(xs), max(ys) - min(ys)
+    dims = max(xs) - min(xs), max(ys) - min(ys)
+    DXF_DIMENSIONS_CACHE[path] = dims
+    return dims
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
-    # (Sem alteração — parse do DXT)
+    """Parse DXT and return piece metadata with cached DXF dimensions."""
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
     pecas = []
     pasta = dxt_path.parent
+
     for part in root.findall(".//Part"):
         fields = {
             f.find("Name").text: f.find("Value").text
@@ -350,10 +365,12 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             filename = fields.get("Filename", "")
             length = float(fields.get("Length", 0))
             width = float(fields.get("Width", 0))
+
             if filename:
                 medidas = _medidas_dxf(pasta / filename)
                 if medidas:
                     length, width = medidas
+
             pecas.append(
                 {
                     "PartName": fields.get("PartName", "SemNome"),
@@ -413,37 +430,52 @@ def _entity_polygon(ent) -> Optional[Polygon]:
 
 
 def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
-    """Parse DXT and attach shapely polygons for each piece."""
-    pecas = _ler_dxt_polygons(dxt_path)
+    """Parse DXT and attach shapely polygons for each piece.
+
+    This function now reuses DXF data for pieces that reference the same file,
+    significantly reducing processing time and avoiding timeouts during nesting
+    execution.
+    """
+    pecas = _ler_dxt(dxt_path)
     pasta = dxt_path.parent
+
     for p in pecas:
-        poly = None
-        if p.get("Filename"):
-            try:
-                doc = ezdxf.readfile(pasta / p["Filename"])
-                msp = doc.modelspace()
-                contornos: List[Polygon] = []
-                furos: List[Polygon] = []
-                for ent in msp:
-                    layer = str(ent.dxf.layer).lower()
-                    poly_ent = _entity_polygon(ent)
-                    if not poly_ent:
-                        continue
-                    if layer in {"borda_externa", "contorno"}:
-                        contornos.append(poly_ent)
-                    elif layer.startswith("furo") or layer.startswith("usinar"):
-                        furos.append(poly_ent)
-                if contornos:
-                    poly = unary_union(contornos)
-                    for f in furos:
-                        poly = poly.difference(f)
-                    if isinstance(poly, MultiPolygon):
-                        poly = max(poly.geoms, key=lambda g: g.area)
-            except Exception:
-                poly = None
+        poly: Optional[Polygon] = None
+        filename = p.get("Filename")
+        if filename:
+            path = (pasta / filename).resolve()
+            if path not in DXF_POLYGON_CACHE:
+                try:
+                    doc = ezdxf.readfile(path)
+                    msp = doc.modelspace()
+                    contornos: List[Polygon] = []
+                    furos: List[Polygon] = []
+                    for ent in msp:
+                        layer = str(ent.dxf.layer).lower()
+                        poly_ent = _entity_polygon(ent)
+                        if not poly_ent:
+                            continue
+                        if layer in {"borda_externa", "contorno"}:
+                            contornos.append(poly_ent)
+                        elif layer.startswith("furo") or layer.startswith("usinar"):
+                            furos.append(poly_ent)
+                    if contornos:
+                        p_union: Polygon = unary_union(contornos)
+                        for f in furos:
+                            p_union = p_union.difference(f)
+                        if isinstance(p_union, MultiPolygon):
+                            p_union = max(p_union.geoms, key=lambda g: g.area)
+                        DXF_POLYGON_CACHE[path] = p_union
+                    else:
+                        DXF_POLYGON_CACHE[path] = None
+                except Exception:
+                    DXF_POLYGON_CACHE[path] = None
+            poly = DXF_POLYGON_CACHE.get(path)
+
         if poly is None:
             poly = box(0, 0, p["Length"], p["Width"])
         p["polygon"] = poly
+
     return pecas
 
 
