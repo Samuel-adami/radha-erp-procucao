@@ -1579,16 +1579,21 @@ def _carregar_estoque(materiais: List[str]) -> Dict[str, List[Dict]]:
     try:
         with get_db_connection() as conn:
             pads = [f"%{m}%" for m in materiais]
+
+            conds = " OR ".join([f"descricao ILIKE {PLACEHOLDER}" for _ in materiais])
+            sql = (
+                f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE {conds}"
+            )
             rows = (
-                conn.exec_driver_sql(
-                    f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE descricao ILIKE ANY ({PLACEHOLDER})",
-                    (pads,),
-                )
+                conn.exec_driver_sql(sql, tuple(pads))
+
                 .mappings()
                 .all()
             )
             for r in rows:
-                desc = (r.get("descricao") or "").lower()
+
+                desc = (r.get(\"descricao\") or \"\").lower()
+
                 for m in materiais:
                     if m.lower() in desc:
                         estoque.setdefault(m, []).append(dict(r))
