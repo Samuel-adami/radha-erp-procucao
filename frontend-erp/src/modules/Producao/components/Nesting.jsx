@@ -137,11 +137,11 @@ const Nesting = () => {
         return false;
       }
       const materiais = resp.materiais || [];
-      const estoque = {};
-      for (const m of materiais) {
-        const e = await fetchComAuth(`/chapas-estoque?descricao=${encodeURIComponent(m)}`);
-        if (Array.isArray(e)) estoque[m] = e;
-      }
+      const estoque = await fetchComAuth('/chapas-estoque-batch', {
+        method: 'POST',
+        body: JSON.stringify({ materiais }),
+      });
+      if (!estoque || typeof estoque !== 'object') return { ok: false };
       setSobrasDisp(estoque);
       const faltantes = materiais.filter(
         (m) => !chapas.some((c) => normalizar(c.propriedade) === normalizar(m))
