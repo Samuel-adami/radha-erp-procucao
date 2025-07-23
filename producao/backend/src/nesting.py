@@ -11,7 +11,7 @@ from shapely.ops import unary_union
 from shapely.geometry import Polygon, MultiPolygon
 from shapely import affinity
 
-from rectpack import newPacker
+from nesting_ai import _arranjar_poligonos_ia
 import ezdxf
 import math
 from ezdxf.math import ConstructionArc
@@ -1661,7 +1661,14 @@ def gerar_nesting_preview(
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
 
-        chapas_polys = _arranjar_poligonos(lista, largura, altura, espaco, rot)
+        chapas_polys = _arranjar_poligonos_ia(
+            lista,
+            largura,
+            altura,
+            espaco,
+            rot,
+            estoque.get(material) if estoque else None,
+        )
 
         for placa in chapas_polys:
             if not placa:
@@ -1881,7 +1888,14 @@ def gerar_nesting(
         rot = False if cfg.get("possui_veio") else True
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
-        chapas_polys = _arranjar_poligonos(lista, largura, altura, espaco, rot)
+        chapas_polys = _arranjar_poligonos_ia(
+            lista,
+            largura,
+            altura,
+            espaco,
+            rot,
+            estoque.get(material) if estoque else None,
+        )
         for placa in chapas_polys:
             for p in placa:
                 p["x"] += ref_esq
