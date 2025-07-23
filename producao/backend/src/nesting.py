@@ -334,10 +334,12 @@ def _medidas_dxf(path: Path) -> Optional[Tuple[float, float]]:
 
 
 def _ler_dxt(dxt_path: Path) -> List[Dict]:
-    # (Sem alteração — parse do DXT)
+    """Parse DXT and return piece metadata with cached DXF dimensions."""
     root = ET.fromstring(dxt_path.read_text(encoding="utf-8", errors="ignore"))
     pecas = []
     pasta = dxt_path.parent
+    medidas_cache: Dict[str, Optional[Tuple[float, float]]] = {}
+
     for part in root.findall(".//Part"):
         fields = {
             f.find("Name").text: f.find("Value").text
@@ -350,10 +352,14 @@ def _ler_dxt(dxt_path: Path) -> List[Dict]:
             filename = fields.get("Filename", "")
             length = float(fields.get("Length", 0))
             width = float(fields.get("Width", 0))
+
             if filename:
-                medidas = _medidas_dxf(pasta / filename)
+                if filename not in medidas_cache:
+                    medidas_cache[filename] = _medidas_dxf(pasta / filename)
+                medidas = medidas_cache.get(filename)
                 if medidas:
                     length, width = medidas
+
             pecas.append(
                 {
                     "PartName": fields.get("PartName", "SemNome"),
