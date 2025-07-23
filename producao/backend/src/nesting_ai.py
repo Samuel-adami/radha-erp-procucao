@@ -56,29 +56,42 @@ def _arranjar_poligonos_ia(
     packer.pack()
 
     placas: List[List[Dict]] = []
-    for abin in packer.bin_list():
-        placa: List[Dict] = []
-        for rect in abin:
-            rid = rect.rid
-            p = pecas[rid]
-            rot = bool(rect.rotation)
-            poly = p.get("polygon") or box(0, 0, p.get("Length", 0), p.get("Width", 0))
-            g = affinity.rotate(poly, 90 if rot else 0, origin=(0, 0))
-            minx, miny, maxx, maxy = g.bounds
-            g = affinity.translate(g, rect.x - minx, rect.y - miny)
-            novo = p.copy()
-            novo.update(
-                {
-                    "x": rect.x,
-                    "y": rect.y,
-                    "Length": rect.width - espaco,
-                    "Width": rect.height - espaco,
-                    "polygon": g,
-                    "rotated": rot,
-                    "rotationAngle": 90 if rot else 0,
-                }
-            )
-            placa.append(novo)
-        if placa:
-            placas.append(placa)
+
+    # Inicializa lista de placas com a quantidade de bins utilizados
+    num_bins = len(packer.bin_list())
+    placas = [[] for _ in range(num_bins)]
+
+    for bin_id, x, y, w, h, rid in packer.rect_list():
+        p = pecas[rid]
+        poly = p.get("polygon") or box(0, 0, p.get("Length", 0), p.get("Width", 0))
+        minx, miny, maxx, maxy = poly.bounds
+        orig_w = maxx - minx
+        orig_h = maxy - miny
+
+        # Detectar se houve rotacao comparando com dimensoes originais
+        rot = False
+        if rotacionar and abs(orig_w + espaco - h) < 1e-6 and abs(orig_h + espaco - w) < 1e-6:
+            rot = True
+
+        g = affinity.rotate(poly, 90 if rot else 0, origin=(0, 0))
+        minx, miny, maxx, maxy = g.bounds
+        g = affinity.translate(g, x - minx, y - miny)
+
+        novo = p.copy()
+        novo.update(
+            {
+                "x": x,
+                "y": y,
+                "Length": w - espaco,
+                "Width": h - espaco,
+                "polygon": g,
+                "rotated": rot,
+                "rotationAngle": 90 if rot else 0,
+            }
+        )
+        placas[bin_id].append(novo)
+
+    # Remove placas vazias
+    placas = [p for p in placas if p]
+
     return placas
