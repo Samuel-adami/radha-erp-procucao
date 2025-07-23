@@ -414,7 +414,7 @@ def _entity_polygon(ent) -> Optional[Polygon]:
 
 def _ler_dxt_polygons(dxt_path: Path) -> List[Dict]:
     """Parse DXT and attach shapely polygons for each piece."""
-    pecas = _ler_dxt_polygons(dxt_path)
+    pecas = _ler_dxt(dxt_path)
     pasta = dxt_path.parent
     for p in pecas:
         poly = None
