@@ -2,7 +2,13 @@ from fastapi import FastAPI, Request, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
-from gabster_api import list_orcamento_cliente_item, get_projeto
+from gabster_api import (
+    list_orcamento_cliente_item,
+    get_projeto,
+    get_acabamento,
+    get_componente,
+    get_produto,
+)
 from orcamento_gabster import parse_gabster_projeto
 from storage import (
     upload_file,

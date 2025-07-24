@@ -95,3 +95,41 @@ def list_projetos(
             continue
     return projetos
 
+
+def get_acabamento(
+    cd_acabamento: int,
+    *, user: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch acabamento details from Gabster API."""
+    url = f"{BASE_URL}acabamento/{cd_acabamento}/?format=json"
+    headers = _auth_header(user, api_key)
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_componente(
+    cd_componente: int,
+    *, user: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch componente details from Gabster API."""
+    url = f"{BASE_URL}componente/{cd_componente}/?format=json"
+    headers = _auth_header(user, api_key)
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+
+def get_produto(
+    cd_produto: int,
+    *, user: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch produto details from Gabster API."""
+    url = f"{BASE_URL}produto/{cd_produto}/?format=json"
+    headers = _auth_header(user, api_key)
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()

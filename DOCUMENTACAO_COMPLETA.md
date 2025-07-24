@@ -130,7 +130,7 @@ Esses modelos aparecem nas rotas de `/atendimentos`, `/condicoes-pagamento` e `/
 
 ## 3. Integrações Externas
 
-- **Gabster (Comercial)**: `gabster_api.py` implementa `get_projeto` e `list_orcamento_cliente_item` usados em `/gabster-projeto` e `/leitor-orcamento-gabster`【F:comercial-backend/gabster_api.py†L1-L31】.
+- **Gabster (Comercial)**: `gabster_api.py` implementa `get_projeto`, `list_orcamento_cliente_item` e os endpoints de metadados `get_acabamento`, `get_componente`, `get_produto`, usados em `/gabster-projeto` e `/leitor-orcamento-gabster`【F:comercial-backend/gabster_api.py†L1-L31】【F:comercial-backend/gabster_api.py†L81-L134】.
 - **OpenAI (Marketing)**: `services/openai_service.py` usa `AsyncOpenAI` e `openai.ChatCompletion` nas funções `gerar_resposta` e `gerar_imagem`【F:marketing-digital-ia/backend/services/openai_service.py†L18-L56】.
 - **S3 (Produção)**: `storage.py` usa `boto3` para `upload_file`, `download_file` e `delete_file` com prefixo configurável【F:producao/backend/src/storage.py†L7-L32】. Exemplo de chave: `producao/lotes/Lote_123.zip`.
 

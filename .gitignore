@@ -10,3 +10,5 @@ node_modules/
 
 logs/
 *.pid
+
+saida/
