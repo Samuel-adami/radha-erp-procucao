@@ -4,15 +4,15 @@ sudo systemctl daemon-reload
 sudo systemctl enable radha-producao-backend
 sudo systemctl enable radha-comercial-backend
 sudo systemctl enable radha-marketing-backend
-sudo systemctl enable radha-finance-backend
 sudo systemctl enable radha-gateway-backend
+sudo systemctl enable radha-finance-backend
 sudo systemctl enable radha-frontend
 
 sudo systemctl start radha-producao-backend
 sudo systemctl start radha-comercial-backend
 sudo systemctl start radha-marketing-backend
-sudo systemctl start radha-finance-backend
 sudo systemctl start radha-gateway-backend
+sudo systemctl start radha-finance-backend
 sudo systemctl start radha-frontend
 
 ## Comandos Úteis para Gerenciamento dos Serviços
@@ -21,12 +21,20 @@ sudo systemctl start radha-frontend
 sudo systemctl status radha-producao-backend
 sudo systemctl status radha-comercial-backend
 sudo systemctl status radha-marketing-backend
-sudo systemctl status radha-finance-backend
 sudo systemctl status radha-gateway-backend
+sudo systemctl status radha-finance-backend
 sudo systemctl status radha-frontend
 
-# Parar, iniciar, reiniciar
+# Atualizar
+sudo systemctl daemon-reload
 sudo systemctl restart radha-producao-backend
+sudo systemctl restart radha-marketing-backend
+sudo systemctl restart radha-comercial-backend
+sudo systemctl restart radha-gateway-backend
+sudo systemctl restart radha-finance-backend
+sudo systemctl restart radha-frontend
+sudo systemctl restart nginx
+
 sudo systemctl stop radha-producao-backend
 sudo systemctl start radha-producao-backend
 # Repita para os outros serviços
@@ -35,8 +43,8 @@ sudo systemctl start radha-producao-backend
 sudo journalctl -u radha-producao-backend -f
 sudo journalctl -u radha-comercial-backend -f
 sudo journalctl -u radha-marketing-backend -f
-sudo journalctl -u radha-finance-backend -f
 sudo journalctl -u radha-gateway-backend -f
+sudo journalctl -u radha-finance-backend -f
 sudo journalctl -u radha-frontend -f
 
 ## Scripts Prontos para Status de Todos os Serviços
@@ -51,8 +59,8 @@ Todos os logs dos serviços podem ser visualizados via journalctl, ex:
 sudo journalctl -u radha-producao-backend -n 40 --no-pager
 sudo journalctl -u radha-comercial-backend -n 40 --no-pager
 sudo journalctl -u radha-marketing-backend -n 40 --no-pager
-sudo journalctl -u radha-finance-backend -n 40 --no-pager
 sudo journalctl -u radha-gateway-backend -n 40 --no-pager
+sudo journalctl -u radha-finance-backend -n 40 --no-pager
 sudo journalctl -u radha-frontend -f
 
 
@@ -88,3 +96,46 @@ sudo nginx -t
 ## Se precisar ver logs recentes do nginx:
 
 sudo journalctl -u nginx -n 40 --no-pager
+
+sudo -u postgres psql producao
+
+SELECT * FROM producao.lotes ORDER BY id DESC LIMIT 5;
+SELECT * FROM marketing.rdstation_tokens ORDER BY id DESC LIMIT 5;
+SELECT * FROM comercial.gabster_projeto_itens;
+SELECT * FROM comercial.atendimento_tarefas;
+
+sudo -u postgres psql -d producao -f comercial-backend/migrations/001_alter_gabster_projeto_itens.sql
+
+Para fazer o Git mantendo os arquivos do Github:
+git checkout -- <arquivo>
+
+Exemplo: git checkout -- frontend-erp/package.json
+
+
+
+
+
+
+Importar Imagens
+
+scp -i ~/.ssh/id_ed25519 "C:/Users/samue/Downloads/Sobreposição de linhas na visualização da chapa.png" samuel@212.85.13.74:/home/samuel/
+
+mv ~/Sobreposição de linhas na visualização da chapa.png ~/radha-erp-producao/scripts/imagens/
+
+
+id_ed25519
+
+python scripts/agente_erp_rag.py
+
+sudo chmod +x scripts/reindexar_agente.sh
+
+./scripts/reindexar_agente.sh
+
+
+Scripts
+
+python scripts/agente_erp_rag.py
+python scripts/simular_importacao_gabster.py <codigo_do_projeto>
+python scripts/test_gabster_import.py
+
+pytest tests/comercial/tests/comercial/test_gabster_import.py

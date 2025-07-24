@@ -103,7 +103,7 @@ async def leitor_orcamento_gabster(request: Request):
 
 @app.post("/gabster-projeto")
 async def gabster_projeto(request: Request):
-    """Return structured project data from Gabster API."""
+    """Return header + enriched items from Gabster APIs for a Projeto."""
     params = await request.json()
     codigo = params.get("codigo")
     usuario = params.get("usuario")
@@ -111,13 +111,62 @@ async def gabster_projeto(request: Request):
     if not codigo:
         raise HTTPException(status_code=400, detail="Codigo obrigatorio")
     try:
+        # 1) Cabeçalho do projeto
         raw = get_projeto(int(codigo), user=usuario, api_key=chave)
-        data = parse_gabster_projeto(raw)
+        header = {
+            "id": raw.get("id"),
+            "nome": raw.get("nome"),
+            "cd_cliente": raw.get("cd_cliente"),
+            "nome_arquivo_skp": raw.get("nome_arquivo_skp"),
+            "identificador_arquivo_skp": raw.get("identificador_arquivo_skp"),
+            "descricao": raw.get("descricao"),
+            "observacao": raw.get("observacao"),
+            "ambiente": raw.get("ambiente"),
+            "projeto_ref": raw.get("projeto_ref"),
+        }
+        # 2) Itens do orçamento de cliente (lista) para este projeto
+        orc_items = list_orcamento_cliente_item(user=usuario, api_key=chave).get("objects") or []
+        itens_brutos = [it for it in orc_items if it.get("cd_orcamento_cliente") == header["id"]]
+        # 3) Deduplica códigos e busca metadados
+        cds_acab = {it.get("cd_acabamento") for it in itens_brutos if it.get("cd_acabamento")}
+        cds_comp = {it.get("cd_componente") for it in itens_brutos if it.get("cd_componente")}
+        cds_prod = {it.get("cd_produto") for it in itens_brutos if it.get("cd_produto")}
+        acabamentos = {c: get_acabamento(c, user=usuario, api_key=chave) for c in cds_acab}
+        componentes = {c: get_componente(c, user=usuario, api_key=chave) for c in cds_comp}
+        produtos = {c: get_produto(c, user=usuario, api_key=chave) for c in cds_prod}
+        # 4) Monta lista enriquecida
+        enriched = []
+        for it in itens_brutos:
+            enriched.append({
+                "id": it.get("id"),
+                "quantidade": it.get("quantidade"),
+                "referencia": it.get("referencia"),
+                "valor": it.get("valor"),
+                "comprimento": it.get("comprimento"),
+                "largura_profundidade": it.get("largura_profundidade"),
+                "espessura_altura": it.get("espessura_altura"),
+                "acabamento": {
+                    "cd": it.get("cd_acabamento"),
+                    "nome": acabamentos.get(it.get("cd_acabamento"), {}).get("nome")
+                },
+                "componente": {
+                    "cd": it.get("cd_componente"),
+                    "nome": componentes.get(it.get("cd_componente"), {}).get("nome")
+                },
+                "produto": {
+                    "cd": it.get("cd_produto"),
+                    "nome": produtos.get(it.get("cd_produto"), {}).get("nome")
+                }
+            })
     except requests.exceptions.HTTPError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:  # generic errors
+    except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc))
-    return data
+    # estrutura de saída compatível com front-end Projeto 3D
+    ambiente = header.get("ambiente") or "Projeto"
+    # soma o valor total dos itens para facilitar fluxo de negociação
+    total = sum(item.get("valor", 0) for item in enriched)
+    return {"projetos": {ambiente: {**header, "itens": enriched, "total": total}}}
 
 
 @app.post("/leitor-orcamento-promob")
@@ -447,8 +496,12 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                 )
             for amb, info in dados_json["projetos"].items():
                 for it in info.get("itens", []):
+                    # insere itens de projeto (Promob ou Gabster), ajustando chaves para valores
+                    desc = it.get("descricao") or it.get("referencia")
+                    unit = safe_float(it.get("unitario") if it.get("unitario") is not None else it.get("valor"))
+                    quant = safe_int(it.get("quantidade"))
+                    tot = safe_float(it.get("total") if it.get("total") is not None else it.get("valor"))
                     conn.exec_driver_sql(
-
                         """
                         INSERT INTO projeto_itens (
                             atendimento_id, tarefa_id, ambiente,
@@ -459,24 +512,24 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                             atendimento_id,
                             tarefa_id,
                             amb,
-                            it.get("descricao"),
-                            safe_float(it.get("unitario")),
-                            safe_int(it.get("quantidade")),
-                            safe_float(it.get("total")),
+                            desc,
+                            unit,
+                            quant,
+                            tot,
                         ),
                     )
                     if dados_json.get("programa") == "Gabster":
-                        # persist original Gabster item if available
+                        # persiste item original do Gabster
+                        ref = it.get("referencia") or it.get("descricao")
+                        val = safe_float(it.get("valor") if it.get("valor") is not None else it.get("total"))
                         params = (
                             atendimento_id,
                             tarefa_id,
-                            it.get("descricao"),
-                            safe_int(it.get("quantidade")),
-                            safe_float(it.get("total")),
+                            ref,
+                            quant,
+                            val,
                         )
-                        logging.info(
-                            "Inserindo gabster_projeto_itens: %s", params
-                        )
+                        logging.info("Inserindo gabster_projeto_itens: %s", params)
                         try:
                             conn.exec_driver_sql(
                                 """
@@ -488,9 +541,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                                 params,
                             )
                         except Exception as exc:  # pragma: no cover - debug aid
-                            logging.error(
-                                "Erro ao inserir em gabster_projeto_itens: %s", exc
-                            )
+                            logging.error("Erro ao inserir em gabster_projeto_itens: %s", exc)
                             raise
         conn.commit()
         logging.info("Dados do projeto gravados com sucesso")
@@ -886,4 +937,3 @@ async def assinar_contrato(request: Request):
     c.save()
     buffer.seek(0)
     return StreamingResponse(buffer, media_type="application/pdf")
-

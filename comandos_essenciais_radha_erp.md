@@ -176,6 +176,13 @@ sudo -u postgres psql -d producao -f producao/backend/migrations/002_obj_key.sql
 Após rodar o script, os endpoints que manipulam lotes e nestings conseguem
 encontrar os arquivos `.zip` normalmente.
 
+Caso o banco tenha sido criado antes da versão que inclui a coluna `tarefa_id`
+em `gabster_projeto_itens`, execute a migração abaixo para adicioná-la:
+
+```bash
+sudo -u postgres psql -d producao -f comercial-backend/migrations/001_alter_gabster_projeto_itens.sql
+```
+
 ---
 
 ## 🟩 Docker (Para MinIO/S3 Local)
@@ -277,4 +284,3 @@ exit
 ---
 
 > **Qualquer dúvida sobre uso dos comandos, só chamar!**
-

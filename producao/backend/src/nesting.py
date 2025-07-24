@@ -665,27 +665,22 @@ def _gcode_peca(
         try:
             doc = ezdxf.readfile(dxf_path)
             msp = doc.modelspace()
-            from ezdxf.math import Matrix44
+            # rotation uses simple math instead of Matrix44
 
             if rotated:
-                ang = -(rotation_angle or 90)
-                m = (
-                    Matrix44.translate(-ox, -oy, 0)
-                    @ Matrix44.z_rotate(math.radians(ang))
-                    @ Matrix44.scale(1, -1, 1)
-                    @ Matrix44.translate(ox, oy, 0)
-                )
+                import math
 
-                def rotacionar_ponto(x: float, y: float) -> tuple:
-                    # Vec2 from ezdxf does not provide a ``transform`` method in
-                    # current versions, therefore use Matrix44.transform and
-                    # extract the 2D coordinates from the resulting Vec3.
-                    v = m.transform((x, y, 0))
-                    return v.x, v.y
+                # Rotate point around piece origin (ox, oy) by rotation_angle degrees CCW
+                rad = math.radians(rotation_angle or 90)
+
+                def rotacionar_ponto(x: float, y: float) -> tuple[float, float]:
+                    x0, y0 = x - ox, y - oy
+                    xr = x0 * math.cos(rad) - y0 * math.sin(rad)
+                    yr = x0 * math.sin(rad) + y0 * math.cos(rad)
+                    return xr + ox, yr + oy
 
             else:
-
-                def rotacionar_ponto(x: float, y: float) -> tuple:
+                def rotacionar_ponto(x: float, y: float) -> tuple[float, float]:
                     return x, y
 
             for ent in msp:
@@ -1467,25 +1462,18 @@ def _ops_from_dxf(
     ops: List[Dict] = []
     next_id = 1
     if rotated:
-        from ezdxf.math import Matrix44
         import math
 
-        angle = math.radians(-90)
-        m = (
-            Matrix44.translate(-ox, -oy, 0)
-            @ Matrix44.z_rotate(angle)
-            @ Matrix44.scale(1, -1, 1)
-            @ Matrix44.translate(ox, oy, 0)
-        )
+        # Rotate point around piece origin (ox, oy) by 90 degrees CCW
+        rad = math.radians(90)
 
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
-            # ``Vec2.transform`` is not available; use Matrix44 directly and
-            # drop the z-component after transformation.
-            v = m.transform((ax, ay, 0))
-            return v.x, v.y
+            x0, y0 = ax - ox, ay - oy
+            xr = x0 * math.cos(rad) - y0 * math.sin(rad)
+            yr = x0 * math.sin(rad) + y0 * math.cos(rad)
+            return xr + ox, yr + oy
 
     else:
-
         def rot_point(ax: float, ay: float) -> tuple[float, float]:
             return ax, ay
 
