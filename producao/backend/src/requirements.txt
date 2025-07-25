@@ -4,6 +4,8 @@ ezdxf
 Pillow
 shapely
 sqlalchemy
+rectpack
+nest2D
 psycopg2-binary
 boto3
 python-multipart

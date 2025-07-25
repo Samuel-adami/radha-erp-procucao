@@ -343,9 +343,9 @@ for placa in chapas_polys:
 | 4. Polígonos Shapely       | `_ler_dxt_polygons`                   |
 | 4.1 Entidades → Polígonos  | `_entity_polygon`                     |
 | 5. Configurações de chapas | `gerar_nesting[_preview]`             |
-| 6. SVG input para svgnest  | `arranjar_poligonos_svgnest`          |
-| 7. Executar svgnest        | `svgnest.nest`                        |
-| 8. Extrair transformações  | `arranjar_poligonos_svgnest`          |
+| 6. Identificar retângulos  | `arranjar_poligonos`                  |
+| 7. Empacotar retângulos    | `rectpack.newPacker`                  |
+| 8. Nesting orgânico        | `nest2D.nest`                         |
 | 9. Extração pós-nesting    | `_ops_from_dxf` e `gerar_nesting`     |
 
-**Fonte:** Código-fonte dos módulos `nesting.py` e `nesting_svgnest.py` em produção.
+**Fonte:** Código-fonte do módulo `nesting.py` em produção.

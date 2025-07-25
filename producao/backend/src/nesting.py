@@ -11,7 +11,8 @@ from shapely.ops import unary_union
 from shapely.geometry import Polygon, MultiPolygon
 from shapely import affinity
 
-from nesting_svgnest import arranjar_poligonos_svgnest
+from rectpack import newPacker
+"""Removido uso de nest2D; agora usa apenas rectpack."""
 import ezdxf
 import math
 from ezdxf.math import ConstructionArc
@@ -46,6 +47,72 @@ def _retangulo_sobra(g: Polygon, tol: float = 1e-6) -> Optional[Polygon]:
     if maxx - minx < MIN_LARGURA_SOBRA or maxy - miny < MIN_LARGURA_SOBRA:
         return None
     return rect
+
+
+def arranjar_poligonos(
+    pecas: List[Dict],
+    largura: float,
+    altura: float,
+    espaco: float = 0.0,
+    rotacionar: bool = True,
+    estoque: Optional[List[Dict]] = None,
+    config_maquina: Optional[Dict] = None,
+    config_layers: Optional[List[Dict]] = None,
+    ferramentas: Optional[List[Dict]] = None,
+) -> List[List[Dict]]:
+    """
+    Gera nesting usando apenas rectpack para todas as peças via seus bounding boxes.
+
+    Retorna lista de placas, cada placa é lista de dicts de peça com x, y,
+    rotationAngle e polygon atualizados, mantendo as operações internas.
+    """
+    # Extrair refilos da configuração da máquina
+    ref_inf = ref_sup = ref_esq = ref_dir = 0.0
+    if config_maquina:
+        from nesting import _cfg_val
+
+        ref_inf = _cfg_val(config_maquina, "refiloInferior", "refilo_inferior")
+        ref_sup = _cfg_val(config_maquina, "refiloSuperior", "refilo_superior")
+        ref_esq = _cfg_val(config_maquina, "refiloEsquerda", "refilo_esquerda")
+        ref_dir = _cfg_val(config_maquina, "refiloDireita", "refilo_direita")
+
+    # Limites internos da chapa
+    wbin = largura - ref_esq - ref_dir - 2 * espaco
+    hbin = altura - ref_inf - ref_sup - 2 * espaco
+
+    placas: List[List[Dict]] = []
+
+    # Empacotar todas as peças via seus bounding boxes
+    packer = newPacker(rotation=rotacionar)
+    for ridx, p in enumerate(pecas):
+        minx, miny, maxx, maxy = p["polygon"].bounds
+        packer.add_rect(maxx - minx, maxy - miny, ridx)
+    packer.add_bin(wbin, hbin, count=1)
+    packer.pack()
+
+    placa: List[Dict] = []
+    for _, x, y, w, h, rid in packer.rect_list():
+        p = pecas[rid]
+        rotated = rotacionar and (p["polygon"].bounds[2] - p["polygon"].bounds[0]) != w
+        angle = 90 if rotated else 0
+        poly = p["polygon"]
+        if rotated:
+            poly = affinity.rotate(poly, angle, origin=(0, 0))
+        poly = affinity.translate(poly, xoff=x + espaco + ref_esq, yoff=y + espaco + ref_inf)
+        novo = p.copy()
+        novo.update({"polygon": poly, "x": x + espaco + ref_esq, "y": y + espaco + ref_inf, "rotationAngle": angle})
+        for op in novo.get("operacoes", []):
+            opl = op["polygon"]
+            if rotated:
+                opl = affinity.rotate(opl, angle, origin=(0, 0))
+            opl = affinity.translate(opl, xoff=x + espaco + ref_esq, yoff=y + espaco + ref_inf)
+            op["polygon"] = opl
+            op["x"] = op.get("x", 0) + x + espaco + ref_esq
+            op["y"] = op.get("y", 0) + y + espaco + ref_inf
+        placa.append(novo)
+
+    placas.append(placa)
+    return placas
 
 
 def _retangulos_sobra(g: Polygon, tol: float = 1e-6) -> List[Polygon]:
@@ -1674,7 +1741,7 @@ def gerar_nesting_preview(
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
 
-        chapas_polys = arranjar_poligonos_svgnest(
+        chapas_polys = arranjar_poligonos(
             lista,
             largura,
             altura,
@@ -1905,7 +1972,7 @@ def gerar_nesting(
         rot = False if cfg.get("possui_veio") else True
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
-        chapas_polys = arranjar_poligonos_svgnest(
+        chapas_polys = arranjar_poligonos(
             lista,
             largura,
             altura,
