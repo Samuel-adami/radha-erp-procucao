@@ -85,4 +85,16 @@ Sobras geradas durante o nesting passam por uma validação adicional:
 4. A tela de visualização exibe essa prévia obtida de `/nesting-preview`.
 5. Confirmando a otimização, o frontend chama `/executar-nesting-final` para gerar os arquivos e registrar a execução.
 
+### Migração para svgnest (nesting poligonal)
+
+- Instale a dependência Python: `pip install svgnest`
+- Converta cada peça e a chapa em elementos SVG (paths/rects), chamando `svgnest.nest()` para obter o posicionamento poligonal.
+- Extraia do SVG de saída as transformações (`translate`, `rotate`) e mapeie para a estrutura de dados usada no backend.
+- Habilite via configuração em `config_maquina`, por exemplo:
+  ```jsonc
+  { "espacoEntrePecas": 5, "usa_svgnest": true }
+  ```
+
+Com isso, é possível usar svgnest para contornos verdadeiramente orgânicos e maximizar o aproveitamento sem limitar-se a retângulos.
+
 Com este fluxo, é possível entender de onde cada informação é buscada e como os arquivos `.nc` e `.cyc` são produzidos a partir dos dados da tela de configuração da máquina.

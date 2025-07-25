@@ -35,6 +35,7 @@ cd ~/radha-erp-producao
 git pull origin main
 ```
 git add <nome_do_arquivo>
+git commit -m "Atualizações feitas na VPS"
 git push origin main
 
 

@@ -11,4 +11,5 @@ node_modules/
 logs/
 *.pid
 
-saida/
+producao/backend/src/saida/
+

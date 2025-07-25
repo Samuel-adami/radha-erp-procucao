@@ -104,6 +104,9 @@ SELECT * FROM marketing.rdstation_tokens ORDER BY id DESC LIMIT 5;
 SELECT * FROM comercial.gabster_projeto_itens;
 SELECT * FROM comercial.atendimento_tarefas;
 
+DELETE FROM comercial.atendimento_tarefas;
+
+
 sudo -u postgres psql -d producao -f comercial-backend/migrations/001_alter_gabster_projeto_itens.sql
 
 Para fazer o Git mantendo os arquivos do Github:

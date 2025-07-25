@@ -11,7 +11,7 @@ from shapely.ops import unary_union
 from shapely.geometry import Polygon, MultiPolygon
 from shapely import affinity
 
-from nesting_ai import _arranjar_poligonos_ia
+from nesting_svgnest import arranjar_poligonos_svgnest
 import ezdxf
 import math
 from ezdxf.math import ConstructionArc
@@ -1657,6 +1657,7 @@ def gerar_nesting_preview(
     if estoque is None:
         estoque = _carregar_estoque(list(pecas_por_material.keys()))
 
+    # Nesting poligonal via svgnest-python (não usa empacotamento retangular)
     chapas: List[Dict] = []
     idx = 1
     espaco = float(config_maquina.get("espacoEntrePecas", 0)) if config_maquina else 0
@@ -1673,13 +1674,16 @@ def gerar_nesting_preview(
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
 
-        chapas_polys = _arranjar_poligonos_ia(
+        chapas_polys = arranjar_poligonos_svgnest(
             lista,
             largura,
             altura,
             espaco,
             rot,
             estoque.get(material) if estoque else None,
+            config_maquina=config_maquina,
+            config_layers=config_layers,
+            ferramentas=ferramentas,
         )
 
         for placa in chapas_polys:
@@ -1894,19 +1898,23 @@ def gerar_nesting(
     area_larg = largura_chapa - ref_esq - ref_dir
     area_alt = altura_chapa - ref_inf - ref_sup
 
+    # Nesting poligonal via svgnest-python (não usa empacotamento retangular)
     chapas: List[List[Dict]] = []
     for material, lista in pecas_por_material.items():
         cfg = chapas_cfg.get(material, {})
         rot = False if cfg.get("possui_veio") else True
         largura = float(cfg.get("comprimento", area_larg))
         altura = float(cfg.get("largura", area_alt))
-        chapas_polys = _arranjar_poligonos_ia(
+        chapas_polys = arranjar_poligonos_svgnest(
             lista,
             largura,
             altura,
             espaco,
             rot,
             estoque.get(material) if estoque else None,
+            config_maquina=config_maquina,
+            config_layers=config_layers,
+            ferramentas=ferramentas,
         )
         for placa in chapas_polys:
             for p in placa:
