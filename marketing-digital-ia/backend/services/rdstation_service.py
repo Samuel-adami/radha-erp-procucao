@@ -1,3 +1,4 @@
+import os
 import time
 import asyncio
 import logging
@@ -10,7 +11,7 @@ API_URL = "https://api.rd.services/platform/contacts"
 _CACHE = None
 _CACHE_TIMESTAMP = 0.0
 _CACHE_LOCK = asyncio.Lock()
-CACHE_TTL = 900  # 15 minutos
+CACHE_TTL = int(os.getenv("RDSTATION_CACHE_TTL", "900"))  # 15 minutos (configurável via RDSTATION_CACHE_TTL)
 
 async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
     logging.debug("Iniciando _fetch_leads()")
@@ -85,5 +86,9 @@ async def obter_leads(
             raise
         except Exception as e:
             logging.error("Falha ao obter leads: %s", e)
-            return _CACHE or []
-
+            # Em caso de erro genérico, retorna cache anterior se disponível
+            if _CACHE is not None:
+                logging.debug("Retornando cache antigo após erro ao buscar leads")
+                return _CACHE
+            # Se não houver cache, propaga erro para o frontend
+            raise HTTPException(status_code=500, detail="Falha ao obter leads do RD Station")

@@ -9,14 +9,32 @@ Configure as seguintes variáveis no `.env`:
 RDSTATION_CLIENT_ID=<client id>
 RDSTATION_CLIENT_SECRET=<client secret>
 RDSTATION_REDIRECT_URI=<url de callback>
+RDSTATION_CACHE_TTL=<cache ttl em segundos, padrão 900>
 ```
 
 ## Autenticação
 1. Acesse `/rd/login` estando autenticado no sistema. Esse endpoint monta a URL de autorização com `scope=contacts` e você será redirecionado para a página da RD Station.
-2. Após conceder acesso, a RD Station redireciona para `RDSTATION_REDIRECT_URI`, que deve apontar para `/rd/callback`. Essa rota troca o `code` pelos tokens e armazena tudo na tabela `rdstation_tokens`.
-3. O backend renova automaticamente o `access_token` usando o `refresh_token` quando necessário.
-   Uma tarefa de fundo (`auto_refresh_tokens`) verifica periodicamente se os
-   tokens estão prestes a expirar e solicita a renovação.
+2. Após conceder acesso, a RD Station redireciona para `RDSTATION_REDIRECT_URI`, que deve apontar para `/rd/callback`. Essa rota executa uma requisição POST a `https://api.rd.services/auth/token` incluindo o código de autorização e armazena os tokens na tabela `rdstation_tokens`. Por exemplo:
+```json
+{
+  "client_id": "<CLIENT_ID>",
+  "client_secret": "<CLIENT_SECRET>",
+  "code": "<AUTHORIZATION_CODE>",
+  "grant_type": "authorization_code",
+  "redirect_uri": "<RDSTATION_REDIRECT_URI>"
+}
+```
+3. O backend renova automaticamente o `access_token` usando o `refresh_token` quando necessário. A requisição POST de refresh envia o payload:
+```json
+{
+  "client_id": "<CLIENT_ID>",
+  "client_secret": "<CLIENT_SECRET>",
+  "grant_type": "refresh_token",
+  "refresh_token": "<REFRESH_TOKEN>"
+}
+```
+Uma tarefa de fundo (`auto_refresh_tokens`) verifica periodicamente se os
+tokens estão prestes a expirar e solicita a renovação.
 
 ### Inserção manual de tokens
 Se já possuir tokens válidos, envie-os para `/rd/tokens`:
@@ -53,3 +71,11 @@ python scripts/debug_rdstation_integration.py
 ```
 
 Um arquivo `rdstation_debug_info.json` será gerado contendo o resultado das tentativas de atualização dos tokens e de uma chamada de teste aos leads. Isso facilita a identificação de problemas quando a integração não está retornando dados.
+
+## Monitoramento e Alertas
+
+Para garantir a disponibilidade do serviço de leads e detectar falhas de forma proativa, é recomendado:
+
+- Expor métricas Prometheus sobre chamadas à API RD Station (sucessos, 4xx, 5xx).  
+- Coletar essas métricas (via `prometheus_client` ou exporter dedicado) e configurar alertas em caso de aumento de erro HTTP ou latência.  
+- Criar dashboards para monitorar o _throughput_ de leads e falhas de autenticação.

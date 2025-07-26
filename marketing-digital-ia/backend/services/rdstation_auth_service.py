@@ -66,7 +66,13 @@ async def exchange_code(code: str, account_id: str = "default") -> dict:
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             TOKEN_URL,
-            json={"client_id": CLIENT_ID, "client_secret": CLIENT_SECRET, "code": code},
+            json={
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "code": code,
+                "grant_type": "authorization_code",
+                "redirect_uri": REDIRECT_URI,
+            },
         )
         resp.raise_for_status()
         data = resp.json()
@@ -85,14 +91,16 @@ async def refresh(account_id: str = "default") -> dict | None:
                 json={
                     "client_id": CLIENT_ID,
                     "client_secret": CLIENT_SECRET,
+                    "grant_type": "refresh_token",
                     "refresh_token": token.get("refresh_token"),
                 },
             )
             resp.raise_for_status()
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 401:
-                # Tokens expiraram ou são inválidos. Remove do banco para que
-                # uma nova autorização seja necessária.
+                logging.warning(
+                    "Refresh token expirado para %s, removendo do banco", account_id
+                )
                 delete_tokens(account_id)
             raise
         data = resp.json()

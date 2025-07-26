@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+import logging
 from fastapi.responses import RedirectResponse
 
 from pydantic import BaseModel
@@ -34,10 +35,14 @@ async def rd_login():
 
 
 @router.get("/callback")
-async def rd_callback(code: str):
+async def rd_callback(code: str | None = None):
+    if not code:
+        logging.error("Callback RD Station chamado sem código de autorização")
+        raise HTTPException(status_code=400, detail="Parâmetro 'code' é obrigatório")
     try:
         await exchange_code(code)
     except Exception as e:
+        logging.error("Falha ao trocar código por token RD Station: %s", e)
         raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True}
 
@@ -49,4 +54,3 @@ async def store_tokens(data: TokenData):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {"ok": True}
-

@@ -4,7 +4,7 @@ Este documento descreve passo a passo como o Radha ERP importa e gerencia leads 
 
 ## Visão Geral
 
-O módulo "Gestão de Leads" faz parte do backend `marketing-digital-ia` e é acessado pelo frontend em `frontend-erp`. Os leads são buscados diretamente na API do RD Station Marketing e armazenados em cache por 15 minutos. Informações adicionais podem ser salvas localmente na tabela `leads_info`.
+O módulo "Gestão de Leads" faz parte do backend `marketing-digital-ia` e é acessado pelo frontend em `frontend-erp`. Os leads são buscados diretamente na API do RD Station Marketing e armazenados em cache em memória (TTL de 15 minutos por padrão, configurável via `RDSTATION_CACHE_TTL`). Informações adicionais podem ser salvas localmente na tabela `leads_info`.
 
 ## 1. Autenticação e Tokens RD Station
 
@@ -32,9 +32,9 @@ Arquivo principal: `marketing-digital-ia/backend/services/rdstation_service.py`.
   - Faz chamadas paginadas à API `https://api.rd.services/platform/contacts`.
   - Envia header `Authorization: Bearer {access_token}`.
   - Lê o campo `contacts` (ou `items`) de cada resposta, acumulando os resultados.
-- `async obter_leads(force_refresh=False, page_size=100, max_pages=None)`
+`async obter_leads(force_refresh=False, page_size=100, max_pages=None)`
   - Controla um cache em memória (_CACHE) válido por 15 minutos (`CACHE_TTL`).
-  - Em caso de erro, devolve o último cache disponível.
+  - Em caso de erro na captura de leads da API, retorna o cache anterior (se houver) para manter a lista disponível.
 
 ### 2.2 Dados Esperados
 
@@ -52,9 +52,10 @@ Esses campos formam a lista exibida na interface.
 
 Definidas em `marketing-digital-ia/backend/routes/leads.py`:
 
-- `GET /leads/`
+`GET /leads/`
   - Requer permissão `marketing-ia/gestao-leads`.
-  - Chama `obter_leads()` para buscar na RD Station e filtra por datas, campanha e estágio.
+  - Parâmetro opcional `force_refresh` (bool) para ignorar o cache em memória e forçar nova consulta.
+  - Chama `obter_leads(force_refresh)` para buscar na RD Station e filtra por datas, campanha e estágio.
 - `GET /leads/info/{rd_id}`
   - Retorna informações complementares salvas em `leads_info` por `obter_info` (`services/leads_info_service.py`).
 - `POST /leads/info/{rd_id}`
@@ -92,7 +93,9 @@ Os componentes React ficam em `frontend-erp/src/modules/MarketingDigitalIA`.
 
 - **Tokens inválidos ou expirados** – verifique a tabela `rdstation_tokens` ou reexecute o fluxo `/rd/login`.
 - **Variáveis de ambiente ausentes** – `RDSTATION_CLIENT_ID`, `RDSTATION_CLIENT_SECRET` e `RDSTATION_REDIRECT_URI` devem estar configuradas.
-- **Falha de comunicação com a API da RD Station** – erros de rede são registrados e o serviço pode retornar dados em cache.
+- **Falha de comunicação com a API da RD Station** – erros de rede são registrados e o serviço agora propaga o erro como uma falha HTTP para o frontend.
+
+- **Monitoramento e alertas** – recomenda‑se expor métricas Prometheus para chamadas de leads (sucessos, falhas 4xx/5xx) e configurar alertas em caso de aumento de erros ou latência.
 
 Com estes arquivos e passos é possível depurar por que os leads não estão aparecendo no Radha ERP.
 

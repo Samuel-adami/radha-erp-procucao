@@ -20,9 +20,13 @@ async def listar_leads(
     fim: str | None = Query(None),
     campanha: str | None = Query(None),
     estagio: str | None = Query(None),
+    force_refresh: bool = Query(
+        False,
+        description="Força atualização dos leads ignorando o cache em memória",
+    ),
 ):
     try:
-        dados = await obter_leads()
+        dados = await obter_leads(force_refresh=force_refresh)
     except HTTPException as exc:
         # Repassa problemas de autenticação da RD Station para o frontend
         raise exc
