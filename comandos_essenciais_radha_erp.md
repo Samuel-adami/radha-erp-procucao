@@ -287,4 +287,13 @@ exit
 
 ---
 
+## 🟩 OAuth RD Station — Gerar novo authorization code
+
+```bash
+# Use o script que automatiza todo o fluxo (OAuth, login e fetch de leads):
+./scripts/fetch_rdstation_leads.sh
+```
+
+---
+
 > **Qualquer dúvida sobre uso dos comandos, só chamar!**

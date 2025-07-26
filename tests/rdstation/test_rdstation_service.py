@@ -11,6 +11,7 @@ sys.path.extend([str(BACKEND_DIR), str(BACKEND_DIR / "services")])
 import rdstation_service  # type: ignore
 import rdstation_auth_service  # type: ignore
 import httpx
+import _rdstation_http  # client compartilhado para RD Station
 
 class MockResponse:
     def __init__(self, status_code, data=None):
@@ -48,7 +49,7 @@ async def test_fetch_leads_refreshes_token(monkeypatch):
         MockResponse(200, {"contacts": [{"id": 1}]}),
         MockResponse(200, {"contacts": []}),
     ]
-    monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: MockAsyncClient(responses))
+    monkeypatch.setattr(_rdstation_http, "client", MockAsyncClient(responses))
 
     tokens = ["old", "new"]
     async def fake_get_token(account_id="default"):
@@ -73,7 +74,7 @@ async def test_fetch_leads_paginates(monkeypatch):
         MockResponse(200, {"contacts": [{"id": 1}, {"id": 2}]}),
         MockResponse(200, {"contacts": [{"id": 3}]}),
     ]
-    monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: MockAsyncClient(responses))
+    monkeypatch.setattr(_rdstation_http, "client", MockAsyncClient(responses))
 
     async def fake_get_token(account_id="default"):
         return "token"
@@ -92,7 +93,7 @@ async def test_fetch_leads_raises_when_no_token(monkeypatch):
 
     monkeypatch.setattr(rdstation_auth_service, "get_access_token", fake_get_token)
     monkeypatch.setattr(rdstation_service, "get_access_token", fake_get_token)
-    monkeypatch.setattr(httpx, "AsyncClient", lambda *a, **k: MockAsyncClient([]))
+    monkeypatch.setattr(_rdstation_http, "client", MockAsyncClient([]))
 
     with pytest.raises(RuntimeError):
         await rdstation_service._fetch_leads()

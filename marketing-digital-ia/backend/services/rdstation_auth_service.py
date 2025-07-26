@@ -6,6 +6,7 @@ import httpx
 from jose import jwt
 from sqlalchemy import text
 from database import get_db_connection
+from services._rdstation_http import client as _http_client
 
 CLIENT_ID = os.getenv("RDSTATION_CLIENT_ID")
 CLIENT_SECRET = os.getenv("RDSTATION_CLIENT_SECRET")
@@ -63,53 +64,51 @@ def _get(account_id: str) -> dict | None:
 
 
 async def exchange_code(code: str, account_id: str = "default") -> dict:
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            TOKEN_URL,
-            json={
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": REDIRECT_URI,
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        save_tokens(account_id, data.get("access_token"), data.get("refresh_token"), data.get("expires_in", 0))
-        return data
+    resp = await _http_client.post(
+        TOKEN_URL,
+        json={
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": REDIRECT_URI,
+        },
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    save_tokens(account_id, data.get("access_token"), data.get("refresh_token"), data.get("expires_in", 0))
+    return data
 
 
 async def refresh(account_id: str = "default") -> dict | None:
     token = _get(account_id)
     if not token:
         return None
-    async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.post(
-                TOKEN_URL,
-                json={
-                    "client_id": CLIENT_ID,
-                    "client_secret": CLIENT_SECRET,
-                    "grant_type": "refresh_token",
-                    "refresh_token": token.get("refresh_token"),
-                },
+    try:
+        resp = await _http_client.post(
+            TOKEN_URL,
+            json={
+                "client_id": CLIENT_ID,
+                "client_secret": CLIENT_SECRET,
+                "grant_type": "refresh_token",
+                "refresh_token": token.get("refresh_token"),
+            },
+        )
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 401:
+            logging.warning(
+                "Refresh token expirado para %s, removendo do banco", account_id
             )
-            resp.raise_for_status()
-        except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 401:
-                logging.warning(
-                    "Refresh token expirado para %s, removendo do banco", account_id
-                )
-                delete_tokens(account_id)
-            raise
-        data = resp.json()
-        # Nem sempre a API retorna um novo refresh_token. Caso esteja ausente,
-        # mantemos o token atual para evitar sobrescrever com ``None`` e causar
-        # falhas na próxima atualização.
-        refresh_token = data.get("refresh_token") or token.get("refresh_token")
-        save_tokens(account_id, data.get("access_token"), refresh_token, data.get("expires_in", 0))
-        return data
+            delete_tokens(account_id)
+        raise
+    data = resp.json()
+    # Nem sempre a API retorna um novo refresh_token. Caso esteja ausente,
+    # mantemos o token atual para evitar sobrescrever com ``None`` e causar
+    # falhas na próxima atualização.
+    refresh_token = data.get("refresh_token") or token.get("refresh_token")
+    save_tokens(account_id, data.get("access_token"), refresh_token, data.get("expires_in", 0))
+    return data
 
 
 async def get_access_token(account_id: str = "default") -> str | None:

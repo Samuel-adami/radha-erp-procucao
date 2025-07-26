@@ -5,6 +5,7 @@ import logging
 import httpx
 from fastapi import HTTPException
 from services.rdstation_auth_service import get_access_token, refresh
+from services._rdstation_http import client as _http_client
 
 API_URL = "https://api.rd.services/platform/contacts"
 
@@ -24,40 +25,46 @@ async def _fetch_leads(page_size: int = 100, max_pages: int | None = None):
 
 
     headers = {"Authorization": f"Bearer {token}"}
+    # Garante que o cookie de sessão (__rdsid) seja carregado antes das consultas de leads
+    try:
+        await refresh()
+        logging.debug("Cookies RDStation após refresh: %s", _http_client.cookies)
+    except Exception:
+        logging.debug("Falha ao atualizar cookie de sessão RDStation, prosseguindo sem refresh inicial")
     resultados = []
     pagina = 1
 
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        while True:
-            params = {"page": pagina, "page_size": page_size}
+    client = _http_client
+    while True:
+        params = {"page": pagina, "page_size": page_size}
+        resp = await client.get(API_URL, headers=headers, params=params)
+        logging.debug("Código da resposta: %s", resp.status_code)
+        logging.debug("Texto bruto da resposta: %s", resp.text)
+        if resp.status_code == 401:
+            logging.error("Token expirado ou inválido. Tentando refresh...")
+            await refresh()
+            token = await get_access_token()
+            logging.debug("Novo token obtido com sucesso")
+            if not token:
+                logging.error("Falha ao obter novo token.")
+                resp.raise_for_status()
+            headers["Authorization"] = f"Bearer {token}"
             resp = await client.get(API_URL, headers=headers, params=params)
-            logging.debug("Código da resposta: %s", resp.status_code)
-            logging.debug("Texto bruto da resposta: %s", resp.text)
-            if resp.status_code == 401:
-                logging.error("Token expirado ou inválido. Tentando refresh...")
-                await refresh()
-                token = await get_access_token()
-                logging.debug("Novo token obtido com sucesso")
-                if not token:
-                    logging.error("Falha ao obter novo token.")
-                    resp.raise_for_status()
-                headers["Authorization"] = f"Bearer {token}"
-                resp = await client.get(API_URL, headers=headers, params=params)
 
-            resp.raise_for_status()
-            data = resp.json()
-            contatos = data.get("contacts", data.get("items", []))
-            logging.debug(
-                "Página %s - %s contatos retornados", pagina, len(contatos)
-            )
-            resultados.extend(contatos)
+        resp.raise_for_status()
+        data = resp.json()
+        contatos = data.get("contacts", data.get("items", []))
+        logging.debug(
+            "Página %s - %s contatos retornados", pagina, len(contatos)
+        )
+        resultados.extend(contatos)
 
-            if len(contatos) < page_size:
-                break
+        if len(contatos) < page_size:
+            break
 
-            pagina += 1
-            if max_pages and pagina > max_pages:
-                break
+        pagina += 1
+        if max_pages and pagina > max_pages:
+            break
 
     logging.debug("Total de leads acumulados: %s", len(resultados))
     return resultados
