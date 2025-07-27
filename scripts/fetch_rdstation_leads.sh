@@ -7,9 +7,9 @@ set -euo pipefail
 # 3) Faz login no ERP e pega o JWT
 # 4) Chama /leads/?force_refresh=true e exibe resultado
 
-# Configuração de host/porta (ajuste se necessário)
-HOST=${HOST:-localhost}
-PORT=${PORT:-8050}
+# Configuração de host/porta do Gateway (ajuste se necessário)
+HOST=${HOST:-127.0.0.1}
+PORT=${PORT:-8040}
 PREFIX=${PREFIX:-/marketing-ia}
 
 echo
@@ -20,7 +20,7 @@ cat <<-EOF
    http://${HOST}:${PORT}${PREFIX}/rd/login
 
 2) Após autorizar, você será redirecionado para:
-   https://${HOST}${PREFIX}/rd/callback?code=SEU_CODE
+   http://${HOST}:${PORT}${PREFIX}/rd/callback?code=SEU_CODE
 
    Copie o valor de 'code' e cole abaixo.
 EOF
