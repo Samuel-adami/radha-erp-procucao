@@ -102,6 +102,8 @@ sudo -u postgres psql producao
 SELECT * FROM producao.lotes ORDER BY id DESC LIMIT 5;
 SELECT * FROM marketing.rdstation_tokens ORDER BY id DESC LIMIT 5;
 SELECT * FROM comercial.gabster_projeto_itens;
+SELECT * FROM comercial.gabster_orcamento_itens;
+SELECT * FROM comercial.gabster_orcamento_cliente;
 SELECT * FROM comercial.atendimento_tarefas;
 
 DELETE FROM comercial.atendimento_tarefas;

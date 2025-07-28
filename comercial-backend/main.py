@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
 from gabster_api import (
+    list_orcamentos_cliente,
     list_orcamento_cliente_item,
     get_projeto,
     get_acabamento,
@@ -130,7 +131,135 @@ async def gabster_projeto(request: Request):
             "ambiente": raw.get("ambiente"),
             "projeto_ref": raw.get("projeto_ref"),
         }
-        # 2) Itens do orçamento de cliente (lista) para este projeto
+        # 2) Importa budgets via Gabster filtrando por cd_projeto (id do projeto)
+        raw_orc = list_orcamentos_cliente(
+            cd_projeto=header["id"], offset=0, limit=20, user=usuario, api_key=chave
+        )
+        # Extrai a lista de orçamentos do JSON retornado
+        logging.info(
+            "raw_orc keys for projeto %s: %s",
+            header["id"], list(raw_orc.keys())
+        )
+        budgets = (
+            raw_orc.get("objects")
+            or raw_orc.get("results")
+            or raw_orc.get("items")
+            or raw_orc.get("data")
+            or []
+        )
+        logging.info(
+            "Orçamentos retornados para projeto %s: %d registros",
+            header["id"], len(budgets)
+        )
+        # persiste budgets e itens na tabela gabster_orcamento_cliente e gabster_orcamento_itens
+        try:
+            with get_db_connection() as conn:
+                # limpa orçamentos antigos e prepara para itens de cada budget
+                conn.exec_driver_sql(
+                    "DELETE FROM gabster_orcamento_cliente WHERE cd_projeto=%s",
+                    (header["id"],),
+                )
+                for b in budgets:
+                    # insere orçamento e limpa itens antigos deste orçamento
+                    conn.exec_driver_sql(
+                        "DELETE FROM gabster_orcamento_itens WHERE cd_orcamento_cliente=%s",
+                        (b.get("id"),),
+                    )
+                    conn.exec_driver_sql(
+                        """
+                        INSERT INTO gabster_orcamento_cliente (
+                            id, cd_projeto, valor_desconto, valor_frete,
+                            valor_adicional, valor, nome_arquivo_skp,
+                            identificador_arquivo_skp, descricao, observacao
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """,
+                        (
+                            b.get("id"), header["id"], b.get("valor_desconto"),
+                            b.get("valor_frete"), b.get("valor_adicional"), b.get("valor"),
+                            b.get("nome_arquivo_skp"), b.get("identificador_arquivo_skp"),
+                            b.get("descricao"), b.get("observacao"),
+                        ),
+                    )
+                    # busca itens do orçamento via API /orcamento_cliente_item
+                    # busca itens do orçamento diretamente construindo URL para cd_orcamento_cliente
+                    orc_url = (
+                        f"{BASE_URL}orcamento_cliente_item/"
+                        f"?cd_orcamento_cliente={b.get('id')}"
+                        f"&offset=0&limit=100&format=json"
+                    )
+                    logging.info("GET ORCAMENTO_CLIENTE_ITEM direct: %s", orc_url)
+                    raw_items = requests.get(
+                        orc_url, headers=_auth_header(usuario, chave), timeout=15
+                    ).json()
+                    if isinstance(raw_items, dict):
+                        logging.info(
+                            "raw_items keys for orçamento %s: %s",
+                            b.get("id"), list(raw_items.keys()),
+                        )
+                    items_list = (
+                        raw_items.get("objects")
+                        or raw_items.get("results")
+                        or raw_items.get("data")
+                        or raw_items.get("items")
+                        or []
+                    )
+                    logging.info(
+                        "Itens retornados para orçamento %s: %d registros",
+                        b.get("id"), len(items_list)
+                    )
+                    if items_list:
+                        logging.info(
+                            "Chaves do primeiro item de orçamento %s: %s",
+                            b.get("id"), list(items_list[0].keys())
+                        )
+                    # filtra e insere itens do orçamento
+                    inserted = 0
+                    for it in items_list:
+                        # aceita string/int na comparação do projeto do orçamento
+                        if str(it.get("cd_orcamento_cliente")) != str(b.get("id")):
+                            logging.info(
+                                "Ignorado item de orçamento %s: cd_orcamento_cliente %s != projeto %s",
+                                it.get("id"), it.get("cd_orcamento_cliente"), b.get("id"),
+                            )
+                            continue
+                        conn.exec_driver_sql(
+                            """
+                            INSERT INTO gabster_orcamento_itens (
+                                id, cd_orcamento_cliente, cd_produto, quantidade,
+                                cd_acabamento, comprimento, largura_profundidade,
+                                espessura_altura, referencia, codigo_montagem,
+                                cd_componente, valor, guid
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            """,
+                            (
+                                safe_int(it.get("id")),
+                                safe_int(b.get("id")),
+                                safe_int(it.get("cd_produto")),
+                                safe_int(it.get("quantidade")),
+                                safe_int(it.get("cd_acabamento")),
+                                str(it.get("comprimento") or ""),
+                                str(it.get("largura_profundidade") or ""),
+                                str(it.get("espessura_altura") or ""),
+                                str(it.get("referencia") or ""),
+                                safe_int(it.get("codigo_montagem")),
+                                safe_int(it.get("cd_componente")),
+                                safe_float(it.get("valor")),
+                                str(it.get("guid") or ""),
+                            ),
+                        )
+                        inserted += 1
+                    logging.info(
+                        "Inseridos %d itens em gabster_orcamento_itens para orçamento %s",
+                        inserted, b.get("id")
+                    )
+                conn.commit()
+        except Exception:
+            logging.exception(
+                "Erro ao gravar orçamentos + itens para projeto %s",
+                header["id"],
+            )
+
+        # 3) Itens do orçamento de cliente (lista) para compor o Projeto 3D
         orc_items = list_orcamento_cliente_item(user=usuario, api_key=chave).get("objects") or []
         itens_brutos = [it for it in orc_items if it.get("cd_orcamento_cliente") == header["id"]]
         # 3) Deduplica códigos e busca metadados
@@ -495,18 +624,19 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
         if "dados" in data and dados_json.get("projetos"):
 
             conn.exec_driver_sql("DELETE FROM projeto_itens WHERE tarefa_id=%s", (tarefa_id,))
-            if dados_json.get("programa") == "Gabster":
-                conn.exec_driver_sql(
-                    "DELETE FROM gabster_projeto_itens WHERE tarefa_id=%s",
-                    (tarefa_id,),
-                )
             for amb, info in dados_json["projetos"].items():
                 for it in info.get("itens", []):
                     # insere itens de projeto (Promob ou Gabster), ajustando chaves para valores
                     desc = it.get("descricao") or it.get("referencia")
-                    unit = safe_float(it.get("unitario") if it.get("unitario") is not None else it.get("valor"))
+                    unit = safe_float(
+                        it.get("unitario")
+                        if it.get("unitario") is not None
+                        else it.get("valor")
+                    )
                     quant = safe_int(it.get("quantidade"))
-                    tot = safe_float(it.get("total") if it.get("total") is not None else it.get("valor"))
+                    tot = safe_float(
+                        it.get("total") if it.get("total") is not None else it.get("valor")
+                    )
                     conn.exec_driver_sql(
                         """
                         INSERT INTO projeto_itens (
@@ -524,31 +654,34 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                             tot,
                         ),
                     )
-                    if dados_json.get("programa") == "Gabster":
-                        # persiste item original do Gabster
-                        ref = it.get("referencia") or it.get("descricao")
-                        val = safe_float(it.get("valor") if it.get("valor") is not None else it.get("total"))
-                        params = (
-                            atendimento_id,
-                            tarefa_id,
-                            ref,
-                            quant,
-                            val,
-                        )
-                        logging.info("Inserindo gabster_projeto_itens: %s", params)
-                        try:
-                            conn.exec_driver_sql(
-                                """
-                                INSERT INTO gabster_projeto_itens (
-                                    atendimento_id, tarefa_id, referencia,
-                                    quantidade, valor
-                                ) VALUES (%s, %s, %s, %s, %s)
-                                """,
-                                params,
-                            )
-                        except Exception as exc:  # pragma: no cover - debug aid
-                            logging.error("Erro ao inserir em gabster_projeto_itens: %s", exc)
-                            raise
+                # grava cabeçalho do projeto Gabster usando id da plataforma (upsert)
+                if dados_json.get("programa") == "Gabster":
+                    params = (
+                        info.get("id"), info.get("nome"), info.get("cd_cliente"),
+                        info.get("nome_arquivo_skp"), info.get("identificador_arquivo_skp"),
+                        info.get("descricao"), info.get("observacao"), info.get("ambiente"),
+                        info.get("projeto_ref"),
+                    )
+                    logging.info("Upsert gabster_projeto_itens header: %s", params)
+                    conn.exec_driver_sql(
+                        """
+                        INSERT INTO gabster_projeto_itens (
+                            id, nome, cd_cliente, nome_arquivo_skp,
+                            identificador_arquivo_skp, descricao, observacao,
+                            ambiente, projeto_ref
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO UPDATE SET
+                          nome = EXCLUDED.nome,
+                          cd_cliente = EXCLUDED.cd_cliente,
+                          nome_arquivo_skp = EXCLUDED.nome_arquivo_skp,
+                          identificador_arquivo_skp = EXCLUDED.identificador_arquivo_skp,
+                          descricao = EXCLUDED.descricao,
+                          observacao = EXCLUDED.observacao,
+                          ambiente = EXCLUDED.ambiente,
+                          projeto_ref = EXCLUDED.projeto_ref
+                        """,
+                        params,
+                    )
         conn.commit()
         logging.info("Dados do projeto gravados com sucesso")
     return {"ok": True}

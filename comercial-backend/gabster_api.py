@@ -43,9 +43,22 @@ def get_projeto(cd_projeto: int, *, user: Optional[str] = None, api_key: Optiona
     return response.json()
 
 
-def list_orcamentos_cliente(*, user: Optional[str] = None, api_key: Optional[str] = None) -> dict[str, Any]:
-    """Return list of budgets available for the authenticated user."""
-    url = f"{BASE_URL}orcamento_cliente/?format=json"
+def list_orcamentos_cliente(
+    cd_projeto: Optional[int] = None,
+    offset: int = 0,
+    limit: int = 20,
+    *,
+    user: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> dict[str, Any]:
+    """Return list of budgets for a given project from the Gabster API."""
+    params = []
+    if cd_projeto is not None:
+        params.append(f"cd_projeto={cd_projeto}")
+    params.append(f"offset={offset}")
+    params.append(f"limit={limit}")
+    params.append("format=json")
+    url = f"{BASE_URL}orcamento_cliente/?" + "&".join(params)
     headers = _auth_header(user, api_key)
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
@@ -55,15 +68,20 @@ def list_orcamentos_cliente(*, user: Optional[str] = None, api_key: Optional[str
 def list_orcamento_cliente_item(
     offset: int = 0,
     limit: int = 20,
+    cd_orcamento_cliente: Optional[int] = None,
     *,
     user: Optional[str] = None,
     api_key: Optional[str] = None,
 ) -> dict[str, Any]:
-    """Return items from the 'Orçamento de Cliente' endpoint."""
-    url = (
-        f"{BASE_URL}orcamento_cliente_item/?offset={offset}&limit={limit}&format=json"
-    )
+    """Return items from the 'Orçamento de Cliente' endpoint, optionally filtered by cd_orcamento_cliente."""
+    params = [f"offset={offset}", f"limit={limit}", "format=json"]
+    if cd_orcamento_cliente is not None:
+        params.insert(0, f"cd_orcamento_cliente={cd_orcamento_cliente}")
+    url = f"{BASE_URL}orcamento_cliente_item/?" + "&".join(params)
     headers = _auth_header(user, api_key)
+    # debug: mostra URL chamada para itens de orçamento de cliente
+    import logging
+    logging.info("GET ORCAMENTO_CLIENTE_ITEM: %s", url)
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     return response.json()
