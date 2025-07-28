@@ -13,7 +13,6 @@ function ProducaoLayout() {
   const matchLote = useMatch(`${resolved.pathname}/lote/*`); // Matches /producao/lote/qualquer_nome
   const matchApontamento = useMatch({ path: `${resolved.pathname}/apontamento`, end: true });
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
-  const matchNesting = useMatch({ path: `${resolved.pathname}/nesting`, end: true });
   const matchChapas = useMatch({ path: `${resolved.pathname}/chapas`, end: true });
   const matchEstoque = useMatch({ path: `${resolved.pathname}/chapas/estoque`, end: true });
   const matchOcorr = useMatch({ path: `${resolved.pathname}/ocorrencias`, end: false });
@@ -47,14 +46,6 @@ function ProducaoLayout() {
             className={`px-3 py-1 rounded ${matchVolume ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
           >
             Apontamento Volume
-          </Link>
-        )}
-        {possuiPermissao('producao/nesting') && (
-          <Link
-            to="nesting"
-            className={`px-3 py-1 rounded ${matchNesting ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
-          >
-            Nesting
           </Link>
         )}
         {possuiPermissao('producao/chapas') && (
@@ -107,9 +98,6 @@ function Producao() {
         <Route path="lote/:nome/ferragem/:id" element={<EditarFerragem />} />
         <Route path="apontamento" element={<Apontamento />} />
         <Route path="apontamento-volume" element={<ApontamentoVolume />} />
-        <Route path="nesting" element={<Nesting />} />
-        <Route path="nesting/visualizacao" element={<VisualizacaoNesting />} />
-        <Route path="nesting/config-maquina" element={<ConfigMaquina />} />
         <Route path="chapas" element={<CadastroChapas />} />
         <Route path="chapas/estoque" element={<EstoqueChapas />} />
         <Route path="ocorrencias" element={<LotesOcorrencia />} />

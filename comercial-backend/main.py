@@ -259,6 +259,54 @@ async def gabster_projeto(request: Request):
                 header["id"],
             )
 
+        # 3) Sincroniza todos os itens de orçamentos na plataforma Gabster
+        # Chama paginadamente o endpoint /orcamento_cliente_item/?offset=&limit=&format=json
+        offset = 0
+        limit = 100
+        while True:
+            page = list_orcamento_cliente_item(
+                offset=offset, limit=limit, user=usuario, api_key=chave
+            )
+            items_page = (
+                page.get("objects")
+                or page.get("results")
+                or page.get("data")
+                or page.get("items")
+                or []
+            )
+            if not items_page:
+                break
+            with get_db_connection() as conn:
+                for item in items_page:
+                    conn.exec_driver_sql(
+                        """
+                        INSERT INTO gabster_orcamento_itens (
+                            id, cd_orcamento_cliente, cd_produto, quantidade,
+                            cd_acabamento, comprimento, largura_profundidade,
+                            espessura_altura, referencia, codigo_montagem,
+                            cd_componente, valor, guid
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (id) DO NOTHING
+                        """,
+                        (
+                            safe_int(item.get("id")),
+                            safe_int(item.get("cd_orcamento_cliente")),
+                            safe_int(item.get("cd_produto")),
+                            safe_int(item.get("quantidade")),
+                            safe_int(item.get("cd_acabamento")),
+                            str(item.get("comprimento") or ""),
+                            str(item.get("largura_profundidade") or ""),
+                            str(item.get("espessura_altura") or ""),
+                            str(item.get("referencia") or ""),
+                            safe_int(item.get("codigo_montagem")),
+                            safe_int(item.get("cd_componente")),
+                            safe_float(item.get("valor")),
+                            str(item.get("guid") or ""),
+                        ),
+                    )
+                conn.commit()
+            offset += limit
+
         # 3) Itens do orçamento de cliente (lista) para compor o Projeto 3D
         orc_items = list_orcamento_cliente_item(user=usuario, api_key=chave).get("objects") or []
         itens_brutos = [it for it in orc_items if it.get("cd_orcamento_cliente") == header["id"]]

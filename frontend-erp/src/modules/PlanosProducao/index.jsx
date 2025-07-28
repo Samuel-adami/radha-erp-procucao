@@ -1,7 +1,9 @@
 import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 import { useUsuario } from '../../UserContext';
-import { Nesting, VisualizacaoNesting, ConfigMaquina } from '../Producao/AppProducao';
+import Nesting from '../Producao/components/Nesting';
+import VisualizacaoNesting from '../Producao/components/nesting-view/VisualizacaoNesting';
+import ConfigMaquina from '../Producao/components/ConfigMaquina';
 import Seccionadora from './components/Seccionadora';
 
 function PlanosProducaoLayout() {

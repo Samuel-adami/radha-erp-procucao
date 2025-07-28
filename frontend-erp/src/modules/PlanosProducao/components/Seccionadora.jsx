@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
-import { Button } from '../../../Producao/components/ui/button';
+import { Button } from '../../Producao/components/ui/button';
 
 const Seccionadora = () => {
   const [pastaLote, setPastaLote] = useState('');
