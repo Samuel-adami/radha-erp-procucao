@@ -1,0 +1,20 @@
+{
+  "cd_acabamento": 115964,
+  "cd_componente": 489890,
+  "cd_orcamento_cliente": 510681,
+  "cd_produto": 2046635,
+  "cd_usuario_cadastro": 85263,
+  "cd_usuario_modificacao": 85263,
+  "codigo_montagem": 0,
+  "comprimento": "300.0",
+  "datahora_cadastro": "2024-10-16T07:46:16",
+  "datahora_cancelamento": null,
+  "datahora_modificacao": "2024-10-16T07:46:16",
+  "espessura_altura": "10.00",
+  "guid": null,
+  "id": 59917328,
+  "largura_profundidade": "258.000",
+  "quantidade": 2,
+  "referencia": "1981651",
+  "valor": 0.0
+}

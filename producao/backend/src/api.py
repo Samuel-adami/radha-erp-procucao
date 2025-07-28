@@ -44,6 +44,7 @@ from nesting import (
     _encontrar_dxt,
     _sanitize_material_name,
 )
+from seccionadora import gerar_seccionadora, gerar_seccionadora_preview
 import ezdxf
 from typing import Union, Dict, List
 
@@ -773,6 +774,130 @@ async def api_coletar_chapas(request: Request):
     except Exception as e:
         return {"erro": str(e)}
     return {"materiais": materiais}
+
+
+@app.post("/seccionadora-preview")
+async def seccionadora_preview(request: Request):
+    """Retorna a disposição inicial para corte por guilhotina."""
+    dados = await request.json()
+    pasta_lote = dados.get("pasta_lote")
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+    try:
+        pasta_resolvida = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+    try:
+        chapas = gerar_seccionadora_preview(
+            str(pasta_resolvida),
+            float(dados.get("largura_chapa", 2750)),
+            float(dados.get("altura_chapa", 1850)),
+            None,
+        )
+    except Exception as e:
+        return {"erro": str(e)}
+    return {"chapas": chapas}
+
+
+@app.post("/executar-seccionadora")
+async def executar_seccionadora(request: Request):
+    """Executa o corte por guilhotina final, registra sobras e gera artefatos."""
+    dados = await request.json()
+    pasta_lote = dados.get("pasta_lote")
+    largura_chapa = float(dados.get("largura_chapa", 2750))
+    altura_chapa = float(dados.get("altura_chapa", 1850))
+    sobras_ids_raw = dados.get("sobras_ids", [])
+    try:
+        sobras_ids = [int(s) for s in sobras_ids_raw if str(s).strip()]
+    except Exception:
+        sobras_ids = []
+    if not pasta_lote:
+        return {"erro": "Parâmetro 'pasta_lote' não informado."}
+    try:
+        pasta_resolvida = ensure_pasta_local(pasta_lote)
+    except FileNotFoundError as e:
+        return {"erro": str(e)}
+
+    try:
+        estoque_sel = None
+        if sobras_ids:
+            with get_db_connection() as conn:
+                rows = (
+                    conn.exec_driver_sql(
+                        f"SELECT id, chapa_id, descricao, comprimento, largura FROM {SCHEMA_PREFIX}chapas_estoque WHERE id = ANY({PLACEHOLDER})",
+                        (sobras_ids,),
+                    )
+                    .mappings()
+                    .all()
+                )
+                estoque_sel = {}
+                for r in rows:
+                    desc = (r.get("descricao") or "").split("(")[0].strip()
+                    estoque_sel.setdefault(desc, []).append(dict(r))
+
+        pasta_resultado, sobras, preview = gerar_seccionadora(
+            str(pasta_resolvida), largura_chapa, altura_chapa, estoque_sel
+        )
+    except Exception as e:
+        return {"erro": str(e)}
+
+    pasta_path = Path(pasta_resultado)
+    zip_path = shutil.make_archive(
+        str(pasta_path), "zip", root_dir=pasta_path.parent, base_dir=pasta_path.name
+    )
+    obj_key = f"seccionadoras/Seccionadora_{pasta_path.name}.zip"
+    upload_file(zip_path, obj_key)
+    os.remove(zip_path)
+    shutil.rmtree(pasta_path, ignore_errors=True)
+
+    # registra sobras no estoque
+    try:
+        with get_db_connection() as conn:
+            origem = Path(pasta_lote).stem
+            has_origem = _has_column(conn, "chapas_estoque", "origem")
+            has_reservada = _has_column(conn, "chapas_estoque", "reservada")
+            has_mov_origem = _has_column(conn, "chapas_estoque_mov", "origem")
+            for placa in sobras:
+                for s in placa:
+                    mat = s.get("Material")
+                    comp = float(s.get("height", 0))
+                    larg = float(s.get("width", 0))
+                    row = conn.exec_driver_sql(
+                        f"SELECT id, custo_m2 FROM {SCHEMA_PREFIX}chapas WHERE propriedade={PLACEHOLDER} LIMIT 1",
+                        (mat,),
+                    ).fetchone()
+                    chapa_id = row[0] if row else None
+                    custo_m2 = float(row[1]) if row and row[1] is not None else 0.0
+                    m2 = comp * larg / 1000000.0
+                    desc = f"{mat} ({int(comp)} x {int(larg)})"
+                    cols = ["chapa_id", "descricao", "comprimento", "largura", "m2", "custo_m2", "custo_total"]
+                    params = [chapa_id, desc, comp, larg, m2, custo_m2, m2 * custo_m2]
+                    if has_origem:
+                        cols.append("origem"); params.append(origem)
+                    if has_reservada:
+                        cols.append("reservada"); params.append(0)
+                    placeholders = ",".join([PLACEHOLDER] * len(params))
+                    sql = f"INSERT INTO {SCHEMA_PREFIX}chapas_estoque ({', '.join(cols)}) VALUES ({placeholders})"
+                    conn.exec_driver_sql(sql, tuple(params))
+            conn.commit()
+    except Exception:
+        pass
+
+    # registra execução no histórico
+    try:
+        with get_db_connection() as conn:
+            conn.exec_driver_sql(
+                f"INSERT INTO {SCHEMA_PREFIX}seccionadoras (lote, obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})",
+                (
+                    pasta_lote,
+                    obj_key,
+                    datetime.now().isoformat(),
+                ),
+            )
+            conn.commit()
+    except Exception:
+        pass
+    return {"status": "ok", "pasta_resultado": obj_key}
 
 
 @app.get("/listar-lotes")

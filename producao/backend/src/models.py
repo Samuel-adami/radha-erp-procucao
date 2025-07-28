@@ -33,6 +33,17 @@ class Nesting(Base):
     criado_em = Column(String)
 
 
+class Seccionadora(Base):
+    """Registros de execuções do motor de corte por guilhotina."""
+
+    __tablename__ = "seccionadoras"
+
+    id = Column(Integer, primary_key=True)
+    lote = Column(String)
+    obj_key = Column(String)
+    criado_em = Column(String)
+
+
 class LoteOcorrencia(Base):
     """Representa um lote de ocorrência gerado pelo backend."""
 

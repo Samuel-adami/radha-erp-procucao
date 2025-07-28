@@ -12,6 +12,7 @@ import {
 
 import MarketingDigitalIA from "./modules/MarketingDigitalIA";
 import Producao from "./modules/Producao";
+import PlanosProducao from "./modules/PlanosProducao";
 import Cadastros from "./modules/Cadastros";
 import Comercial from "./modules/Comercial";
 import Finance from "./modules/Finance";
@@ -59,6 +60,14 @@ function Layout({ usuario, onLogout }) {
               className={`px-2 py-1 rounded ${matchProducao ? "bg-blue-700" : "hover:bg-blue-700"}`}
             >
               Produção
+            </Link>
+          )}
+          {possuiPermissao("planos-producao") && (
+            <Link
+              to="/planos-producao"
+              className={`px-2 py-1 rounded ${useMatch("/planos-producao/*") ? "bg-blue-700" : "hover:bg-blue-700"}`}
+            >
+              Planos de Produção
             </Link>
           )}
           {possuiPermissao("comercial") && (
@@ -205,6 +214,7 @@ function App() {
           <Route path="cadastros/*" element={<Cadastros />} />
           <Route path="marketing-ia/*" element={<MarketingDigitalIA />} />
           <Route path="producao/*" element={<Producao />} />
+          <Route path="planos-producao/*" element={<PlanosProducao />} />
           <Route path="comercial/*" element={<Comercial />} />
           <Route path="finance/*" element={<Finance />} />
           <Route path="formularios/*" element={<Formularios />} />

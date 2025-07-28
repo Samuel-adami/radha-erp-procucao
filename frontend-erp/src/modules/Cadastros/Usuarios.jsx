@@ -23,6 +23,11 @@ const PERMISSOES_DISPONIVEIS = {
     'producao/ocorrencias',
     'producao/relatorios/ocorrencias'
   ],
+  'Planos de Produção': [
+    'planos-producao',
+    'planos-producao/nesting',
+    'planos-producao/seccionadora'
+  ],
   'Cadastros': [
     'cadastros',
     'cadastros/dados-empresa',
