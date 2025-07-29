@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def safe_float(value):
     """Convert value to float returning 0.0 when invalid."""
     try:
-        val = str(value).replace(".", "").replace(",", ".")
+        val = str(value).replace(".", "")
         return float(val)
     except (TypeError, ValueError):
         return 0.0
@@ -44,7 +44,7 @@ def safe_float(value):
 def safe_int(value):
     """Convert value to int returning 0 when invalid."""
     try:
-        val = str(value).replace(".", "").replace(",", ".")
+        val = str(value).replace(".", "")
         return int(float(val))
     except (TypeError, ValueError):
         return 0
@@ -115,10 +115,11 @@ async def gabster_projeto(request: Request):
     """Return header + enriched items from Gabster APIs for a Projeto."""
     params = await request.json()
     codigo = params.get("codigo")
-    usuario = params.get("usuario")
-    chave = params.get("chave")
-    if not codigo:
-        raise HTTPException(status_code=400, detail="Codigo obrigatorio")
+    usuario = os.getenv("GABSTER_API_USER")
+    chave = os.getenv("GABSTER_API_KEY")
+    if not all([codigo, usuario, chave]):
+        raise HTTPException(status_code=400, detail="Campos obrigatórios: codigo, e variáveis de ambiente GABSTER_API_USER e GABSTER_API_KEY.")
+
     try:
         # 1) Cabeçalho do projeto
         raw = get_projeto(int(codigo), user=usuario, api_key=chave)
@@ -133,6 +134,43 @@ async def gabster_projeto(request: Request):
             "ambiente": raw.get("ambiente"),
             "projeto_ref": raw.get("projeto_ref"),
         }
+
+        # ✅ INSERE O PROJETO ANTES DE QUALQUER OUTRA IMPORTAÇÃO
+        with get_db_connection() as conn:
+            conn.exec_driver_sql(
+                """
+                INSERT INTO gabster_projeto_itens (
+                    id, nome, cd_cliente, nome_arquivo_skp,
+                    identificador_arquivo_skp, descricao, observacao,
+                    ambiente, projeto_ref
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (id) DO UPDATE SET
+                    nome = EXCLUDED.nome,
+                    cd_cliente = EXCLUDED.cd_cliente,
+                    nome_arquivo_skp = EXCLUDED.nome_arquivo_skp,
+                    identificador_arquivo_skp = EXCLUDED.identificador_arquivo_skp,
+                    descricao = EXCLUDED.descricao,
+                    observacao = EXCLUDED.observacao,
+                    ambiente = EXCLUDED.ambiente,
+                    projeto_ref = EXCLUDED.projeto_ref
+                """,
+                (
+                    header["id"],
+                    header["nome"],
+                    header["cd_cliente"],
+                    header["nome_arquivo_skp"],
+                    header["identificador_arquivo_skp"],
+                    header["descricao"],
+                    header["observacao"],
+                    header["ambiente"],
+                    header["projeto_ref"]
+                )
+            )
+            conn.commit()
+
+        # segue normalmente com a importação de orçamentos...
+
+    
         # 2) Importa budgets via Gabster filtrando por cd_projeto (id do projeto)
         raw_orc = list_orcamentos_cliente(
             cd_projeto=header["id"], offset=0, limit=20, user=usuario, api_key=chave
@@ -296,9 +334,9 @@ async def gabster_projeto(request: Request):
                             safe_int(item.get("cd_produto")),
                             safe_int(item.get("quantidade")),
                             safe_int(item.get("cd_acabamento")),
-                            str(item.get("comprimento") or ""),
-                            str(item.get("largura_profundidade") or ""),
-                            str(item.get("espessura_altura") or ""),
+                            safe_int(item.get("comprimento")),
+                            safe_int(item.get("largura_profundidade")),
+                            safe_int(item.get("espessura_altura")),                           
                             str(item.get("referencia") or ""),
                             safe_int(item.get("codigo_montagem")),
                             safe_int(item.get("cd_componente")),
@@ -309,16 +347,23 @@ async def gabster_projeto(request: Request):
                 conn.commit()
             offset += limit
 
-        # 3) Itens do orçamento de cliente (lista) para compor o Projeto 3D
-        orc_items = list_orcamento_cliente_item(user=usuario, api_key=chave).get("objects") or []
-        itens_brutos = [it for it in orc_items if it.get("cd_orcamento_cliente") == header["id"]]
-        # 3) Deduplica códigos e busca metadados
-        cds_acab = {it.get("cd_acabamento") for it in itens_brutos if it.get("cd_acabamento")}
-        cds_comp = {it.get("cd_componente") for it in itens_brutos if it.get("cd_componente")}
-        cds_prod = {it.get("cd_produto") for it in itens_brutos if it.get("cd_produto")}
+        # 3) Itens do orçamento do projeto atual para compor o Projeto 3D
+        with get_db_connection() as conn:
+            res = conn.exec_driver_sql(
+                "SELECT * FROM gabster_orcamento_itens WHERE cd_orcamento_cliente IN (SELECT id FROM gabster_orcamento_cliente WHERE cd_projeto = %s)",
+                (header["id"],)
+            )
+            itens_brutos = [dict(r._mapping) for r in res.fetchall()]
+
+        # Deduplica códigos para buscar metadados externos
+        cds_acab = {it["cd_acabamento"] for it in itens_brutos if it.get("cd_acabamento")}
+        cds_comp = {it["cd_componente"] for it in itens_brutos if it.get("cd_componente")}
+        cds_prod = {it["cd_produto"] for it in itens_brutos if it.get("cd_produto")}
+
         acabamentos = {c: get_acabamento(c, user=usuario, api_key=chave) for c in cds_acab}
         componentes = {c: get_componente(c, user=usuario, api_key=chave) for c in cds_comp}
         produtos = {c: get_produto(c, user=usuario, api_key=chave) for c in cds_prod}
+
         # 4) Monta lista enriquecida
         enriched = []
         for it in itens_brutos:
@@ -343,6 +388,7 @@ async def gabster_projeto(request: Request):
                     "nome": produtos.get(it.get("cd_produto"), {}).get("nome")
                 }
             })
+
     except requests.exceptions.HTTPError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except Exception as exc:
