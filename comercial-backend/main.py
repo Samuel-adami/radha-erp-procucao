@@ -120,6 +120,9 @@ async def gabster_projeto(request: Request):
     if not all([codigo, usuario, chave]):
         raise HTTPException(status_code=400, detail="Campos obrigatórios: codigo, e variáveis de ambiente GABSTER_API_USER e GABSTER_API_KEY.")
 
+    # inicializa header/enriched para garantir retorno mesmo em caso de falha posterior
+    header: dict = {}
+    enriched: list = []
     try:
         # 1) Cabeçalho do projeto
         raw = get_projeto(int(codigo), user=usuario, api_key=chave)
@@ -220,8 +223,7 @@ async def gabster_projeto(request: Request):
                             b.get("descricao"), b.get("observacao"),
                         ),
                     )
-                    # busca itens do orçamento via API /orcamento_cliente_item
-                    # busca itens do orçamento diretamente construindo URL para cd_orcamento_cliente
+                    
                     orc_url = (
                         f"{BASE_URL}orcamento_cliente_item/"
                         f"?cd_orcamento_cliente={b.get('id')}"
@@ -390,9 +392,11 @@ async def gabster_projeto(request: Request):
             })
 
     except requests.exceptions.HTTPError as exc:
+        # erros de autenticação ou recursos não encontrados retornam 400
         raise HTTPException(status_code=400, detail=str(exc))
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception:
+        # captura e segue, mantendo os dados já importados nas tabelas
+        logging.exception("Erro ao processar projeto %s", codigo)
     # estrutura de saída compatível com front-end Projeto 3D
     ambiente = header.get("ambiente") or "Projeto"
     # soma o valor total dos itens para facilitar fluxo de negociação
@@ -752,32 +756,37 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                     )
                 # grava cabeçalho do projeto Gabster usando id da plataforma (upsert)
                 if dados_json.get("programa") == "Gabster":
-                    params = (
-                        info.get("id"), info.get("nome"), info.get("cd_cliente"),
-                        info.get("nome_arquivo_skp"), info.get("identificador_arquivo_skp"),
-                        info.get("descricao"), info.get("observacao"), info.get("ambiente"),
-                        info.get("projeto_ref"),
-                    )
-                    logging.info("Upsert gabster_projeto_itens header: %s", params)
-                    conn.exec_driver_sql(
-                        """
-                        INSERT INTO gabster_projeto_itens (
-                            id, nome, cd_cliente, nome_arquivo_skp,
-                            identificador_arquivo_skp, descricao, observacao,
-                            ambiente, projeto_ref
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (id) DO UPDATE SET
-                          nome = EXCLUDED.nome,
-                          cd_cliente = EXCLUDED.cd_cliente,
-                          nome_arquivo_skp = EXCLUDED.nome_arquivo_skp,
-                          identificador_arquivo_skp = EXCLUDED.identificador_arquivo_skp,
-                          descricao = EXCLUDED.descricao,
-                          observacao = EXCLUDED.observacao,
-                          ambiente = EXCLUDED.ambiente,
-                          projeto_ref = EXCLUDED.projeto_ref
-                        """,
-                        params,
-                    )
+                    try:
+                        params = (
+                            info.get("id"), info.get("nome"), info.get("cd_cliente"),
+                            info.get("nome_arquivo_skp"), info.get("identificador_arquivo_skp"),
+                            info.get("descricao"), info.get("observacao"), info.get("ambiente"),
+                            info.get("projeto_ref"),
+                        )
+                        logging.info("Upsert gabster_projeto_itens header: %s", params)
+                        conn.exec_driver_sql(
+                            """
+                            INSERT INTO gabster_projeto_itens (
+                                id, nome, cd_cliente, nome_arquivo_skp,
+                                identificador_arquivo_skp, descricao, observacao,
+                                ambiente, projeto_ref
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (id) DO UPDATE SET
+                              nome = EXCLUDED.nome,
+                              cd_cliente = EXCLUDED.cd_cliente,
+                              nome_arquivo_skp = EXCLUDED.nome_arquivo_skp,
+                              identificador_arquivo_skp = EXCLUDED.identificador_arquivo_skp,
+                              descricao = EXCLUDED.descricao,
+                              observacao = EXCLUDED.observacao,
+                              ambiente = EXCLUDED.ambiente,
+                              projeto_ref = EXCLUDED.projeto_ref
+                            """,
+                            params,
+                        )
+                    except Exception:
+                        logging.exception(
+                            "Erro ao gravar cabeçalho gabster_projeto_itens"
+                        )
         conn.commit()
         logging.info("Dados do projeto gravados com sucesso")
     return {"ok": True}
