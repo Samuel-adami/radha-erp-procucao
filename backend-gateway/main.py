@@ -43,6 +43,7 @@ PRODUCAO_BACKEND_URL = os.getenv("PRODUCAO_BACKEND_URL", "http://127.0.0.1:8060"
 # de resposta pode ser configurado via PRODUCAO_TIMEOUT.
 PRODUCAO_TIMEOUT = float(os.getenv("PRODUCAO_TIMEOUT", "120"))
 COMERCIAL_BACKEND_URL = os.getenv("COMERCIAL_BACKEND_URL", "http://127.0.0.1:8070")
+COMERCIAL_TIMEOUT = float(os.getenv("COMERCIAL_TIMEOUT", "300"))
 FINANCE_BACKEND_URL = os.getenv("FINANCE_BACKEND_URL", "http://127.0.0.1:8080")
 
 
@@ -144,7 +145,8 @@ async def call_producao_backend(path: str, request: Request):
 # Rota para o módulo Comercial
 @app.api_route("/comercial/{path:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def call_comercial_backend(path: str, request: Request):
-    async with httpx.AsyncClient() as client:
+    timeout = httpx.Timeout(COMERCIAL_TIMEOUT)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         url = f"{COMERCIAL_BACKEND_URL}/{path}"
         try:
             headers = {k: v for k, v in request.headers.items() if k.lower() not in ["host"]}
@@ -546,4 +548,3 @@ if os.path.exists(index_file):
         if os.path.isfile(candidate):
             return FileResponse(candidate)
         return FileResponse(index_file)
-

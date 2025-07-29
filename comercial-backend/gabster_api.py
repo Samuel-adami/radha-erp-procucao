@@ -151,3 +151,29 @@ def get_produto(
     response = requests.get(url, headers=headers, timeout=15)
     response.raise_for_status()
     return response.json()
+
+def get_cliente(
+    cd_cliente: int,
+    *, user: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch cliente details from Gabster API."""
+    url = f"{BASE_URL}cliente/{cd_cliente}/?format=json"
+    headers = _auth_header(user, api_key)
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+def get_unidade(
+    cd_unidade: int,
+    *, user: Optional[str] = None,
+    api_key: Optional[str] = None
+) -> dict[str, Any]:
+    """Fetch unidade details from Gabster API."""
+    url = f"{BASE_URL}unidade/{cd_unidade}/?format=json"
+    headers = _auth_header(user, api_key)
+    response = requests.get(url, headers=headers, timeout=15)
+    response.raise_for_status()
+    return response.json()
+
+    

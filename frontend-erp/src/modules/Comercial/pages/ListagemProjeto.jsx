@@ -2,6 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
+// formata valores para moeda BRL
+const currency = v =>
+  Number(v || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
 function normalize(str) {
   return (str || '')
     .normalize('NFD')
@@ -16,7 +23,8 @@ export default function ListagemProjeto() {
   const tarefaId = params.tarefaId;
   const ambiente = decodeURIComponent(params.ambiente || '').trim();
   const [itens, setItens] = useState([]);
-  const [headers, setHeaders] = useState([]);
+  const [cabecalho, setCabecalho] = useState({});
+  const [valorTotal, setValorTotal] = useState(0);
 
   useEffect(() => {
     const carregar = async () => {
@@ -35,35 +43,59 @@ export default function ListagemProjeto() {
 
       );
       const info = chave ? projetos[chave] : projetos[ambiente];
-      const lista = info?.itens || [];
-      setItens(lista);
-      setHeaders(lista[0] ? Object.keys(lista[0]) : []);
+      setCabecalho(info.cabecalho || {});
+      setValorTotal(info.valor_total_orcamento || 0);
+      setItens(info.itens || []);
     };
     carregar();
   }, [id, tarefaId, ambiente]);
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold">Listagem do Projeto - {ambiente}</h3>
-      <table className="min-w-full text-sm border">
-        <thead>
+      <div className="p-4 bg-gray-100 rounded shadow">
+        <h3 className="text-lg font-semibold mb-2">Orçamento Final Gabster</h3>
+        <div className="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <span className="font-medium">Código do Projeto:</span> {cabecalho.cd_projeto}
+          </div>
+          <div>
+            <span className="font-medium">Nome do Cliente:</span> {cabecalho.nome_cliente}
+          </div>
+          <div>
+            <span className="font-medium">Ambiente:</span> {cabecalho.ambiente}
+          </div>
+          <div className="col-span-3">
+            <span className="font-medium">Valor Total:</span> R$ {currency(valorTotal)}
+          </div>
+        </div>
+      </div>
+      <table className="min-w-full text-sm divide-y divide-gray-200">
+        <thead className="bg-gray-50">
           <tr>
-            {headers.map(h => (
-              <th key={h} className="border px-2 text-left">{h}</th>
-            ))}
+            <th className="px-4 py-2 text-left">Ref</th>
+            <th className="px-4 py-2 text-left">Produto</th>
+            <th className="px-4 py-2 text-center">Qtde</th>
+            <th className="px-4 py-2 text-left">Unidade</th>
+            <th className="px-4 py-2 text-right">Valor Unitário</th>
+            <th className="px-4 py-2 text-right">Total Produto</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="bg-white divide-y divide-gray-200">
           {itens.map((it, idx) => (
             <tr key={idx}>
-              {headers.map(h => (
-                <td key={h} className="border px-2 text-left">{String(it[h] ?? '')}</td>
-              ))}
+              <td className="px-4 py-2">{it.ref}</td>
+              <td className="px-4 py-2">{it.produto}</td>
+              <td className="px-4 py-2 text-center">{it.qtde}</td>
+              <td className="px-4 py-2">{it.unidade}</td>
+              <td className="px-4 py-2 text-right">{currency(it.valor_unitario)}</td>
+              <td className="px-4 py-2 text-right">{currency(it.total_produto)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <Link to={`/comercial/${id}`} className="px-3 py-1 rounded bg-blue-600 text-white">Voltar</Link>
+      <Link to={`/comercial/${id}`} className="px-3 py-1 rounded bg-blue-600 text-white">
+        Voltar
+      </Link>
     </div>
   );
 }

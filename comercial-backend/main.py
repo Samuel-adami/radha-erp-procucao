@@ -9,6 +9,7 @@ from gabster_api import (
     get_acabamento,
     get_componente,
     get_produto,
+    get_cliente,
     BASE_URL,
     _auth_header
 )
@@ -301,53 +302,6 @@ async def gabster_projeto(request: Request):
                 header["id"],
             )
 
-        # 3) Sincroniza todos os itens de orçamentos na plataforma Gabster
-        # Chama paginadamente o endpoint /orcamento_cliente_item/?offset=&limit=&format=json
-        offset = 0
-        limit = 100
-        while True:
-            page = list_orcamento_cliente_item(
-                offset=offset, limit=limit, user=usuario, api_key=chave
-            )
-            items_page = (
-                page.get("objects")
-                or page.get("results")
-                or page.get("data")
-                or page.get("items")
-                or []
-            )
-            if not items_page:
-                break
-            with get_db_connection() as conn:
-                for item in items_page:
-                    conn.exec_driver_sql(
-                        """
-                        INSERT INTO gabster_orcamento_itens (
-                            id, cd_orcamento_cliente, cd_produto, quantidade,
-                            cd_acabamento, comprimento, largura_profundidade,
-                            espessura_altura, referencia, codigo_montagem,
-                            cd_componente, valor, guid
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (id) DO NOTHING
-                        """,
-                        (
-                            safe_int(item.get("id")),
-                            safe_int(item.get("cd_orcamento_cliente")),
-                            safe_int(item.get("cd_produto")),
-                            safe_int(item.get("quantidade")),
-                            safe_int(item.get("cd_acabamento")),
-                            safe_int(item.get("comprimento")),
-                            safe_int(item.get("largura_profundidade")),
-                            safe_int(item.get("espessura_altura")),                           
-                            str(item.get("referencia") or ""),
-                            safe_int(item.get("codigo_montagem")),
-                            safe_int(item.get("cd_componente")),
-                            safe_float(item.get("valor")),
-                            str(item.get("guid") or ""),
-                        ),
-                    )
-                conn.commit()
-            offset += limit
 
         # 3) Itens do orçamento do projeto atual para compor o Projeto 3D
         with get_db_connection() as conn:
@@ -399,9 +353,40 @@ async def gabster_projeto(request: Request):
         logging.exception("Erro ao processar projeto %s", codigo)
     # estrutura de saída compatível com front-end Projeto 3D
     ambiente = header.get("ambiente") or "Projeto"
-    # soma o valor total dos itens para facilitar fluxo de negociação
-    total = sum(item.get("valor", 0) for item in enriched)
-    return {"projetos": {ambiente: {**header, "itens": enriched, "total": total}}}
+    # monta orçamento final para front Projeto 3D
+    # Cabeçalho
+    cli_meta = get_cliente(header.get("cd_cliente"), user=usuario, api_key=chave)
+    orcamento_header = {
+        "cd_projeto": header.get("id"),
+        "nome_cliente": cli_meta.get("nome"),
+        "ambiente": ambiente,
+    }
+    # Itens do orçamento final
+    itens_final: list[dict] = []
+    for it in itens_brutos:
+        prod_meta = produtos.get(it.get("cd_produto"), {})
+        qtd = it.get("quantidade") or 0
+        valor = it.get("valor") or 0
+        valor_unit = valor / qtd if qtd else 0
+        itens_final.append({
+            "ref": it.get("cd_produto"),
+            "produto": prod_meta.get("nome"),
+            "qtde": qtd,
+            "unidade": prod_meta.get("unidade"),
+            "valor_unitario": valor_unit,
+            "total_produto": valor,
+        })
+    # Valor total do orçamento (campo valor em gabster_orcamento_cliente)
+    with get_db_connection() as conn:
+        res = conn.exec_driver_sql(
+            "SELECT valor FROM gabster_orcamento_cliente WHERE id=%s",
+            (raw_orc.get("objects")[0].get("id") if isinstance(raw_orc, dict) and raw_orc.get("objects") else None,)
+        ).scalar() or 0
+    return {
+        "cabecalho": orcamento_header,
+        "itens": itens_final,
+        "valor_total_orcamento": res,
+    }
 
 
 @app.post("/leitor-orcamento-promob")

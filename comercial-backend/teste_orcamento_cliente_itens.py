@@ -1,7 +1,7 @@
 import requests
 import json
 
-url = 'https://api.gabster.com.br/integracao/api/v2/orcamento_cliente_item/?format=json'
+url = 'https://api.gabster.com.br/integracao/api/v2/unidade/?format=json'
 
 headers = {
     'Content-Type': 'application/json',
