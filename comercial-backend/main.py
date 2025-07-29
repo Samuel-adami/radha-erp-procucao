@@ -9,6 +9,8 @@ from gabster_api import (
     get_acabamento,
     get_componente,
     get_produto,
+    BASE_URL,
+    _auth_header
 )
 from orcamento_gabster import parse_gabster_projeto
 from storage import (
@@ -237,9 +239,9 @@ async def gabster_projeto(request: Request):
                                 safe_int(it.get("cd_produto")),
                                 safe_int(it.get("quantidade")),
                                 safe_int(it.get("cd_acabamento")),
-                                str(it.get("comprimento") or ""),
-                                str(it.get("largura_profundidade") or ""),
-                                str(it.get("espessura_altura") or ""),
+                                safe_int(it.get("comprimento") or ""),
+                                safe_int(it.get("largura_profundidade") or ""),
+                                safe_int(it.get("espessura_altura") or ""),
                                 str(it.get("referencia") or ""),
                                 safe_int(it.get("codigo_montagem")),
                                 safe_int(it.get("cd_componente")),

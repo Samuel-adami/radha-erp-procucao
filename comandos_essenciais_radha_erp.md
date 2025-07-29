@@ -51,6 +51,7 @@ python3.11 -m venv venv
 
 # Ativar ambiente virtual
 source venv/bin/activate
+source ../venv/bin/activate
 source ../../venv/bin/activate
 source ../../../venv/bin/activate
 
