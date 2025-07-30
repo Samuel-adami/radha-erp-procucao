@@ -48,3 +48,6 @@ tests/rdstation/__pycache__/
 venv/
 .env
 *.env
+adicionar_alias_radhaai.sh
+dev_assistant.sh
+gpt_dev_assistant_interativo.py
