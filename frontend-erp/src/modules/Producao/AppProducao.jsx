@@ -15,6 +15,9 @@ import CadastroMotivos from "./components/CadastroMotivos";
 import RelatorioOcorrencias from "./components/RelatorioOcorrencias";
 import EditarLoteOcorrencia from "./components/EditarLoteOcorrencia";
 import PacoteOcorrencia from "./components/PacoteOcorrencia";
+import Nesting from "./components/Nesting";
+import VisualizacaoNesting from "./components/nesting-view/VisualizacaoNesting";
+import ConfigMaquina from "./components/ConfigMaquina";
 import "./Producao.css";
 
 let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
@@ -763,4 +766,4 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, ImportarXML, VisualizacaoPeca, CadastroChapas, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, ImportarXML, VisualizacaoPeca, CadastroChapas, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };
