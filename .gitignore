@@ -1,15 +1,50 @@
-__pycache__/
-*.pyc
-env/
-venv/
-.env/
-.env
-.venv/
-node_modules/
+# Logs
+logs/
 *.log
 
-logs/
-*.pid
+# Dependências
+node_modules/
+dist/
+dist-ssr/
+
+# Arquivos locais
+*.local
+
+# VS Code - permitir arquivos úteis
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/settings.json
+
+# IDEs
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
 
 producao/backend/src/saida/
+arquivos_samuel/
 
+arquivos_samuel/
+backend-gateway/.env
+backend-gateway/__pycache__/
+backend-gateway/services/__pycache__/
+comercial-backend/.env
+comercial-backend/__pycache__/
+finance_backend/.env
+finance_backend/__pycache__/
+finance_backend/services/__pycache__/
+frontend-erp/.env
+producao/backend/src/.env
+producao/backend/src/__pycache__/
+producao/backend/src/venv/
+tests/__pycache__/
+tests/finance/__pycache__/
+tests/rdstation/__pycache__/
+venv/
+.env
+*.env
