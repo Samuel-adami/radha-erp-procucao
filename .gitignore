@@ -51,3 +51,4 @@ venv/
 adicionar_alias_radhaai.sh
 dev_assistant.sh
 gpt_dev_assistant_interativo.py
+__pycache__/

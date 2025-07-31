@@ -111,67 +111,71 @@ class AgenteERP_RAG_Focado:
             self.logger.error("Erro ao listar objetos do S3: %s", e)
             return None
 
-def _load_code_documents(self, solicitacao_usuario: str) -> list[Document]:
-    """
-    Carrega arquivos relevantes com base em palavras-chave da solicitação (via ripgrep),
-    ao invés de carregar diretórios inteiros.
-    """
-    from langchain_community.document_loaders import TextLoader
-    from pathlib import Path
+    def _load_code_documents(self, solicitacao_usuario: str) -> list[Document]:
+        """
+        Carrega arquivos relevantes com base em palavras-chave da solicitação (via ripgrep),
+        ao invés de carregar diretórios inteiros.
+        """
+        from langchain_community.document_loaders import TextLoader
 
-    arquivos = self.buscar_arquivos_por_palavra_chave(solicitacao_usuario, root_path=os.getenv("PATH_DO_ERP", "."))
-    docs = []
+        # Busca arquivos relevantes em cada diretório de escopo definido
+        arquivos_set: set[str] = set()
+        for path in self.escopos_de_codigo:
+            encontrados = self.buscar_arquivos_por_palavra_chave(solicitacao_usuario, root_path=path)
+            arquivos_set.update(encontrados)
+        arquivos = list(arquivos_set)
+        docs: list[Document] = []
 
-    if not arquivos:
-        self.logger.warning("Nenhum arquivo relevante encontrado com base na solicitação. Usando fallback padrão.")
-        return []
+        if not arquivos:
+            self.logger.warning("Nenhum arquivo relevante encontrado com base na solicitação. Usando fallback padrão.")
+            return []
 
-    for arq in arquivos:
-        try:
-            loader = TextLoader(arq)
-            docs.extend(loader.load())
-        except Exception as e:
-            self.logger.warning("Erro ao carregar arquivo %s: %s", arq, e)
+        for arq in arquivos:
+            try:
+                loader = TextLoader(arq)
+                docs.extend(loader.load())
+            except Exception as e:
+                self.logger.warning("Erro ao carregar arquivo %s: %s", arq, e)
 
-    unique = {doc.metadata['source']: doc for doc in docs}
-    self.logger.info("Total de %d arquivos relevantes encontrados.", len(unique))
-    return list(unique.values())
+        unique = {doc.metadata['source']: doc for doc in docs}
+        self.logger.info("Total de %d arquivos relevantes encontrados.", len(unique))
+        return list(unique.values())
 
-def buscar_arquivos_por_palavra_chave(self, solicitacao: str, root_path: str) -> list[str]:
-    """
-    Usa ripgrep para buscar arquivos com base em palavras-chave extraídas da solicitação natural do usuário.
-    """
-    import subprocess
-    import re
+    def buscar_arquivos_por_palavra_chave(self, solicitacao: str, root_path: str) -> list[str]:
+        """
+        Usa ripgrep para buscar arquivos com base em palavras-chave extraídas da solicitação natural do usuário.
+        """
+        import subprocess
+        import re
 
-    palavras = re.findall(r'\b\w+\b', solicitacao.lower())
-    chaves = [p for p in palavras if len(p) > 4 and p not in {
-        "corrija", "falha", "erro", "importacao", "corrigir", "problema",
-        "codigo", "funcao", "metodo", "arquivo", "projeto", "sistema"
-    }]
+        palavras = re.findall(r'\b\w+\b', solicitacao.lower())
+        chaves = [p for p in palavras if len(p) > 4 and p not in {
+            "corrija", "falha", "erro", "importacao", "corrigir", "problema",
+            "codigo", "funcao", "metodo", "arquivo", "projeto", "sistema"
+        }]
 
-    if not chaves:
-        print("⚠️ Nenhuma palavra-chave forte detectada. Tentando com termos genéricos.")
-        chaves = palavras  # tenta tudo
+        if not chaves:
+            print("⚠️ Nenhuma palavra-chave forte detectada. Tentando com termos genéricos.")
+            chaves = palavras  # tenta tudo
 
-    encontrados = set()
-    for chave in chaves:
-        try:
-            resultado = subprocess.run(
-                ["rg", "-l", "-i", chave, root_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                text=True,
-                check=False
-            )
-            for linha in resultado.stdout.strip().split("\n"):
-                if linha.strip() and os.path.isfile(linha.strip()):
-                    encontrados.add(linha.strip())
-        except FileNotFoundError:
-            print("❌ Ripgrep (rg) não instalado. Instale com: sudo apt install ripgrep")
-            break
+        encontrados = set()
+        for chave in chaves:
+            try:
+                resultado = subprocess.run(
+                    ["rg", "-l", "-i", chave, root_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    check=False
+                )
+                for linha in resultado.stdout.strip().split("\n"):
+                    if linha.strip() and os.path.isfile(linha.strip()):
+                        encontrados.add(linha.strip())
+            except FileNotFoundError:
+                print("❌ Ripgrep (rg) não instalado. Instale com: sudo apt install ripgrep")
+                break
 
-    return list(encontrados)
+        return list(encontrados)
 
     def _load_external_documents(self, docs: list[Document]) -> list[Document]:
         """Anexa documentos externos de schema do banco e estrutura do S3."""
@@ -243,8 +247,7 @@ def buscar_arquivos_por_palavra_chave(self, solicitacao: str, root_path: str) ->
         usando RAG e parsing robusto de JSON.
         """
         self.logger.info("Gerando plano de ação com RAG...")
-        try:    agent = AgenteERP_RAG_Focado(escopos_de_codigo=focus)
-
+        try:
             response_str = self.rag_chain.invoke(solicitacao_usuario)
             decoder = json.JSONDecoder()
             obj, _ = decoder.raw_decode(response_str)
