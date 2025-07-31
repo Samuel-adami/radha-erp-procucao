@@ -36,13 +36,21 @@ export default function ListagemProjeto() {
         let dados = {};
         try {
           dados = typeof orc.dados === 'string' ? JSON.parse(orc.dados) : orc.dados || {};
-        } catch {
-          // ignore parse errors
+        } catch (parseErr) {
+          console.error('Erro ao parsear orc.dados:', orc.dados, parseErr);
+          dados = {};
         }
         const projetos = dados.projetos || {};
         const chave = Object.keys(projetos).find(k => normalize(k) === normalize(ambiente));
         const info = chave ? projetos[chave] : projetos[ambiente];
+        console.log('Dados do orçamento original (orc.dados):', orc.dados);
+        console.log('Dados parseados (dados):', dados);
+        console.log('Projetos disponíveis:', projetos);
+        console.log('Ambiente solicitado:', ambiente);
+        console.log('Chave encontrada para ambiente:', chave);
+        console.log('Informações do projeto (info):', info);
         if (!info || !info.cabecalho || !Array.isArray(info.itens)) {
+          console.error('Dados do projeto inválidos ou incompletos', { info });
           throw new Error('Dados do projeto inválidos ou incompletos');
         }
         setCabecalho(info.cabecalho);
