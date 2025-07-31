@@ -256,12 +256,14 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                     Importar do Gabster
                   </Button>
                   {dadosProj[amb] && (
-                    <Link
-                      to={`listagem/${tarefa.id}/${encodeURIComponent(amb)}`}
+                    <a
+                      href={`${import.meta.env.VITE_GATEWAY_URL}/comercial/${dadosProj[amb].cabecalho.cd_projeto}/projeto3d/html`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="text-sm text-blue-600 underline"
                     >
-                      Listagem
-                    </Link>
+                      Ver Orçamento
+                    </a>
                   )}
                 </div>
                   {dadosProj[amb] && (

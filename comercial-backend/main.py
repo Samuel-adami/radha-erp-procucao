@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, HTMLResponse
 from database import get_db_connection, init_db, insert_with_id
 from orcamento_promob import parse_promob_xml
 from gabster_api import (
@@ -29,6 +29,7 @@ import requests
 import base64
 import tempfile
 import os
+from fastapi.templating import Jinja2Templates
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -73,9 +74,11 @@ def get_next_codigo(conn):
     return f"AT-{seq:04d}"
 
 app = FastAPI(redirect_slashes=False)
-
 # Initialize commercial database tables on startup
 init_db()
+
+# Template engine for HTML rendering
+templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 
 @app.get("/")
@@ -387,6 +390,100 @@ async def gabster_projeto(request: Request):
         "itens": itens_final,
         "valor_total_orcamento": res,
     }
+
+
+@app.get("/comercial/{codigo}/projeto3d/html", response_class=HTMLResponse)
+async def projeto3d_html(request: Request, codigo: int):
+    """Renderiza em HTML o orçamento do Projeto 3D diretamente do Gabster API."""
+    usuario = os.getenv("GABSTER_API_USER")
+    chave = os.getenv("GABSTER_API_KEY")
+    if not all([usuario, chave]):
+        raise HTTPException(
+            status_code=400,
+            detail="Variáveis de ambiente GABSTER_API_USER e GABSTER_API_KEY são obrigatórias",
+        )
+    # Cabeçalho do projeto
+    raw = get_projeto(int(codigo), user=usuario, api_key=chave)
+    cab = {
+        "id": raw.get("id"),
+        "nome": raw.get("nome"),
+        "cd_cliente": raw.get("cd_cliente"),
+        "nome_arquivo_skp": raw.get("nome_arquivo_skp"),
+        "identificador_arquivo_skp": raw.get("identificador_arquivo_skp"),
+        "descricao": raw.get("descricao"),
+        "observacao": raw.get("observacao"),
+        "ambiente": raw.get("ambiente"),
+        "projeto_ref": raw.get("projeto_ref"),
+    }
+    # Orçamentos (budgets) do projeto
+    raw_orc = list_orcamentos_cliente(
+        cd_projeto=cab["id"], offset=0, limit=20, user=usuario, api_key=chave
+    )
+    budgets = (
+        raw_orc.get("objects")
+        or raw_orc.get("results")
+        or raw_orc.get("items")
+        or raw_orc.get("data")
+        or []
+    )
+    # Itens brutos de todos os orçamentos
+    itens_brutos: list[dict] = []
+    for b in budgets:
+        raw_items = list_orcamento_cliente_item(
+            cd_orcamento_cliente=b.get("id"), offset=0, limit=100, user=usuario, api_key=chave
+        )
+        items_list = (
+            raw_items.get("objects")
+            or raw_items.get("results")
+            or raw_items.get("data")
+            or raw_items.get("items")
+            or []
+        )
+        for it in items_list:
+            if str(it.get("cd_orcamento_cliente")) != str(b.get("id")):
+                continue
+            itens_brutos.append(it)
+    # Buscar metadados de acabamento, componente e produto
+    cds_acab = {it.get("cd_acabamento") for it in itens_brutos if it.get("cd_acabamento")}
+    cds_comp = {it.get("cd_componente") for it in itens_brutos if it.get("cd_componente")}
+    cds_prod = {it.get("cd_produto") for it in itens_brutos if it.get("cd_produto")}
+    acabamentos = {c: get_acabamento(c, user=usuario, api_key=chave) for c in cds_acab}
+    componentes = {c: get_componente(c, user=usuario, api_key=chave) for c in cds_comp}
+    produtos = {c: get_produto(c, user=usuario, api_key=chave) for c in cds_prod}
+    # Montar cabeçalho para renderização
+    cli_meta = get_cliente(cab.get("cd_cliente"), user=usuario, api_key=chave)
+    orcamento_header = {
+        "cd_projeto": cab.get("id"),
+        "nome_cliente": cli_meta.get("nome"),
+        "ambiente": cab.get("ambiente") or "Projeto",
+    }
+    # Montar lista final de itens
+    itens_final: list[dict] = []
+    for it in itens_brutos:
+        prod_meta = produtos.get(it.get("cd_produto"), {})
+        qtd = it.get("quantidade") or 0
+        valor = it.get("valor") or 0
+        valor_unit = valor / qtd if qtd else 0
+        itens_final.append({
+            "ref": it.get("cd_produto"),
+            "produto": prod_meta.get("nome"),
+            "qtde": qtd,
+            "unidade": prod_meta.get("unidade"),
+            "valor_unitario": valor_unit,
+            "total_produto": valor,
+        })
+    # Valor total do orçamento
+    valor_total = sum(it.get("total_produto") for it in itens_final)
+    # Renderiza template HTML
+    return templates.TemplateResponse(
+        "projeto3d.html",
+        {
+            "request": request,
+            "cabecalho": orcamento_header,
+            "itens": itens_final,
+            "valor_total": valor_total,
+        },
+    )
 
 
 @app.post("/leitor-orcamento-promob")
