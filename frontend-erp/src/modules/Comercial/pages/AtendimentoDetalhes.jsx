@@ -11,7 +11,14 @@ const currency = v =>
 
 function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
   const [edit, setEdit] = useState(false);
-  const [dados, setDados] = useState(() => tarefa.dados || {});
+  const [dados, setDados] = useState(() => {
+    // Parse JSON persisted in tarefa.dados, se existir
+    try {
+      return typeof tarefa.dados === 'string' ? JSON.parse(tarefa.dados) : tarefa.dados || {};
+    } catch {
+      return {};
+    }
+  });
 
   const desfazer = async () => {
     const senha = window.prompt('Digite sua senha para desfazer a tarefa');
@@ -149,40 +156,49 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
     const dadosProj = dados.projetos || {};
     const programa = dados.programa || 'Gabster';
 
-    const salvarProjeto = async novosDados => {
-      await fetchComAuth(
-        `/comercial/atendimentos/${atendimentoId}/tarefas/${tarefa.id}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({
-            concluida: projetos.every(p => novosDados.projetos?.[p]),
-            dados: JSON.stringify(novosDados),
-          }),
-        }
-      );
-      await onChange();
+    /**
+     * Salva os dados do projeto e opcionalmente finaliza a tarefa.
+     * @param novosDados estado completo dos projetos
+     * @param concluir se true marca tarefa como concluída
+     */
+    const salvarProjeto = async (novosDados, concluir = false) => {
+      try {
+        await fetchComAuth(
+          `/comercial/atendimentos/${atendimentoId}/tarefas/${tarefa.id}`,
+          {
+            method: 'PUT',
+            body: JSON.stringify({
+              concluida: concluir,
+              dados: JSON.stringify(novosDados),
+            }),
+          }
+        );
+        await onChange();
+        return true;
+      } catch (err) {
+        console.error('Erro ao salvar projeto', err);
+        alert('Erro ao salvar projeto: ' + err.message);
+        return false;
+      }
     };
 
     const importarGabster = amb => async () => {
       const codigo = window.prompt('Código do projeto Gabster');
-      if (!codigo) return;
+      if (!codigo) {
+        alert('Importação cancelada');
+        return;
+      }
       try {
+        // Fetch final Gabster budget (header, items and total)
         const info = await fetchComAuth('/comercial/gabster-projeto', {
           method: 'POST',
           body: JSON.stringify({ codigo }),
         });
-        const projetosResp = info.projetos || {};
-        const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
-        const novos = {
-          ...dados,
-          programa,
-          projetos: {
-            ...dados.projetos,
-            [amb]: { codigo, ...dadosAmb },
-          },
-        };
-        setDados(() => novos);
-        await salvarProjeto(novos);
+        // Store the returned data directly under the ambiente key
+        const novos = { ...dados, programa, projetos: { ...dados.projetos, [amb]: info } };
+        const ok = await salvarProjeto(novos);
+        if (!ok) return;
+        setDados(novos);
         alert('Importação realizada com sucesso');
       } catch (err) {
         console.error('Erro ao importar do Gabster', err);
@@ -192,7 +208,10 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
 
     const handleFilePromob = amb => async e => {
       const file = e.target.files[0];
-      if (!file) return;
+      if (!file) {
+        alert('Importação cancelada');
+        return;
+      }
       const form = new FormData();
       form.append('file', file);
       try {
@@ -202,16 +221,10 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         });
         const projetosResp = info.projetos || {};
         const dadosAmb = projetosResp[amb] || Object.values(projetosResp)[0] || {};
-        const novos = {
-          ...dados,
-          programa,
-          projetos: {
-            ...dados.projetos,
-            [amb]: { arquivo: file.name, ...dadosAmb },
-          },
-        };
-        setDados(() => novos);
-        await salvarProjeto(novos);
+        const novos = { ...dados, programa, projetos: { ...dados.projetos, [amb]: { arquivo: file.name, ...dadosAmb } } };
+        const ok = await salvarProjeto(novos);
+        if (!ok) return;
+        setDados(novos);
         alert('Importação realizada com sucesso');
       } catch (err) {
         console.error('Erro ao importar do Promob', err);
@@ -282,6 +295,12 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
               </div>
             ))}
           </div>
+        )}
+        {/* Botão para finalizar a tarefa após importar todos os projetos */}
+        {!tarefa.concluida && projetos.every(amb => dados.projetos?.[amb]) && (
+          <Button size="sm" className="bg-blue-600 text-white" onClick={() => salvarProjeto(dados, true)}>
+            Finalizar Projeto 3D
+          </Button>
         )}
         {tarefa.concluida && (
           <div className="flex gap-2">

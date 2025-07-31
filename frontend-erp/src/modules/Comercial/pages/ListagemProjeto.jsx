@@ -25,31 +25,40 @@ export default function ListagemProjeto() {
   const [itens, setItens] = useState([]);
   const [cabecalho, setCabecalho] = useState({});
   const [valorTotal, setValorTotal] = useState(0);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const carregar = async () => {
-      const t = await fetchComAuth(`/comercial/atendimentos/${id}/tarefas`);
-      const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
-      if (!orc) return;
-      let dados = {};
       try {
-        dados = typeof orc.dados === 'string' ? JSON.parse(orc.dados) : orc.dados || {};
-      } catch {
-        // ignore parse errors
+        const t = await fetchComAuth(`/comercial/atendimentos/${id}/tarefas`);
+        const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
+        if (!orc) return;
+        let dados = {};
+        try {
+          dados = typeof orc.dados === 'string' ? JSON.parse(orc.dados) : orc.dados || {};
+        } catch {
+          // ignore parse errors
+        }
+        const projetos = dados.projetos || {};
+        const chave = Object.keys(projetos).find(k => normalize(k) === normalize(ambiente));
+        const info = chave ? projetos[chave] : projetos[ambiente];
+        if (!info || !info.cabecalho || !Array.isArray(info.itens)) {
+          throw new Error('Dados do projeto inválidos ou incompletos');
+        }
+        setCabecalho(info.cabecalho);
+        setValorTotal(info.valor_total_orcamento || 0);
+        setItens(info.itens);
+      } catch (err) {
+        console.error('Erro ao carregar orçamento', err);
+        setError('Erro ao carregar orçamento: ' + err.message);
       }
-      const projetos = dados.projetos || {};
-      const chave = Object.keys(projetos).find(
-        k => normalize(k) === normalize(ambiente)
-
-      );
-      const info = chave ? projetos[chave] : projetos[ambiente];
-      setCabecalho(info.cabecalho || {});
-      setValorTotal(info.valor_total_orcamento || 0);
-      setItens(info.itens || []);
     };
     carregar();
   }, [id, tarefaId, ambiente]);
 
+  if (error) {
+    return <div className="text-red-600">{error}</div>;
+  }
   return (
     <div className="space-y-4">
       <div className="p-4 bg-gray-100 rounded shadow">
