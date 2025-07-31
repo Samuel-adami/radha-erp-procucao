@@ -1,0 +1,55 @@
+*** Begin Patch
+*** Update File: agente_erp_rag.py
+@@
+$(sed -n '168,309p' agente_erp_rag.py | sed 's/^/-/')
++# --- PONTO DE ENTRADA: indexação dinâmica via ripgrep e prompt inicial ---
++if __name__ == "__main__":
++    # Primeiro passo: recebe a solicitação em linguagem natural
++    print("\n✅ Agente ERP RAG iniciado. Digite sua solicitação em linguagem natural (ou 'sair' para encerrar):")
++    solicitacao = input("> ").strip()
++    if not solicitacao or solicitacao.lower() in ['sair', 'exit', 'quit']:
++        print("Encerrando o agente. Até logo!")
++        exit(0)
++
++    # Localiza arquivos relevantes via ripgrep, ignorando diretórios comuns
++    project_root = os.getcwd()
++    print("\n🔍 Encontrando arquivos relevantes com ripgrep...")
++    try:
++        rg_proc = subprocess.run(
++            [
++                "rg", "-l", solicitacao,
++                "--glob", "!.git/*",
++                "--glob", "!venv/*",
++                "--glob", "!.vscode/*",
++                "--glob", "!.idea/*"
++            ],
++            cwd=project_root,
++            capture_output=True,
++            text=True,
++        )
++        arquivos = [os.path.join(project_root, p) for p in rg_proc.stdout.splitlines() if p.strip()]
++    except Exception as e:
++        print(f"Erro ao executar ripgrep: {e}")
++        arquivos = []
++
++    if arquivos:
++        print(f"Arquivos encontrados pelo ripgrep: {len(arquivos)}")
++    else:
++        print("Nenhum arquivo específico encontrado. Iremos indexar todo o projeto.")
++        arquivos = [project_root]
++
++    # Cria o agente indexando apenas os arquivos relevantes
++    print(f"\nIniciando indexação para {len(arquivos)} arquivos... (isso pode levar alguns instantes)")
++    agente = AgenteERP_RAG_Focado(escopos_de_codigo=arquivos)
++
++    # Gera e exibe o plano de ação
++    print("\n✅ Indexação concluída. Gerando plano de ação...\n")
++    plano_completo = agente.gerar_plano(solicitacao)
++
++    if plano_completo and "erro" not in plano_completo:
++        print("\n" + "="*28 + " PLANO DE AÇÃO (JSON) " + "="*29)
++        print(json.dumps(plano_completo.get("plano_execucao_json", {}), indent=2, ensure_ascii=False))
++        print("="*80)
++
++    print("\nPróxima solicitação ou 'sair' para terminar.")
+*** End Patch
