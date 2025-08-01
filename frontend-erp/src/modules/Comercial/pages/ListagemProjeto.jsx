@@ -22,97 +22,32 @@ export default function ListagemProjeto() {
   const id = params.id;
   const tarefaId = params.tarefaId;
   const ambiente = decodeURIComponent(params.ambiente || '').trim();
-  const [itens, setItens] = useState([]);
-  const [cabecalho, setCabecalho] = useState({});
-  const [valorTotal, setValorTotal] = useState(0);
   const [error, setError] = useState('');
 
+  // Redireciona para a versão HTML do orçamento no backend
   useEffect(() => {
-    const carregar = async () => {
+    const redirectHtml = async () => {
       try {
         const t = await fetchComAuth(`/comercial/atendimentos/${id}/tarefas`);
         const orc = t.tarefas.find(tt => String(tt.id) === String(tarefaId));
-        if (!orc) return;
-        let dados = {};
-        try {
-          dados = typeof orc.dados === 'string' ? JSON.parse(orc.dados) : orc.dados || {};
-        } catch (parseErr) {
-          console.error('Erro ao parsear orc.dados:', orc.dados, parseErr);
-          dados = {};
-        }
+        let dados = typeof orc.dados === 'string' ? JSON.parse(orc.dados) : orc.dados || {};
         const projetos = dados.projetos || {};
         const chave = Object.keys(projetos).find(k => normalize(k) === normalize(ambiente));
         const info = chave ? projetos[chave] : projetos[ambiente];
-        console.log('Dados do orçamento original (orc.dados):', orc.dados);
-        console.log('Dados parseados (dados):', dados);
-        console.log('Projetos disponíveis:', projetos);
-        console.log('Ambiente solicitado:', ambiente);
-        console.log('Chave encontrada para ambiente:', chave);
-        console.log('Informações do projeto (info):', info);
-        if (!info || !info.cabecalho || !Array.isArray(info.itens)) {
-          console.error('Dados do projeto inválidos ou incompletos', { info });
-          throw new Error('Dados do projeto inválidos ou incompletos');
+        if (!info?.cabecalho?.cd_projeto) {
+          throw new Error('Código do projeto não encontrado para redirecionamento');
         }
-        setCabecalho(info.cabecalho);
-        setValorTotal(info.valor_total_orcamento || 0);
-        setItens(info.itens);
+        window.location.href = `${import.meta.env.VITE_GATEWAY_URL}/comercial/${info.cabecalho.cd_projeto}/projeto3d/html`;
       } catch (err) {
-        console.error('Erro ao carregar orçamento', err);
-        setError('Erro ao carregar orçamento: ' + err.message);
+        console.error('Erro ao redirecionar para HTML do orçamento', err);
+        setError('Não foi possível abrir a versão HTML: ' + err.message);
       }
     };
-    carregar();
+    redirectHtml();
   }, [id, tarefaId, ambiente]);
 
   if (error) {
     return <div className="text-red-600">{error}</div>;
   }
-  return (
-    <div className="space-y-4">
-      <div className="p-4 bg-gray-100 rounded shadow">
-        <h3 className="text-lg font-semibold mb-2">Orçamento Final Gabster</h3>
-        <div className="grid grid-cols-3 gap-4 text-sm">
-          <div>
-            <span className="font-medium">Código do Projeto:</span> {cabecalho.cd_projeto}
-          </div>
-          <div>
-            <span className="font-medium">Nome do Cliente:</span> {cabecalho.nome_cliente}
-          </div>
-          <div>
-            <span className="font-medium">Ambiente:</span> {cabecalho.ambiente}
-          </div>
-          <div className="col-span-3">
-            <span className="font-medium">Valor Total:</span> R$ {currency(valorTotal)}
-          </div>
-        </div>
-      </div>
-      <table className="min-w-full text-sm divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th className="px-4 py-2 text-left">Ref</th>
-            <th className="px-4 py-2 text-left">Produto</th>
-            <th className="px-4 py-2 text-center">Qtde</th>
-            <th className="px-4 py-2 text-left">Unidade</th>
-            <th className="px-4 py-2 text-right">Valor Unitário</th>
-            <th className="px-4 py-2 text-right">Total Produto</th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {itens.map((it, idx) => (
-            <tr key={idx}>
-              <td className="px-4 py-2">{it.ref}</td>
-              <td className="px-4 py-2">{it.produto}</td>
-              <td className="px-4 py-2 text-center">{it.qtde}</td>
-              <td className="px-4 py-2">{it.unidade}</td>
-              <td className="px-4 py-2 text-right">{currency(it.valor_unitario)}</td>
-              <td className="px-4 py-2 text-right">{currency(it.total_produto)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Link to={`/comercial/${id}`} className="px-3 py-1 rounded bg-blue-600 text-white">
-        Voltar
-      </Link>
-    </div>
-  );
+  return null;
 }
