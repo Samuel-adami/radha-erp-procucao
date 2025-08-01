@@ -143,7 +143,7 @@ function Usuarios() {
           <span className="text-sm">Permissões</span>
           <div className="border rounded p-2 max-h-40 overflow-y-auto space-y-2">
             {Object.entries(PERMISSOES_DISPONIVEIS).map(([grupo, permissoes]) => {
-              const [pai, ...filhos] = permissoes;
+              const [, ...filhos] = permissoes;
               const todosMarcados = permissoes.every(p => form.permissoes.includes(p));
               return (
                 <fieldset key={grupo} className="border-b last:border-b-0 pb-1">

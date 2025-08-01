@@ -65,7 +65,7 @@ function BriefingVendas() {
       const ts = await fetchComAuth(`/comercial/atendimentos/${atendimentoId}/tarefas`);
       const tarefa = (ts.tarefas || []).find(t => String(t.id) === String(tarefaId));
       let dadosExist = {};
-      try { dadosExist = tarefa && tarefa.dados ? JSON.parse(tarefa.dados) : {}; } catch {}
+      try { dadosExist = tarefa && tarefa.dados ? JSON.parse(tarefa.dados) : {}; } catch (err) { console.error('Erro ao parsear dadosExist', err); }
 
       // Determina o endereço de entrega do atendimento
       let rua = at.atendimento.rua || '';

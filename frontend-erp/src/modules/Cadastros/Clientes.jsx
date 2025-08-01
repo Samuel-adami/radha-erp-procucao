@@ -37,35 +37,38 @@ function formatCEP(valor) {
   return dig.replace(/(\d{0,5})(\d{0,3}).*/, (_, a, b) => (a ? a : '') + (b ? `-${b}` : ''));
 }
 
+// inicialização do formulário de clientes
+const initialForm = {
+  procedencia: '',
+  estadoImovel: '',
+  previsaoFechamento: '',
+  codigo: '',
+  nome: '',
+  documento: '',
+  rgIe: '',
+  sexo: '',
+  dataNascimento: '',
+  telefone1: '',
+  telefone2: '',
+  pais: 'Brasil',
+  profissao: '',
+  cep: '',
+  cidade: '',
+  estado: '',
+  endereco: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  email: '',
+};
+
 function Clientes() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const initialForm = {
-    procedencia: '',
-    estadoImovel: '',
-    previsaoFechamento: '',
-    codigo: '',
-    nome: '',
-    documento: '',
-    rgIe: '',
-    sexo: '',
-    dataNascimento: '',
-    telefone1: '',
-    telefone2: '',
-    pais: 'Brasil',
-    profissao: '',
-    cep: '',
-    cidade: '',
-    estado: '',
-    endereco: '',
-    numero: '',
-    complemento: '',
-    bairro: '',
-    email: '',
-  };
   const [form, setForm] = useState(initialForm);
   const [dirty, setDirty] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (id) {
       fetchComAuth(`/clientes/${id}`)

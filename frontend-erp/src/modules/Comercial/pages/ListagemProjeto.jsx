@@ -2,12 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
-// formata valores para moeda BRL
-const currency = v =>
-  Number(v || 0).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
 
 function normalize(str) {
   return (str || '')

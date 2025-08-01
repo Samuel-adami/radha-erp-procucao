@@ -37,8 +37,24 @@ function GestaoLeads() {
   };
 
   useEffect(() => {
-    carregar();
-  }, []);
+    (async () => {
+      setCarregando(true);
+      setErro('');
+      try {
+        const params = new URLSearchParams();
+        if (inicio) params.append('inicio', inicio);
+        if (fim) params.append('fim', fim);
+        if (campanha) params.append('campanha', campanha);
+        if (estagio) params.append('estagio', estagio);
+        const dados = await fetchComAuth(`/leads/?${params.toString()}`);
+        setLeads(dados.leads || []);
+      } catch (e) {
+        setErro(e.message || String(e));
+      } finally {
+        setCarregando(false);
+      }
+    })();
+  }, [inicio, fim, campanha, estagio]);
 
   return (
     <div className="p-4">

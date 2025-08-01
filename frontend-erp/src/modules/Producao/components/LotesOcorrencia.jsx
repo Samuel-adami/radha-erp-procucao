@@ -178,7 +178,14 @@ const LotesOcorrencia = () => {
                     OC {String(l.oc_numero).padStart(8, "0")} - {l.lote} - {l.pacote}
                   </span>
                   <div className="space-x-2">
-                    <Button size="sm" onClick={() => navigate(`ocorrencias/editar/${l.id}`)}>Editar</Button>
+                    {l.arquivo_url && (
+                      <Button size="sm" onClick={() => window.open(l.arquivo_url, '_blank')}>
+                        Baixar
+                      </Button>
+                    )}
+                    <Button size="sm" onClick={() => navigate(`ocorrencias/editar/${l.id}`)}>
+                      Editar
+                    </Button>
                     <Button
                       size="sm"
                       variant="destructive"

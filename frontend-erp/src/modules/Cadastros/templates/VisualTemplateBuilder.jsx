@@ -107,7 +107,6 @@ function VisualTemplateBuilder() {
   const navigate = useNavigate();
   const [titulo, setTitulo] = useState('');
   const [campos, setCampos] = useState([]);
-  const [arquivoKey, setArquivoKey] = useState('');
   const [arquivoUrl, setArquivoUrl] = useState('');
   const fileRef = useRef();
   const [editing, setEditing] = useState(null); // { field, index }
@@ -120,7 +119,6 @@ function VisualTemplateBuilder() {
           if (t) {
             setTitulo(t.titulo);
             setCampos(t.campos || []);
-            setArquivoKey(t.arquivo_key || '');
             setArquivoUrl(t.arquivo_url || '');
           }
         })
@@ -170,7 +168,6 @@ function VisualTemplateBuilder() {
       method: 'POST',
       body: form,
     });
-    setArquivoKey(resp.arquivo_key || '');
     setArquivoUrl(resp.arquivo_url || '');
     e.target.value = '';
   };

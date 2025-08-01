@@ -265,13 +265,17 @@ const Nesting = () => {
     }
   };
 
-  const baixarNesting = async (n) => {
-    const url = `/download-nesting/${n.id}`;
-    try {
-      const loteBase = n.lote.split(/[/\\]/).pop().replace(/\.zip$/i, '');
-      await downloadComAuth(url, `Nesting_${loteBase}.zip`);
-    } catch (err) {
-      alert('Falha ao baixar otimização');
+  const baixarNesting = (n) => {
+    if (n.arquivo_url) {
+      window.open(n.arquivo_url, '_blank');
+    } else {
+      const url = `/download-nesting/${n.id}`;
+      try {
+        const loteBase = n.lote.split(/[/\\]/).pop().replace(/\.zip$/i, '');
+        downloadComAuth(url, `Nesting_${loteBase}.zip`);
+      } catch (err) {
+        alert('Falha ao baixar otimização');
+      }
     }
   };
 

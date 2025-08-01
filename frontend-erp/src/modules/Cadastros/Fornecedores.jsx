@@ -3,13 +3,16 @@ import { Button } from '../Producao/components/ui/button';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchComAuth } from '../../utils/fetchComAuth';
 
+// inicialização do formulário de fornecedores
+const initialForm = { nome: '', contato: '' };
+
 function Fornecedores() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const initialForm = { nome: '', contato: '' };
   const [form, setForm] = useState(initialForm);
   const [dirty, setDirty] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (id) {
       fetchComAuth(`/fornecedores/${id}`)

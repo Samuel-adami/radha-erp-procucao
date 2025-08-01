@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '../../Producao/components/ui/button';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
@@ -474,7 +474,7 @@ function AtendimentoDetalhes() {
   const [atendimento, setAtendimento] = useState(null);
   const [tarefas, setTarefas] = useState([]);
 
-  const carregarTarefas = async () => {
+  const carregarTarefas = useCallback(async () => {
     const t = await fetchComAuth(`/comercial/atendimentos/${id}/tarefas`);
     // parse dados JSON if exists
     setTarefas(
@@ -488,7 +488,7 @@ function AtendimentoDetalhes() {
         return { ...tt, dados };
       })
     );
-  };
+  }, [id]);
 
   useEffect(() => {
     const carregar = async () => {
@@ -501,7 +501,7 @@ function AtendimentoDetalhes() {
       }
     };
     carregar();
-  }, [id]);
+  }, [carregarTarefas, id]);
 
 
   if (!atendimento) {

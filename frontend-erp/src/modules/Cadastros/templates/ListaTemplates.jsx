@@ -36,6 +36,7 @@ function ListaTemplates() {
     }
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { carregar(); }, [tipo]);
 
   const excluir = async id => {

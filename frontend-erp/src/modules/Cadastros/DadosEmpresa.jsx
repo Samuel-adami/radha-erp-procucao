@@ -3,29 +3,34 @@ import { Button } from '../Producao/components/ui/button';
 import { fetchComAuth } from '../../utils/fetchComAuth';
 import { useNavigate } from 'react-router-dom';
 
+// inicialização do formulário de empresa
+const initialForm = {
+  razaoSocial: '',
+  nomeFantasia: '',
+  cnpj: '',
+  inscricaoEstadual: '',
+  cep: '',
+  rua: '',
+  numero: '',
+  complemento: '',
+  bairro: '',
+  cidade: '',
+  estado: '',
+  telefone1: '',
+  telefone2: '',
+  slogan: '',
+  logo: '',
+  logoFile: null,
+};
+
 function DadosEmpresa() {
   const navigate = useNavigate();
-  const initialForm = {
-    razaoSocial: '',
-    nomeFantasia: '',
-    cnpj: '',
-    inscricaoEstadual: '',
-    cep: '',
-    rua: '',
-    numero: '',
-    complemento: '',
-    bairro: '',
-    cidade: '',
-    estado: '',
-    telefone1: '',
-    telefone2: '',
-    slogan: '',
-    logo: '',
-    logoFile: null,
-  };
   const [form, setForm] = useState(initialForm);
   const [dirty, setDirty] = useState(false);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchComAuth('/empresa')
       .then(d => {
