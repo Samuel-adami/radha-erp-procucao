@@ -63,6 +63,9 @@ def arranjar_poligonos(
     """
     Gera nesting usando apenas rectpack para todas as peças via seus bounding boxes.
 
+    Suporta múltiplas chapas (placas) conforme necessário, sem limitar a apenas uma,
+    empacotando automaticamente peças excedentes em chapas adicionais.
+
     Retorna lista de placas, cada placa é lista de dicts de peça com x, y,
     rotationAngle e polygon atualizados, mantendo as operações internas.
     """
@@ -83,15 +86,18 @@ def arranjar_poligonos(
     placas: List[List[Dict]] = []
 
     # Empacotar todas as peças via seus bounding boxes
+    # usa rectpack com bins ilimitados para permitir nesting em várias chapas
     packer = newPacker(rotation=rotacionar)
     for ridx, p in enumerate(pecas):
         minx, miny, maxx, maxy = p["polygon"].bounds
         packer.add_rect(maxx - minx, maxy - miny, ridx)
-    packer.add_bin(wbin, hbin, count=1)
+    # adiciona bins com dimensão da chapa, sem limite de quantidade (multi-placa)
+    packer.add_bin(wbin, hbin)
     packer.pack()
-
-    placa: List[Dict] = []
-    for _, x, y, w, h, rid in packer.rect_list():
+    # agrupa resultados por índice de bin para gerar placas separadas
+    from collections import defaultdict
+    placas_map: Dict[int, List[Dict]] = defaultdict(list)
+    for bin_idx, x, y, w, h, rid in packer.rect_list():
         p = pecas[rid]
         rotated = rotacionar and (p["polygon"].bounds[2] - p["polygon"].bounds[0]) != w
         angle = 90 if rotated else 0
@@ -109,9 +115,10 @@ def arranjar_poligonos(
             op["polygon"] = opl
             op["x"] = op.get("x", 0) + x + espaco + ref_esq
             op["y"] = op.get("y", 0) + y + espaco + ref_inf
-        placa.append(novo)
+        placas_map[bin_idx].append(novo)
 
-    placas.append(placa)
+    # ordena placas por índice de bin e retorna lista de placas
+    placas: List[List[Dict]] = [placas_map[i] for i in sorted(placas_map)]
     return placas
 
 
