@@ -392,7 +392,7 @@ async def gabster_projeto(request: Request):
     }
 
 
-@app.get("/comercial/{codigo}/projeto3d/html", response_class=HTMLResponse)
+@app.get("/{codigo}/projeto3d/html", response_class=HTMLResponse)
 async def projeto3d_html(request: Request, codigo: int):
     """Renderiza em HTML o orçamento do Projeto 3D diretamente do Gabster API."""
     usuario = os.getenv("GABSTER_API_USER")
