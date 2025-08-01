@@ -1,6 +1,6 @@
 import React from "react";
 
-const VisualizacaoPeca = ({ comprimento, largura, orientacao, operacoes = [] }) => {
+const VisualizacaoPeca = ({ comprimento, largura, operacoes = [] }) => {
   if (!comprimento || !largura) return <p>Dimensões inválidas.</p>;
 
   const C = parseFloat(comprimento);

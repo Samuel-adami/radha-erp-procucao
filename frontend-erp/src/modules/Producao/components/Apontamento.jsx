@@ -25,7 +25,7 @@ const Apontamento = () => {
     }
     setPendentes([]);
     setCodigo("");
-  }, [pacoteIndex, lote]);
+  }, [pacote, pacoteIndex, lote]);
 
   const salvarVolumes = (novos) => {
     const atual = JSON.parse(localStorage.getItem("lotesProducao") || "[]");

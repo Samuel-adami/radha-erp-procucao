@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "./ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchComAuth } from "../../../utils/fetchComAuth";
@@ -74,7 +74,7 @@ const LotesOcorrencia = () => {
       editarLoteLocal(id);
       navigate('.', { replace: true, state: {} });
     }
-  }, [location.state]);
+  }, [location.state, editarLoteLocal, navigate]);
 
   useEffect(() => {
     if (!loteSel) {
@@ -124,11 +124,11 @@ const LotesOcorrencia = () => {
     navigate(`pacote/${loteId}`);
   };
 
-  const editarLoteLocal = (id) => {
+  const editarLoteLocal = useCallback((id) => {
     const l = lotesLocais.find((x) => x.id === id);
     if (!l) return;
     navigate(`pacote/${id}`);
-  };
+  }, [lotesLocais, navigate]);
 
   const excluirLoteLocal = (id) => {
     if (!window.confirm("Excluir este lote local?")) return;
@@ -248,4 +248,3 @@ const LotesOcorrencia = () => {
 };
 
 export default LotesOcorrencia;
-

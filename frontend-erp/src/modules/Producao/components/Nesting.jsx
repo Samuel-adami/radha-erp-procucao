@@ -24,8 +24,8 @@ const modeloChapa = {
 };
 
 const criaLayer = (nome) => {
-  const matchFuro = nome.match(/^FURO_(\d+)_([\d\.]+)$/i);
-  const matchUsinar = nome.match(/^USINAR_([\d\.]+)_([\w]+)/i);
+  const matchFuro = nome.match(/^FURO_(\d+)_([\d.]+)$/i);
+  const matchUsinar = nome.match(/^USINAR_([\d.]+)_([\w]+)/i);
   if (matchFuro) {
     return {
       ...modeloLayer,
@@ -55,13 +55,13 @@ const Nesting = () => {
   const [lotes, setLotes] = useState([]);
   const [larguraChapa, setLarguraChapa] = useState(2750);
   const [alturaChapa, setAlturaChapa] = useState(1850);
-  const [resultado, setResultado] = useState("");
+  const [resultado] = useState("");
   const [layers, setLayers] = useState(() =>
     JSON.parse(localStorage.getItem("configLayers") || "[]")
   );
   const [fila, setFila] = useState([]);
   const [layerAtual, setLayerAtual] = useState(null);
-  const [ferramentas, setFerramentas] = useState(() =>
+  const [ferramentas] = useState(() =>
     JSON.parse(localStorage.getItem("ferramentasNesting") || "[]")
   );
   const [aguardarExecucao, setAguardarExecucao] = useState(false);

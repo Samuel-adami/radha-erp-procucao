@@ -31,6 +31,7 @@ function Layout({ usuario, onLogout }) {
   const matchComercial = useMatch("/comercial/*");
   const matchFinance = useMatch("/finance/*");
   const matchFormularios = useMatch("/formularios/*");
+  const matchPlanosProducao = useMatch("/planos-producao/*");
 
   return (
     <div className="min-h-screen flex">
@@ -65,7 +66,7 @@ function Layout({ usuario, onLogout }) {
           {possuiPermissao("planos-producao") && (
             <Link
               to="/planos-producao"
-              className={`px-2 py-1 rounded ${useMatch("/planos-producao/*") ? "bg-blue-700" : "hover:bg-blue-700"}`}
+              className={`px-2 py-1 rounded ${matchPlanosProducao ? "bg-blue-700" : "hover:bg-blue-700"}`}
             >
               Planos de Produção
             </Link>

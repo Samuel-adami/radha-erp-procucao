@@ -18,6 +18,8 @@ import math
 from ezdxf.math import ConstructionArc
 from shapely.geometry import Point
 from PIL import Image, ImageDraw
+import subprocess
+import json
 
 # Área mínima aproveitável para registrar sobras (0,1 m² em mm²)
 AREA_MIN_SOBRA = 0.1 * 1000 * 1000
@@ -30,7 +32,59 @@ DXF_DIMENSIONS_CACHE: Dict[Path, Optional[Tuple[float, float]]] = {}
 DXF_POLYGON_CACHE: Dict[Path, Optional[Polygon]] = {}
 
 # Backwards compatibility: old code imported `medidas_cache`
+# Backwards compatibility: old code imported `medidas_cache`
 medidas_cache = DXF_DIMENSIONS_CACHE
+
+# Deepnest integration via Node.js wrapper
+_DEEPNEST_SCRIPT = Path(__file__).parent / 'deepnest_runner.js'
+
+def _arranjar_poligonos_deepnest(
+    pecas: List[Dict],
+    largura: float,
+    altura: float,
+    espaco: float,
+    rotacionar: bool,
+    estoque: Optional[List[Dict]],
+    config_maquina: Optional[Dict],
+    config_layers: Optional[List[Dict]],
+    ferramentas: Optional[List[Dict]],
+) -> List[List[Dict]]:
+    """Invoke the Deepnest engine via Node.js and return nested plates."""
+    payload = {
+        'pieces': [
+            {'polygon': list(p['polygon'].exterior.coords)} for p in pecas
+        ],
+        'width': largura,
+        'height': altura,
+        'spacing': espaco,
+        'rotations': rotacionar,
+    }
+    # Invoke Deepnest engine in its project directory (built manually via npm)
+    deepnest_dir = Path(__file__).resolve().parents[3] / 'deepnest'
+    proc = subprocess.run(
+        ['node', str(_DEEPNEST_SCRIPT)],
+        input=json.dumps(payload),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=deepnest_dir,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(f"Deepnest runner failed: {proc.stderr.strip()}")
+    result = json.loads(proc.stdout)
+    placements = result.get('placements', [])
+    nested = []
+    for p, out in zip(pecas, placements):
+        poly = Polygon(out.get('polygon', []))
+        newp = p.copy()
+        newp.update({
+            'polygon': poly,
+            'x': out.get('x', 0),
+            'y': out.get('y', 0),
+            'rotationAngle': out.get('rotationAngle', 0),
+        })
+        nested.append(newp)
+    return [nested]
 
 
 
@@ -59,6 +113,7 @@ def arranjar_poligonos(
     config_maquina: Optional[Dict] = None,
     config_layers: Optional[List[Dict]] = None,
     ferramentas: Optional[List[Dict]] = None,
+    engine: str = 'deepnest',
 ) -> List[List[Dict]]:
     """
     Gera nesting usando apenas rectpack para todas as peças via seus bounding boxes.
@@ -69,6 +124,12 @@ def arranjar_poligonos(
     Retorna lista de placas, cada placa é lista de dicts de peça com x, y,
     rotationAngle e polygon atualizados, mantendo as operações internas.
     """
+    # Se especificado engine deepnest, delega ao wrapper Node.js
+    if engine == 'deepnest':
+        return _arranjar_poligonos_deepnest(
+            pecas, largura, altura, espaco, rotacionar,
+            estoque, config_maquina, config_layers, ferramentas
+        )
     # Extrair refilos da configuração da máquina
     ref_inf = ref_sup = ref_esq = ref_dir = 0.0
     if config_maquina:

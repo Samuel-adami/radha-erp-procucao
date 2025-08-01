@@ -19,7 +19,7 @@ const ApontamentoVolume = () => {
       setVolumes([]);
     }
     setCodigo("");
-  }, [pacoteIndex, lote]);
+  }, [pacote, pacoteIndex, lote]);
 
   const registrarCodigo = (e) => {
     e.preventDefault();

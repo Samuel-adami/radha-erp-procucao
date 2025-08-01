@@ -9,8 +9,8 @@ const CadastroChapas = CC;
 function ProducaoLayout() {
   const resolved = useResolvedPath(''); // O caminho base para este módulo
   const matchHome = useMatch({ path: `${resolved.pathname}`, end: true });
+  const matchLote = useMatch(`${resolved.pathname}/lote/*`);
   // Para o link "Lotes Produção" ser ativo quando estiver na raiz do módulo
-  const matchLote = useMatch(`${resolved.pathname}/lote/*`); // Matches /producao/lote/qualquer_nome
   const matchApontamento = useMatch({ path: `${resolved.pathname}/apontamento`, end: true });
   const matchVolume = useMatch({ path: `${resolved.pathname}/apontamento-volume`, end: true });
   const matchChapas = useMatch({ path: `${resolved.pathname}/chapas`, end: true });
@@ -24,10 +24,10 @@ function ProducaoLayout() {
     <div className="p-4 bg-white rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-blue-700">Módulo: Produção</h2>
       <nav className="flex gap-4 mb-4 border-b pb-2">
-        {possuiPermissao('producao') && (
+{possuiPermissao('producao') && (
           <Link
             to="." // Relativo ao path do módulo (Producao)
-            className={`px-3 py-1 rounded ${matchHome ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+            className={`px-3 py-1 rounded ${(matchHome || matchLote) ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
           >
             Lotes Produção
           </Link>
