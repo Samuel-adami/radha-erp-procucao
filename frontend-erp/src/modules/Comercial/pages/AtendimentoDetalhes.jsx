@@ -256,14 +256,18 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                     Importar do Gabster
                   </Button>
                   {dadosProj[amb] && (
-                    <a
-                      href={`${import.meta.env.VITE_GATEWAY_URL}/comercial/${dadosProj[amb].cabecalho.cd_projeto}/projeto3d/html`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 underline"
+                    <Button
+                      size="sm"
+                      className="bg-blue-600 text-white"
+                      onClick={() =>
+                        window.open(
+                          `${import.meta.env.VITE_GATEWAY_URL}/comercial/${dadosProj[amb].cabecalho.cd_projeto}/projeto3d/html`,
+                          '_blank'
+                        )
+                      }
                     >
                       Ver Orçamento
-                    </a>
+                    </Button>
                   )}
                 </div>
                   {dadosProj[amb] && (
