@@ -1,12 +1,16 @@
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:8010";
 
 export async function fetchComAuth(url, options = {}) {
-  const { raw, ...fetchOpts } = options;
+  // "cache" defaulta para "no-store" para evitar reutilizar respostas em cache,
+  // o que pode causar telas desatualizadas. O chamador pode sobrescrever se desejar.
+  const { raw, cache = "no-store", ...fetchOpts } = options;
   const token = localStorage.getItem("token");
   console.log("Requisição iniciada:", url, "com token:", token);
-  
+
   const headers = {
     ...(fetchOpts.headers || {}),
+    'Cache-Control': 'no-cache',
+    Pragma: 'no-cache',
   };
 
   if (token) {
@@ -47,6 +51,7 @@ export async function fetchComAuth(url, options = {}) {
   let response;
   try {
     response = await fetch(finalUrl, {
+      cache, // garante que as requisições não usem dados antigos do cache do navegador
       ...fetchOpts,
       headers,
     });
