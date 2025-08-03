@@ -9,7 +9,9 @@ export async function fetchComAuth(url, options = {}) {
 
   const headers = {
     ...(fetchOpts.headers || {}),
+
     'Cache-Control': 'no-store',
+
     Pragma: 'no-cache',
   };
 
