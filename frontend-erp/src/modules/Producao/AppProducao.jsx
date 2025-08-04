@@ -20,13 +20,13 @@ import VisualizacaoNesting from "./components/nesting-view/VisualizacaoNesting";
 import ConfigMaquina from "./components/ConfigMaquina";
 import "./Producao.css";
 
-let globalIdProducao = parseInt(localStorage.getItem("globalPecaIdProducao")) || 1;
+// Start IDs fresh to avoid loading stale production data on application load
+let globalIdProducao = 1;
 
 const HomeProducao = () => {
   const navigate = useNavigate();
-  const [lotes, setLotes] = useState(
-    () => JSON.parse(localStorage.getItem("lotesProducao") || "[]")
-  );
+  // Initialize with empty list to fetch fresh data and avoid stale cache
+  const [lotes, setLotes] = useState([]);
 
   useEffect(() => {
     fetchComAuth("/listar-lotes")
