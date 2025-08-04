@@ -14,5 +14,9 @@ export default defineConfig({
   server: {
     port: 3015, // Define a porta do servidor de desenvolvimento para 3015
     host: '0.0.0.0' // Adiciona esta linha para bind em todas as interfaces
+  },
+  preview: {
+    port: 3015, // Define a porta do servidor de preview para 3015, para alinhamento com o Nginx
+    host: '0.0.0.0' // Habilita conexões externas, necessário para proxy reverso
   }
 })
