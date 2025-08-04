@@ -41,11 +41,23 @@ server {
 
     # Não cachear o HTML principal
     location ~* \.html$ {
+        # Proxy para o preview estático na porta 3015 e não cachear o HTML
+        proxy_pass http://127.0.0.1:3015;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         add_header Cache-Control "no-cache, no-store, must-revalidate";
     }
 
     # Cache longo para assets versionados (hash no nome)
     location ~* \.(js|css|png|jpg|jpeg|svg)$ {
+        # Proxy para o preview estático na porta 3015 e aplicar cache longo em assets
+        proxy_pass http://127.0.0.1:3015;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
 
