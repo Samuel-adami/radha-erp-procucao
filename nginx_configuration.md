@@ -22,7 +22,6 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/erp.radhadigital.com.br/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-    # Permite uploads maiores de arquivos XML ou ZIP
     client_max_body_size 200m;
 
     # FRONTEND (React build, na porta 3015 via serve ou similar)
@@ -49,6 +48,7 @@ server {
     location ~* \.(js|css|png|jpg|jpeg|svg)$ {
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
+
 
     # GATEWAY (backend FastAPI rodando na porta 8040)
     # Rotas /auth, /clientes, /fornecedores, /empresa,
@@ -135,17 +135,6 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-    # === Cache policy para o SPA de produção ===
-    # Não cachear o index.html para forçar sempre versão fresca
-    location ~* ^/producao/.*\.html$ {
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-    }
-    # Assets estáticos com hash no nome podem ser cacheados por longo prazo
-    location ~* ^/producao/assets/.*\.(js|css|png|jpg|jpeg|svg)$ {
-        add_header Cache-Control "public, max-age=31536000, immutable";
-    }
-
-    # History-fallback para BrowserRouter (rotas limpas sem #)
     location /producao/ {
         proxy_pass http://127.0.0.1:8040;
         proxy_set_header Host $host;
@@ -160,7 +149,6 @@ server {
         proxy_send_timeout 300s;
         proxy_read_timeout 300s;
     }
-    # Se tiver outras rotas de API, adicione aqui
 }
 ```
 
@@ -186,143 +174,3 @@ server {
     }
 }
 ```
-
-## Arquivo completo `/etc/nginx/sites-available/erp.radhadigital.com.br`
-
-```nginx
-# Redirect HTTP → HTTPS
-server {
-    listen 80;
-    server_name erp.radhadigital.com.br;
-
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name erp.radhadigital.com.br;
-
-    # SSL/TLS
-    ssl_certificate     /etc/letsencrypt/live/erp.radhadigital.com.br/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/erp.radhadigital.com.br/privkey.pem;
-    include             /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam         /etc/letsencrypt/ssl-dhparams.pem;
-
-    # Permite uploads maiores de XML/ZIP
-    client_max_body_size 200m;
-
-    # ============================
-    # FRONTEND (React SPA via serve ou outro servidor estático na porta 3015)
-    # ============================
-    location / {
-        proxy_pass http://127.0.0.1:3015;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade           $http_upgrade;
-        proxy_set_header Connection        "upgrade";
-
-        # Fallback para index.html em rotas aninhadas (BrowserRouter)
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Nunca cachear o HTML principal
-    location ~* \.html$ {
-        add_header Cache-Control "no-cache, no-store, must-revalidate";
-    }
-
-    # Cache pesado (1 ano) para assets que já vêm com hash no nome
-    location ~* \.(js|css|png|jpg|jpeg|svg)$ {
-        add_header Cache-Control "public, max-age=31536000, immutable";
-    }
-
-    # ============================
-    # GATEWAY (FastAPI na porta 8040)
-    # ============================
-    # Rotas da API
-    location /auth/ {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /clientes {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /fornecedores {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /empresa {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /condicoes-pagamento {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /templates {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /usuarios {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /comercial/ {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        # Timeouts maiores para evitar 504 em operações longas
-        proxy_connect_timeout 300s;
-        proxy_send_timeout    300s;
-        proxy_read_timeout    300s;
-    }
-    location ~ ^/marketing-ia/rd/ {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /marketing-ia/ {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-    location /finance/ {
-        proxy_pass http://127.0.0.1:8040;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-## Arquivo completo
