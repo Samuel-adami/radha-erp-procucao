@@ -122,6 +122,17 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
+    # === Cache policy para o SPA de produção ===
+    # Não cachear o index.html para forçar sempre versão fresca
+    location ~* ^/producao/.*\.html$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+    # Assets estáticos com hash no nome podem ser cacheados por longo prazo
+    location ~* ^/producao/assets/.*\.(js|css|png|jpg|jpeg|svg)$ {
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # History-fallback para BrowserRouter (rotas limpas sem #)
     location /producao/ {
         proxy_pass http://127.0.0.1:8040;
         proxy_set_header Host $host;
