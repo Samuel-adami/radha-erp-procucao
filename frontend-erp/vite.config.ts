@@ -17,6 +17,8 @@ export default defineConfig({
   },
   preview: {
     port: 3015, // Define a porta do servidor de preview para 3015, para alinhamento com o Nginx
-    host: '0.0.0.0' // Habilita conexões externas, necessário para proxy reverso
+    host: '0.0.0.0', // Habilita conexões externas, necessário para proxy reverso
+    // Permite acesso via hostname público configurado no Nginx
+    allowedHosts: ['erp.radhadigital.com.br'],
   }
 })

@@ -110,7 +110,7 @@ After=network.target
 
 [Service]
 User=samuel
-WorkingDirectory=/home/samuel/radha-erp-procucao/frontend-erp
+WorkingDirectory=/home/samuel/radha-erp-producao/frontend-erp
 ExecStart=/usr/bin/npx serve -s dist -l 3015
 Restart=always
 
