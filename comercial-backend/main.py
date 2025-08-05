@@ -801,6 +801,25 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
                         {"detail": "Não é possível executar esta tarefa antes de concluir as anteriores"},
                         status_code=400,
                     )
+        if bool(data.get("concluida")) and row.get("nome") == "Projeto 3D":
+            has_proj = False
+            if data.get("dados"):
+                try:
+                    tmp = json.loads(data["dados"])
+                    has_proj = bool(tmp.get("projetos"))
+                except Exception:
+                    has_proj = False
+            else:
+                cnt = conn.exec_driver_sql(
+                    "SELECT COUNT(*) FROM projeto_itens WHERE atendimento_id=%s AND tarefa_id=%s",
+                    (atendimento_id, tarefa_id),
+                ).scalar()
+                has_proj = cnt > 0
+            if not has_proj:
+                return JSONResponse(
+                    {"detail": "Importe um projeto antes de finalizar"},
+                    status_code=400,
+                )
     if "concluida" in data:
         concl = bool(data["concluida"])
         campos.append("concluida=%s")

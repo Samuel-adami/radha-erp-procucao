@@ -80,6 +80,40 @@ def setup_conn():
     return conn
 
 
+def test_projeto3d_requires_import_before_finalize(monkeypatch):
+    main = load_main()
+    conn = setup_conn()
+
+    def get_conn():
+        class Wrapper:
+            def __init__(self, c):
+                self.c = c
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def exec_driver_sql(self, sql, params=None):
+                sql = sql.replace("%s", "?")
+                return self.c.exec_driver_sql(sql, params or ())
+
+            def commit(self):
+                self.c.commit()
+
+            def close(self):
+                self.c.close()
+
+        return Wrapper(conn)
+
+    monkeypatch.setattr(main, "get_db_connection", get_conn)
+    client = TestClient(main.app)
+
+    resp = client.put("/atendimentos/1/tarefas/1", json={"concluida": True})
+    assert resp.status_code == 400
+
+
 def test_projeto3d_persist_and_finalize(monkeypatch):
     main = load_main()
     conn = setup_conn()
