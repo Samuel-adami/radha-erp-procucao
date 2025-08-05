@@ -149,3 +149,13 @@ class ChapaEstoqueMov(Base):
     origem = Column(String)
     destino = Column(String)
     criado_em = Column(String)
+
+class LoteProducao(Base):
+    __tablename__ = "lotes_producao"
+
+    id = Column(Integer, primary_key=True)
+    nome = Column(Text, unique=True, nullable=False)
+    pacotes_json = Column(Text)
+    usuario_id = Column(Integer, nullable=True)
+    criado_em = Column(TIMESTAMP, server_default=func.now())
+    atualizado_em = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
