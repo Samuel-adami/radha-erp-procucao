@@ -270,8 +270,8 @@ async def listar_empresas():
             {
                 "id": e.id,
                 "codigo": e.codigo,
-                "razao_social": e.razao_social,
-                "nome_fantasia": e.nome_fantasia,
+                "razaoSocial": e.razao_social,
+                "nomeFantasia": e.nome_fantasia,
                 "cnpj": e.cnpj,
                 "slogan": e.slogan,
             }
@@ -292,10 +292,10 @@ async def obter_empresa(empresa_id: int):
         return {"empresa": {
             "id": empresa.id,
             "codigo": empresa.codigo,
-            "razao_social": empresa.razao_social,
-            "nome_fantasia": empresa.nome_fantasia,
+            "razaoSocial": empresa.razao_social,
+            "nomeFantasia": empresa.nome_fantasia,
             "cnpj": empresa.cnpj,
-            "inscricao_estadual": empresa.inscricao_estadual,
+            "inscricaoEstadual": empresa.inscricao_estadual,
             "cep": empresa.cep,
             "rua": empresa.rua,
             "numero": empresa.numero,
