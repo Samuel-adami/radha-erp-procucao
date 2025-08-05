@@ -599,7 +599,9 @@ async def negociacao_html(request: Request, atendimento_id: int, tarefa_id: int)
             "total": total_final,
             "validade": validade.strftime("%d/%m/%Y"),
             "info_text": info_text,
-            "logo_url": request.url_for("static", path="logo.png"),
+            "logo_url": request.url_for("static", path="LOGO-RADHA---NORMAL.png")
+            if os.path.exists(os.path.join(static_dir, "LOGO-RADHA---NORMAL.png"))
+            else None,
         },
     )
 
