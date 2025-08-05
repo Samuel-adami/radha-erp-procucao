@@ -385,11 +385,25 @@ async def gabster_projeto(request: Request):
             "SELECT valor FROM gabster_orcamento_cliente WHERE id=%s",
             (raw_orc.get("objects")[0].get("id") if isinstance(raw_orc, dict) and raw_orc.get("objects") else None,)
         ).scalar() or 0
-    return {
+    result = {
         "cabecalho": orcamento_header,
         "itens": itens_final,
         "valor_total_orcamento": res,
     }
+    # Persist project data on the associated atendimento tarefa if specified
+    at_id = params.get("atendimento_id")
+    t_id = params.get("tarefa_id")
+    if at_id and t_id:
+        try:
+            with get_db_connection() as conn:
+                conn.exec_driver_sql(
+                    "UPDATE atendimento_tarefas SET dados=%s WHERE atendimento_id=%s AND id=%s",
+                    (json.dumps(result), at_id, t_id),
+                )
+                conn.commit()
+        except Exception:
+            logging.exception("Erro ao salvar dados do projeto no atendimento_tarefas")
+    return result
 
 
 @app.get("/{codigo}/projeto3d/html", response_class=HTMLResponse)
@@ -764,7 +778,7 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
     with get_db_connection() as conn:
         row = (
             conn.exec_driver_sql(
-                "SELECT id, concluida FROM atendimento_tarefas WHERE atendimento_id=%s AND id=%s",
+                "SELECT id, nome, concluida FROM atendimento_tarefas WHERE atendimento_id=%s AND id=%s",
                 (atendimento_id, tarefa_id),
             )
             .mappings()
@@ -773,15 +787,17 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
         if not row:
             return JSONResponse({"detail": "Tarefa não encontrada"}, status_code=404)
         if not row["concluida"]:
-            prev = conn.exec_driver_sql(
-                "SELECT COUNT(*) FROM atendimento_tarefas WHERE atendimento_id=%s AND id < %s AND concluida=0",
-                (atendimento_id, tarefa_id),
-            ).scalar()
-            if prev > 0:
-                return JSONResponse(
-                    {"detail": "Não é possível executar esta tarefa antes de concluir as anteriores"},
-                    status_code=400,
-                )
+            # skip sequential execution check for Projeto 3D tasks
+            if row.get("nome") != "Projeto 3D":
+                prev = conn.exec_driver_sql(
+                    "SELECT COUNT(*) FROM atendimento_tarefas WHERE atendimento_id=%s AND id < %s AND concluida=0",
+                    (atendimento_id, tarefa_id),
+                ).scalar()
+                if prev > 0:
+                    return JSONResponse(
+                        {"detail": "Não é possível executar esta tarefa antes de concluir as anteriores"},
+                        status_code=400,
+                    )
     if "concluida" in data:
         concl = bool(data["concluida"])
         campos.append("concluida=%s")
