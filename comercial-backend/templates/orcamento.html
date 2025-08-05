@@ -10,10 +10,18 @@
 <body class="bg-gray-50 p-6">
   <div class="max-w-4xl mx-auto bg-white shadow rounded-lg overflow-hidden">
     <div class="p-6 bg-gray-100 border-b flex items-center justify-between">
-      {% if logo_url %}
-      <img src="{{ logo_url }}" alt="Logo" class="h-16">
-      {% endif %}
-      <h1 class="text-2xl font-semibold text-gray-800">{{ titulo }}</h1>
+      <div class="flex items-center space-x-4">
+        {% if logo_url %}
+        <img src="{{ logo_url }}" alt="Logo" class="h-16" onerror="this.onerror=null;this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiNkZGQiLz48dGV4dCB4PSI2MCIgeT0iMjUiIGZvbnQtc2l6ZT0iMTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM1NTUiPkxPR088L3RleHQ+PC9zdmc+';">
+        {% else %}
+        <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiPjxyZWN0IHdpZHRoPSIxMjAiIGhlaWdodD0iNDAiIGZpbGw9IiNkZGQiLz48dGV4dCB4PSI2MCIgeT0iMjUiIGZvbnQtc2l6ZT0iMTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM1NTUiPkxPR088L3RleHQ+PC9zdmc+" alt="Logo" class="h-16">
+        {% endif %}
+        <h1 class="text-2xl font-semibold text-gray-800">{{ titulo }}</h1>
+      </div>
+      <div class="space-x-2">
+        <button onclick="downloadOrcamento()" class="px-4 py-2 bg-blue-600 text-white rounded">Baixar</button>
+        <button onclick="window.print()" class="px-4 py-2 bg-green-600 text-white rounded">Imprimir</button>
+      </div>
     </div>
     <div class="p-6 space-y-6 text-sm">
       <div class="grid grid-cols-2 gap-4">
@@ -93,6 +101,14 @@
   <script>
     const padClient = new SignaturePad(document.getElementById('signature-client'));
     const padSeller = new SignaturePad(document.getElementById('signature-seller'));
+
+    function downloadOrcamento() {
+      const blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = (document.title || 'orcamento') + '.html';
+      link.click();
+    }
   </script>
 </body>
 </html>
