@@ -1,5 +1,6 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, Text, TIMESTAMP
+from sqlalchemy.sql import func
 
 Base = declarative_base()
 
@@ -159,3 +160,4 @@ class LoteProducao(Base):
     usuario_id = Column(Integer, nullable=True)
     criado_em = Column(TIMESTAMP, server_default=func.now())
     atualizado_em = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
