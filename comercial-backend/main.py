@@ -750,11 +750,13 @@ async def listar_tarefas(atendimento_id: int):
             )
 
             if itens_rows:
-                projetos = {}
+                # preserva dados existentes e apenas adiciona/atualiza os itens de cada ambiente
+                projetos = dados.get("projetos", {})
                 for it in itens_rows:
                     amb = it["ambiente"]
-                    projetos.setdefault(amb, {"itens": [], "total": 0})
-                    projetos[amb]["itens"].append(
+                    amb_info = projetos.setdefault(amb, {})
+                    itens = amb_info.setdefault("itens", [])
+                    itens.append(
                         {
                             "descricao": it["descricao"],
                             "unitario": it["unitario"],
@@ -762,8 +764,9 @@ async def listar_tarefas(atendimento_id: int):
                             "total": it["total"],
                         }
                     )
-                    projetos[amb]["total"] += it["total"]
-                dados["projetos"] = projetos
+                    amb_info["total"] = amb_info.get("total", 0) + it["total"]
+                if projetos:
+                    dados["projetos"] = projetos
                 item["dados"] = json.dumps(dados)
             tarefas.append(item)
     return {"tarefas": tarefas}
