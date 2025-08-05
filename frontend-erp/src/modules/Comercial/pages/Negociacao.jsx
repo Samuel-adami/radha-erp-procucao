@@ -48,8 +48,18 @@ function Negociacao() {
       try { dadosNeg = orcAtual && orcAtual.dados ? JSON.parse(orcAtual.dados) : {}; } catch (e) { /* ignore */ }
       const projs = (at.atendimento.projetos || '').split(',').map(p => p.trim()).filter(Boolean);
       const getValorAmb = nome => {
-        const chave = Object.keys(dadosProj.projetos || {}).find(k => normalize(k) === normalize(nome));
-        return dadosProj.projetos?.[chave || nome]?.total || dadosProj.projetos?.[chave || nome]?.valor || 0;
+        const chave = Object.keys(dadosProj.projetos || {}).find(
+          k => normalize(k) === normalize(nome)
+        );
+        const proj = dadosProj.projetos?.[chave || nome] || {};
+        // Prioriza campos "total" ou "valor" e usa "valor_total_orcamento"
+        // do Gabster como fallback
+        return (
+          proj.total ||
+          proj.valor ||
+          proj.valor_total_orcamento ||
+          0
+        );
       };
       const listaAmb = projs.map(a => ({ nome: a, valor: getValorAmb(a) }));
       setAmbientes(listaAmb);
