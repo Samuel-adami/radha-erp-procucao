@@ -28,7 +28,7 @@ dist-ssr/
 
 producao/backend/src/saida/
 arquivos_samuel/
-
+static/
 arquivos_samuel/
 backend-gateway/.env
 backend-gateway/__pycache__/
