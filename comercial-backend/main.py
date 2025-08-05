@@ -390,7 +390,10 @@ async def gabster_projeto(request: Request):
         **header,
         "cabecalho": orcamento_header,
         "itens": itens_final,
+        # Valor total consolidado do orçamento do projeto Gabster
+        # Alias em "total" para compatibilidade com o frontend da negociação
         "valor_total_orcamento": res,
+        "total": res,
     }
     # Persist project data on the associated atendimento tarefa if specified
     at_id = params.get("atendimento_id")
