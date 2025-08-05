@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks, Form
 from fastapi.responses import StreamingResponse
 from storage import (
     upload_file,
@@ -24,11 +24,10 @@ from database import (
     init_db,
     exec_ignore,
     insert_with_id,
- 
-from .lotes_producao import router as lotes_producao_router
-PLACEHOLDER,
+    PLACEHOLDER,
     schema,
 )
+from .lotes_producao import router as lotes_producao_router, salvar_lote_db
 
 SCHEMA_PREFIX = f"{schema}." if schema else ""
 import tempfile
@@ -230,8 +229,14 @@ def coletar_chapas(pasta_lote: str) -> list[str]:
 
 
 @app.post("/importar-xml")
-async def importar_xml(files: list[UploadFile] = File(...)):
+async def importar_xml(
+    nome: str = Form(...), files: list[UploadFile] = File(...)
+):
+    """Importa arquivos de produção e persiste o lote informado."""
+
     logging.info("🚀 Iniciando importação de arquivos...")
+    pacotes = None
+
     with tempfile.TemporaryDirectory() as tmpdirname:
         for f in files:
             (Path(tmpdirname) / f.filename).write_bytes(await f.read())
@@ -255,21 +260,21 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 root = ET.fromstring(
                     caminho_dxt.read_text(encoding="utf-8", errors="ignore")
                 )
-                return {"pacotes": parse_dxt_producao(root, caminho_dxt)}
+                pacotes = parse_dxt_producao(root, caminho_dxt)
             except Exception as e:
                 return {"erro": f"Erro crítico no arquivo DXT: {e}"}
 
-        if arquivo_csv:
+        elif arquivo_csv:
             logging.info(
                 f"📄 Fluxo Gabster iniciado com '{arquivo_csv.filename}'."
             )
             caminho_csv = Path(tmpdirname) / arquivo_csv.filename
             try:
-                return {"pacotes": parse_gabster(caminho_csv)}
+                pacotes = parse_gabster(caminho_csv)
             except Exception as e:
                 return {"erro": f"Erro crítico no arquivo CSV: {e}"}
 
-        if arquivo_xml:
+        elif arquivo_xml:
             logging.info(f"📄 Fluxo XML iniciado com '{arquivo_xml.filename}'.")
             caminho_xml = Path(tmpdirname) / arquivo_xml.filename
             root = ET.fromstring(caminho_xml.read_bytes())
@@ -279,15 +284,17 @@ async def importar_xml(files: list[UploadFile] = File(...)):
                 else "producao"
             )
             logging.info(f"    - Tipo de XML detectado: {tipo_xml}")
-            return {
-                "pacotes": (
-                    parse_xml_orcamento(root)
-                    if tipo_xml == "orcamento"
-                    else parse_xml_producao(root, caminho_xml)
-                )
-            }
+            pacotes = (
+                parse_xml_orcamento(root)
+                if tipo_xml == "orcamento"
+                else parse_xml_producao(root, caminho_xml)
+            )
 
+    if pacotes is None:
         return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml, .csv) foi enviado."}
+
+    salvar_lote_db(nome, pacotes)
+    return {"pacotes": pacotes}
 
 
 @app.post("/gerar-lote-final")
