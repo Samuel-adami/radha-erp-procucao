@@ -21,7 +21,7 @@ from storage import (
     object_exists,
     download_stream,
 )
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import logging
 import re
 import json
@@ -30,6 +30,7 @@ import base64
 import tempfile
 import os
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
@@ -79,6 +80,10 @@ init_db()
 
 # Template engine for HTML rendering
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
+
+# Static files (e.g., logo images)
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 @app.get("/")
@@ -501,6 +506,100 @@ async def projeto3d_html(request: Request, codigo: int):
             "cabecalho": orcamento_header,
             "itens": itens_final,
             "valor_total": valor_total,
+        },
+    )
+
+
+@app.get("/atendimentos/{atendimento_id}/negociacao/{tarefa_id}/html", response_class=HTMLResponse)
+async def negociacao_html(request: Request, atendimento_id: int, tarefa_id: int):
+    """Renderiza em HTML o orçamento da negociação."""
+    with get_db_connection() as conn:
+        at = (
+            conn.exec_driver_sql(
+                "SELECT * FROM atendimentos WHERE id=%s", (atendimento_id,)
+            )
+            .mappings()
+            .fetchone()
+        )
+        if not at:
+            raise HTTPException(status_code=404, detail="Atendimento não encontrado")
+        tarefa = (
+            conn.exec_driver_sql(
+                "SELECT dados FROM atendimento_tarefas WHERE id=%s AND atendimento_id=%s",
+                (tarefa_id, atendimento_id),
+            )
+            .mappings()
+            .fetchone()
+        )
+    if not tarefa or not tarefa.get("dados"):
+        raise HTTPException(status_code=404, detail="Negociação não encontrada")
+    try:
+        dados = json.loads(tarefa.get("dados") or "{}")
+    except Exception:
+        dados = {}
+
+    pontuacao = float(dados.get("pontuacao") or 1)
+    desc1 = float(dados.get("desconto1") or 0)
+    desc2 = float(dados.get("desconto2") or 0)
+    ambientes = dados.get("ambientes", [])
+    selecionados = dados.get("selecionados", {})
+    custos = dados.get("custos", [])
+    parcelas = dados.get("parcelas", [])
+    total_final = float(dados.get("total") or 0)
+
+    def soma_custos(nome: str) -> float:
+        return sum(float(c.get("valor") or 0) for c in custos if c.get("ambiente") == nome)
+
+    ambiente_lista = []
+    total_base = 0.0
+    for a in ambientes:
+        if not selecionados.get(a.get("nome")):
+            continue
+        base = float(a.get("valor") or 0) + soma_custos(a.get("nome"))
+        total_base += base
+        ambiente_lista.append({"nome": a.get("nome"), "base": base})
+
+    total_calc = total_base * pontuacao
+    total_calc *= 1 - desc1 / 100
+    total_calc *= 1 - desc2 / 100
+    fator = total_final / total_calc if total_calc else 0
+
+    ambientes_final = []
+    for a in ambiente_lista:
+        v = a["base"] * pontuacao
+        v *= 1 - desc1 / 100
+        v *= 1 - desc2 / 100
+        v *= fator
+        ambientes_final.append({"nome": a["nome"], "valor": v})
+
+    hoje = date.today()
+    parcelas_fmt = []
+    for idx, p in enumerate(parcelas):
+        dia = hoje + timedelta(days=30 * idx)
+        parcelas_fmt.append(
+            {
+                "numero": p.get("numero"),
+                "valor": float(p.get("valor") or 0),
+                "data": dia.strftime("%d/%m/%Y"),
+            }
+        )
+
+    validade = hoje + timedelta(days=5)
+    info_text = "Informações importantes do orçamento. Atualize este texto conforme necessário."
+
+    return templates.TemplateResponse(
+        "orcamento.html",
+        {
+            "request": request,
+            "titulo": f"Orçamento {at.get('codigo')}",
+            "atendimento": at,
+            "vendedor": at.get("vendedor", ""),
+            "ambientes": ambientes_final,
+            "parcelas": parcelas_fmt,
+            "total": total_final,
+            "validade": validade.strftime("%d/%m/%Y"),
+            "info_text": info_text,
+            "logo_url": request.url_for("static", path="logo.png"),
         },
     )
 
