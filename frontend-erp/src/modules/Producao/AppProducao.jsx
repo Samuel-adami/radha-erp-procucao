@@ -29,45 +29,30 @@ const HomeProducao = () => {
   const [lotes, setLotes] = useState([]);
 
   useEffect(() => {
-    fetchComAuth("/listar-lotes")
-      .then((d) => {
-        const server = Array.isArray(d?.lotes) ? d.lotes.map((k) => {
-          const nome = k.split(/[/\\]/).pop().replace(/^Lote_/, "").replace(/\.zip$/, "");
-          return { nome, pacotes: [] };
-        }) : [];
-        setLotes((prev) => {
-          const nomes = new Set(prev.map((l) => l.nome));
-          const merged = [...prev];
-          server.forEach((l) => {
-            if (!nomes.has(l.nome)) {
-              merged.push(l);
-              nomes.add(l.nome);
-            }
-          });
-          localStorage.setItem("lotesProducao", JSON.stringify(merged));
-          return merged;
-        });
-      })
+    fetchComAuth("/lotes-producao")
+      .then((dados) => setLotes(Array.isArray(dados) ? dados : []))
       .catch(() => {});
   }, []);
 
-  const criarLote = () => {
+  const criarLote = async () => {
     const nome = prompt("Digite o nome do novo lote:");
     if (!nome) return;
-    if (lotes.some(l => l.nome === nome)) return alert("Nome de lote já existe.");
+    if (lotes.some((l) => l.nome === nome)) return alert("Nome de lote já existe.");
 
-    const novo = { nome, pacotes: [] };
-    const atualizados = [...lotes, novo];
-    setLotes(atualizados);
-    localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+    await fetchComAuth("/lotes-producao", {
+      method: "POST",
+      body: JSON.stringify({ nome, pacotes: [] })
+    });
+    setLotes([...lotes, { nome, pacotes: [] }]);
     navigate(`lote/${nome}`);
   };
 
   const excluirLote = async (nome) => {
     if (!window.confirm(`Tem certeza que deseja excluir o lote "${nome}"?`)) return;
-    const atualizados = lotes.filter(l => l.nome !== nome);
-    setLotes(atualizados);
-    localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
+    setLotes((prev) => prev.filter((l) => l.nome !== nome));
+    await fetchComAuth(`/lotes-producao/${encodeURIComponent(nome)}`, {
+      method: "DELETE",
+    }).catch(() => {});
     try {
       await fetchComAuth("/excluir-lote", {
         method: "POST",
@@ -110,12 +95,15 @@ const HomeProducao = () => {
 const LoteProducao = () => {
   const { nome } = useParams();
   const navigate = useNavigate();
-  const [pacotes, setPacotes] = useState(() => {
-    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-    return lotes.find(l => l.nome === nome)?.pacotes || [];
-  });
+  const [pacotes, setPacotes] = useState([]);
 
-  const salvarPacotes = (novosPacotes) => {
+  useEffect(() => {
+    fetchComAuth(`/lotes-producao/${encodeURIComponent(nome)}`)
+      .then((d) => setPacotes(Array.isArray(d?.pacotes) ? d.pacotes : []))
+      .catch(() => {});
+  }, [nome]);
+
+  const salvarPacotes = async (novosPacotes) => {
     const pacotesComIds = novosPacotes.map(pacote => {
       const pecasComIds = (pacote.pecas || []).map(p => {
         const id = globalIdProducao++;
@@ -134,23 +122,22 @@ const LoteProducao = () => {
 
     localStorage.setItem("globalPecaIdProducao", globalIdProducao);
 
-    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-    const atualizados = lotes.map(l =>
-      l.nome === nome ? { ...l, pacotes: [...(l.pacotes || []), ...pacotesComIds] } : l
-    );
-    localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
-    setPacotes(prev => [...prev, ...pacotesComIds]);
+    const atualizados = [...pacotes, ...pacotesComIds];
+    setPacotes(atualizados);
+    await fetchComAuth("/lotes-producao", {
+      method: "POST",
+      body: JSON.stringify({ nome, pacotes: atualizados })
+    });
   };
 
-  const excluirPacote = (index) => {
+  const excluirPacote = async (index) => {
     if (!window.confirm(`Tem certeza que deseja excluir este pacote?`)) return;
     const novos = pacotes.filter((_, i) => i !== index);
-    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-    const atualizados = lotes.map(l =>
-      l.nome === nome ? { ...l, pacotes: novos } : l
-    );
-    localStorage.setItem("lotesProducao", JSON.stringify(atualizados));
     setPacotes(novos);
+    await fetchComAuth("/lotes-producao", {
+      method: "POST",
+      body: JSON.stringify({ nome, pacotes: novos })
+    });
   };
 
   const gerarArquivos = async () => {
