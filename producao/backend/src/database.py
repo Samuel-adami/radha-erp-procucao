@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy import Table, Column, Integer, Text, TIMESTAMP, func
 from models import Base
 from dotenv import load_dotenv, find_dotenv
 import os
@@ -20,6 +21,22 @@ if engine.dialect.name != "postgresql":
     raise RuntimeError("Production backend requires a PostgreSQL database")
 
 PLACEHOLDER = "%s"
+
+# Metadata object for table definitions
+metadata = Base.metadata
+
+# Table for draft production lots
+lotes_producao = Table(
+    "lotes_producao",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("nome", Text, unique=True, nullable=False),
+    Column("pacotes_json", Text),
+    Column("usuario_id", Integer, nullable=True),
+    Column("criado_em", TIMESTAMP, server_default=func.now()),
+    Column("atualizado_em", TIMESTAMP, server_default=func.now(), onupdate=func.now()),
+)
+
 
 
 def insert_with_id(conn, sql: str, params: tuple) -> int:
