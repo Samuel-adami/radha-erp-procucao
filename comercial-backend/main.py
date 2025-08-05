@@ -827,12 +827,17 @@ async def atualizar_tarefa(atendimento_id: int, tarefa_id: int, request: Request
         campos.append("data_execucao=%s")
         valores.append(datetime.utcnow().isoformat() if concl else None)
     if "dados" in data:
+        raw_dados = data["dados"]
+        if isinstance(raw_dados, (dict, list)):
+            dados_json = raw_dados
+            raw_dados = json.dumps(raw_dados)
+        else:
+            try:
+                dados_json = json.loads(raw_dados)
+            except Exception:
+                dados_json = {}
         campos.append("dados=%s")
-        valores.append(data["dados"])
-        try:
-            dados_json = json.loads(data["dados"])
-        except Exception:
-            dados_json = {}
+        valores.append(raw_dados)
     if not campos:
         return {"detail": "Nada para atualizar"}
     valores.extend([atendimento_id, tarefa_id])
