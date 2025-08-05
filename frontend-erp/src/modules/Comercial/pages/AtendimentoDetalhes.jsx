@@ -271,9 +271,11 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                   )}
                 </div>
                   {dadosProj[amb] && (
-                    <div className="text-sm text-gray-700 ml-2">Projeto {dadosProj[amb].codigo}</div>
+                    <div className="text-sm text-gray-700 ml-2">
+                      Projeto {dadosProj[amb].codigo || dadosProj[amb].cabecalho?.cd_projeto}
+                    </div>
                   )}
-              </div>
+                </div>
             ))}
           </div>
         )}

@@ -386,6 +386,8 @@ async def gabster_projeto(request: Request):
             (raw_orc.get("objects")[0].get("id") if isinstance(raw_orc, dict) and raw_orc.get("objects") else None,)
         ).scalar() or 0
     result = {
+        "codigo": header.get("id"),
+        **header,
         "cabecalho": orcamento_header,
         "itens": itens_final,
         "valor_total_orcamento": res,
