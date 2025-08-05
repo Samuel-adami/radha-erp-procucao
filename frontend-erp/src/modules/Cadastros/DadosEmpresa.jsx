@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 // inicialização do formulário de empresa
 const initialForm = {
+  id: null,
   razaoSocial: '',
   nomeFantasia: '',
   cnpj: '',
@@ -35,7 +36,14 @@ function DadosEmpresa() {
     fetchComAuth('/empresa')
       .then(d => {
         if (d && d.empresas && d.empresas[0]) {
-          setForm({ ...initialForm, ...d.empresas[0], logoFile: null });
+          const eid = d.empresas[0].id;
+          fetchComAuth(`/empresa/${eid}`)
+            .then(detail => {
+              if (detail && detail.empresa) {
+                setForm({ ...initialForm, ...detail.empresa, logoFile: null });
+              }
+            })
+            .catch(err => console.error('Erro ao carregar detalhes da empresa', err));
         }
       })
       .catch(err => console.error('Erro ao carregar empresa', err));
@@ -83,7 +91,7 @@ function DadosEmpresa() {
   const salvar = async () => {
     const data = new FormData();
     Object.entries(form).forEach(([k, v]) => {
-      if (k === 'logoFile' || !v) return;
+      if (k === 'logoFile' || k === 'id' || !v) return;
       if (k !== 'logo') data.append(k, v);
     });
     if (form.logoFile) {
