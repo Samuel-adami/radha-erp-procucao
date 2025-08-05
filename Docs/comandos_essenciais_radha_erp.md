@@ -80,6 +80,12 @@ pip install fastapi uvicorn pydantic httpx python-dotenv openai Pillow requests 
 ```bash
 # Ver status do serviço
 sudo systemctl status NOME_DO_SERVICO
+sudo systemctl status radha-producao-backend
+sudo systemctl status radha-comercial-backend
+sudo systemctl status radha-marketing-backend
+sudo systemctl status radha-gateway-backend
+sudo systemctl status radha-finance-backend
+sudo systemctl status radha-frontend
 
 # Iniciar serviço
 sudo systemctl start NOME_DO_SERVICO
@@ -96,13 +102,36 @@ sudo systemctl enable NOME_DO_SERVICO
 # Desativar auto inicialização
 sudo systemctl disable NOME_DO_SERVICO
 
+# Ver logs do serviço em tempo real
+sudo journalctl -u radha-producao-backend -f
+sudo journalctl -u radha-comercial-backend -f
+sudo journalctl -u radha-marketing-backend -f
+sudo journalctl -u radha-gateway-backend -f
+sudo journalctl -u radha-finance-backend -f
+sudo journalctl -u radha-frontend -f
+
 # Ver logs do serviço
 sudo journalctl -u NOME_DO_SERVICO -n 40 --no-pager
+sudo journalctl -u radha-producao-backend -n 40 --no-pager
+sudo journalctl -u radha-comercial-backend -n 40 --no-pager
+sudo journalctl -u radha-marketing-backend -n 40 --no-pager
+sudo journalctl -u radha-gateway-backend -n 40 --no-pager
+sudo journalctl -u radha-finance-backend -n 40 --no-pager
+sudo journalctl -u radha-frontend -n 40 --no-pager
 
 # Recarregar serviços após editar arquivo systemd
 sudo systemctl daemon-reload
-```
 
+# Comandos atualização completa
+sudo systemctl daemon-reload
+sudo systemctl restart radha-producao-backend
+sudo systemctl restart radha-marketing-backend
+sudo systemctl restart radha-comercial-backend
+sudo systemctl restart radha-gateway-backend
+sudo systemctl restart radha-finance-backend
+sudo systemctl restart radha-frontend
+sudo systemctl restart nginx
+```
 **Função:** Gerencia execução dos serviços backend/frontend no modo produção. Facilitam controle, restart automático e logs centralizados.
 
 ---
@@ -153,13 +182,53 @@ sudo pkill -f "npm run dev"
 
 ```bash
 # Acessar o PostgreSQL
-sudo -u postgres psql
+sudo -u postgres psql producao
 
 # Listar usuários (roles)
 \du
 
 # Alterar senha de usuário
 ALTER USER NOME_USUARIO WITH PASSWORD 'NOVA_SENHA';
+
+# Criar um Schema
+CREATE SCHEMA nome_do_schema;
+
+# Excluir (Drop) um Schema (e tudo que estiver dentro)
+DROP SCHEMA nome_do_schema CASCADE;
+
+# Ver Schemas Existentes
+\dn
+
+# Criar uma Tabela
+CREATE TABLE nome_do_schema.nome_da_tabela (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100)
+);
+
+# Excluir (Drop) uma Tabela
+DROP TABLE nome_da_tabela;
+DROP TABLE nome_do_schema.nome_da_tabela;
+
+# Adicionar Coluna em uma Tabela
+ALTER TABLE nome_da_tabela ADD COLUMN nova_coluna VARCHAR(50);
+
+# Excluir Coluna de uma Tabela
+ ALTER TABLE nome_da_tabela DROP COLUMN nome_coluna;
+
+# Listar Todas as Tabelas do Schema Atual
+ \dt
+
+# Para listar todas as tabelas de um schema específico:
+ \dt nome_do_schema.*
+
+# Visualizar a Estrutura de uma Tabela
+ \d nome_da_tabela
+
+# Visualizar os Dados de uma Tabela
+ SELECT * FROM nome_da_tabela;
+
+# Mudar de schema (setar search_path):
+SET search_path TO nome_do_schema;
 
 # Sair do psql
 \q
