@@ -97,7 +97,12 @@ function DadosEmpresa() {
       data.append('logo', new Blob([arr], { type: mime }));
     }
     try {
-      await fetchComAuth('/empresa', { method: 'PUT', body: data });
+      const url = form.id ? `/empresa/${form.id}` : '/empresa';
+      const method = form.id ? 'PUT' : 'POST';
+      const result = await fetchComAuth(url, { method, body: data });
+      if (!form.id && result && result.id) {
+        setForm(prev => ({ ...prev, id: result.id }));
+      }
       alert('Dados salvos');
       setDirty(false);
     } catch (err) {
