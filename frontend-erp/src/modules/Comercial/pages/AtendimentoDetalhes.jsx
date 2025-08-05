@@ -304,7 +304,14 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
         )}
         {/* Botão para finalizar a tarefa após importar todos os projetos */}
         {!tarefa.concluida && projetos.every(amb => dados.projetos?.[amb]) && (
-          <Button size="sm" className="bg-blue-600 text-white" onClick={() => salvarProjeto(dados, true)}>
+          <Button
+            size="sm"
+            className="bg-blue-600 text-white"
+            onClick={async () => {
+              const ok = await salvarProjeto(dados, true);
+              if (ok) alert('Projeto 3D finalizado com sucesso');
+            }}
+          >
             Finalizar Projeto 3D
           </Button>
         )}

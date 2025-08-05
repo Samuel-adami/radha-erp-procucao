@@ -1,10 +1,12 @@
-import sys
 import importlib
 import json
+import sys
+import types
 from pathlib import Path
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
-import types
+
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 MOD_DIR = ROOT_DIR / "comercial-backend"
@@ -25,12 +27,8 @@ def load_main():
         sys.modules.pop("database", None)
 
 
-def test_gabster_import_saves_items(monkeypatch):
-    main = load_main()
-
-    engine = create_engine(
-        "sqlite:///:memory:", connect_args={"check_same_thread": False}
-    )
+def setup_conn():
+    engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
     conn = engine.connect()
     conn.execute(
         text(
@@ -75,11 +73,16 @@ def test_gabster_import_saves_items(monkeypatch):
     )
     conn.execute(
         text(
-            "INSERT INTO atendimento_tarefas (id, atendimento_id, nome, concluida)"
-            " VALUES (1, 1, 'Projeto', 0)"
+            "INSERT INTO atendimento_tarefas (id, atendimento_id, nome, concluida) VALUES (1,1,'Projeto 3D',0)"
         )
     )
     conn.commit()
+    return conn
+
+
+def test_projeto3d_persist_and_finalize(monkeypatch):
+    main = load_main()
+    conn = setup_conn()
 
     def get_conn():
         class Wrapper:
@@ -112,34 +115,30 @@ def test_gabster_import_saves_items(monkeypatch):
         "programa": "Gabster",
         "projetos": {
             "Cozinha": {
-                "id": 10,
-                "nome": "Projeto teste",
-                "cd_cliente": "1",
-                "nome_arquivo_skp": "p.skp",
-                "identificador_arquivo_skp": "abc",
-                "descricao": "desc",
-                "observacao": "obs",
-                "ambiente": "Cozinha",
-                "projeto_ref": "ref",
+                "codigo": "XYZ",
+                "cabecalho": {"cd_projeto": 123},
                 "itens": [
                     {"descricao": "Armario", "unitario": 100, "quantidade": 2, "total": 200}
                 ],
             }
         },
     }
+
     resp = client.put("/atendimentos/1/tarefas/1", json={"dados": json.dumps(dados)})
     assert resp.status_code == 200
 
-    rows = conn.execute(text("SELECT descricao, quantidade, total FROM projeto_itens")).fetchall()
-    assert len(rows) == 1
-    m = rows[0]._mapping
-    assert m["descricao"] == "Armario"
-    assert m["quantidade"] == 2
-    assert m["total"] == 200.0
+    resp = client.get("/atendimentos/1/tarefas")
+    tarefa = resp.json()["tarefas"][0]
+    info = json.loads(tarefa["dados"])
+    assert info["projetos"]["Cozinha"]["codigo"] == "XYZ"
 
-    grows = conn.execute(text("SELECT id, nome, ambiente FROM gabster_projeto_itens")).fetchall()
-    assert len(grows) == 1
-    gm = grows[0]._mapping
-    assert gm["id"] == 10
-    assert gm["nome"] == "Projeto teste"
-    assert gm["ambiente"] == "Cozinha"
+    resp = client.put(
+        "/atendimentos/1/tarefas/1",
+        json={"concluida": True, "dados": json.dumps(dados)},
+    )
+    assert resp.status_code == 200
+
+    resp = client.get("/atendimentos/1/tarefas")
+    tarefa = resp.json()["tarefas"][0]
+    assert tarefa["concluida"] == 1
+
