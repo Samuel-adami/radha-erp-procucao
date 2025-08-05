@@ -176,3 +176,63 @@ def test_projeto3d_persist_and_finalize(monkeypatch):
     tarefa = resp.json()["tarefas"][0]
     assert tarefa["concluida"] == 1
 
+
+def test_projeto3d_accepts_dict_payload(monkeypatch):
+    main = load_main()
+    conn = setup_conn()
+
+    def get_conn():
+        class Wrapper:
+            def __init__(self, c):
+                self.c = c
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def exec_driver_sql(self, sql, params=None):
+                sql = sql.replace("%s", "?")
+                return self.c.exec_driver_sql(sql, params or ())
+
+            def commit(self):
+                self.c.commit()
+
+            def close(self):
+                self.c.close()
+
+        return Wrapper(conn)
+
+    monkeypatch.setattr(main, "get_db_connection", get_conn)
+
+    client = TestClient(main.app)
+
+    dados = {
+        "programa": "Gabster",
+        "projetos": {
+            "Cozinha": {
+                "codigo": "XYZ",
+                "cabecalho": {"cd_projeto": 123},
+                "itens": [
+                    {"descricao": "Armario", "unitario": 100, "quantidade": 2, "total": 200}
+                ],
+            }
+        },
+    }
+
+    resp = client.put("/atendimentos/1/tarefas/1", json={"dados": dados})
+    assert resp.status_code == 200
+
+    resp = client.get("/atendimentos/1/tarefas")
+    tarefa = resp.json()["tarefas"][0]
+    info = json.loads(tarefa["dados"])
+    assert info["projetos"]["Cozinha"]["codigo"] == "XYZ"
+
+    resp = client.put("/atendimentos/1/tarefas/1", json={"concluida": True})
+    assert resp.status_code == 200
+
+    resp = client.get("/atendimentos/1/tarefas")
+    tarefa = resp.json()["tarefas"][0]
+    assert tarefa["concluida"] == 1
+
