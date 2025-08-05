@@ -24,7 +24,9 @@ from database import (
     init_db,
     exec_ignore,
     insert_with_id,
-    PLACEHOLDER,
+ 
+from .lotes_producao import router as lotes_producao_router
+PLACEHOLDER,
     schema,
 )
 
@@ -66,6 +68,8 @@ def _age_seconds(value) -> float | None:
 
 
 app = FastAPI()
+
+app.include_router(lotes_producao_router)
 
 
 @app.on_event("startup")
