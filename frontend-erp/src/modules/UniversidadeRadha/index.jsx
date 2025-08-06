@@ -21,13 +21,13 @@ function UniversidadeRadhaLayout() {
 
         <Link to="treinamentos" className="text-blue-600 hover:underline">
           Treinamentos
+        </Link>
 
         <Link
           to="gerenciar-conteudos"
           className="text-blue-600 hover:underline"
         >
           Gerenciar Conteúdos
-
         </Link>
       </nav>
       <Outlet />
