@@ -1,12 +1,13 @@
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from starlette.responses import JSONResponse, Response, FileResponse
 
 import httpx
 import os
+import uuid
 from database import get_session, init_db
-from models import Empresa, Cliente, Fornecedor
+from models import Empresa, Cliente, Fornecedor, DocumentoTreinamento
 from services import auth_service
 from security import verificar_autenticacao
 
@@ -521,6 +522,93 @@ async def excluir_fornecedor(fornecedor_id: int):
     session = get_session()
     try:
         session.query(Fornecedor).filter(Fornecedor.id == fornecedor_id).delete()
+        session.commit()
+        return {"ok": True}
+    finally:
+        session.close()
+
+
+# -------------------------------
+# Universidade Radha - Documentos
+# -------------------------------
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "documentos_treinamento")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@app.post("/universidade-radha/documentos")
+async def enviar_documento(
+    titulo: str = Form(...),
+    autor: str = Form(...),
+    data: str = Form(...),
+    arquivo: UploadFile = File(...),
+    usuario=Depends(verificar_autenticacao()),
+):
+    ext = os.path.splitext(arquivo.filename)[1].lower()
+    if ext not in [".pdf", ".html"]:
+        raise HTTPException(status_code=400, detail="Formato não suportado")
+
+    nome_arquivo = f"{uuid.uuid4()}{ext}"
+    caminho = os.path.join(UPLOAD_DIR, nome_arquivo)
+    with open(caminho, "wb") as f:
+        f.write(await arquivo.read())
+
+    session = get_session()
+    try:
+        doc = DocumentoTreinamento(
+            titulo=titulo, autor=autor, data=data, caminho=caminho
+        )
+        session.add(doc)
+        session.commit()
+        session.refresh(doc)
+        return {"id": doc.id}
+    finally:
+        session.close()
+
+
+@app.get("/universidade-radha/documentos")
+async def listar_documentos(usuario=Depends(verificar_autenticacao())):
+    session = get_session()
+    try:
+        docs = session.query(DocumentoTreinamento).order_by(DocumentoTreinamento.id).all()
+        return {
+            "documentos": [
+                {
+                    "id": d.id,
+                    "titulo": d.titulo,
+                    "autor": d.autor,
+                    "data": d.data,
+                }
+                for d in docs
+            ]
+        }
+    finally:
+        session.close()
+
+
+@app.get("/universidade-radha/documentos/{doc_id}/arquivo")
+async def obter_documento_arquivo(doc_id: int, usuario=Depends(verificar_autenticacao())):
+    session = get_session()
+    try:
+        doc = session.query(DocumentoTreinamento).filter(DocumentoTreinamento.id == doc_id).first()
+        if not doc or not os.path.exists(doc.caminho):
+            raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+        media_type = "application/pdf" if doc.caminho.endswith(".pdf") else "text/html"
+        return FileResponse(doc.caminho, media_type=media_type)
+    finally:
+        session.close()
+
+
+@app.delete("/universidade-radha/documentos/{doc_id}")
+async def excluir_documento(doc_id: int, usuario=Depends(verificar_autenticacao())):
+    session = get_session()
+    try:
+        doc = session.query(DocumentoTreinamento).filter(DocumentoTreinamento.id == doc_id).first()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Documento não encontrado")
+        if os.path.exists(doc.caminho):
+            os.remove(doc.caminho)
+        session.delete(doc)
         session.commit()
         return {"ok": True}
     finally:

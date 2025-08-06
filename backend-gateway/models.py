@@ -81,3 +81,15 @@ class User(Base):
     nome = Column(String)
     cargo = Column(String)
     permissoes = Column(String)
+
+
+class DocumentoTreinamento(Base):
+    """Armazena os documentos de treinamento enviados pela Universidade Radha."""
+
+    __tablename__ = "documentos_treinamento"
+
+    id = Column(Integer, primary_key=True)
+    titulo = Column(String)
+    autor = Column(String)
+    data = Column(String)
+    caminho = Column(String)

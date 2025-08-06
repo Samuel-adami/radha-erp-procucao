@@ -35,6 +35,8 @@ export async function fetchComAuth(url, options = {}) {
             finalUrl = `${GATEWAY_URL}${url}`; // Rotas do módulo Comercial via Gateway
         } else if (url.startsWith('/finance')) {
             finalUrl = `${GATEWAY_URL}${url}`; // Rotas do módulo Financeiro via Gateway
+        } else if (url.startsWith('/universidade-radha')) {
+            finalUrl = `${GATEWAY_URL}${url}`; // Rotas da Universidade Radha via Gateway
         } else if (url.startsWith('/clientes') || url.startsWith('/fornecedores')) {
             finalUrl = `${GATEWAY_URL}${url}`; // Cadastros básicos via Gateway
         } else if (url.startsWith('/auth') || url.startsWith('/usuarios') || url.startsWith('/empresa')) {

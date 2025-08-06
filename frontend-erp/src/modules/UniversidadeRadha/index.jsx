@@ -1,7 +1,11 @@
 // radha-erp/frontend-erp/src/modules/UniversidadeRadha/index.jsx
 import React from 'react';
 import { Routes, Route, Outlet, Link } from 'react-router-dom';
+
 import Treinamentos from './Treinamentos';
+
+import GerenciarConteudos from './GerenciarConteudos';
+
 
 // Layout simples para o módulo Universidade Radha
 function UniversidadeRadhaLayout() {
@@ -14,8 +18,16 @@ function UniversidadeRadhaLayout() {
         <Link to="" className="text-blue-600 hover:underline">
           Início
         </Link>
+
         <Link to="treinamentos" className="text-blue-600 hover:underline">
           Treinamentos
+
+        <Link
+          to="gerenciar-conteudos"
+          className="text-blue-600 hover:underline"
+        >
+          Gerenciar Conteúdos
+
         </Link>
       </nav>
       <Outlet />
@@ -33,7 +45,14 @@ function UniversidadeRadha() {
     <Routes>
       <Route path="/" element={<UniversidadeRadhaLayout />}>
         <Route index element={<UniversidadeRadhaHome />} />
+
         <Route path="treinamentos" element={<Treinamentos />} />
+
+        <Route
+          path="gerenciar-conteudos"
+          element={<GerenciarConteudos />}
+        />
+
       </Route>
     </Routes>
   );

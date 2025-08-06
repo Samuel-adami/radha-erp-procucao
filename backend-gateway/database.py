@@ -50,6 +50,8 @@ DEFAULT_ADMIN_PERMISSIONS = [
     "producao/nesting",
     "producao/ocorrencias",
     "producao/relatorios/ocorrencias",
+    "universidade-radha",
+    "universidade-radha/gerenciar-conteudos",
 ]
 
 
