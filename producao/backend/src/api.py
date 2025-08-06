@@ -27,7 +27,7 @@ from database import (
     PLACEHOLDER,
     schema,
 )
-from .lotes_producao import router as lotes_producao_router, salvar_lote_db
+from lotes_producao import router as lotes_producao_router, salvar_lote_db
 
 SCHEMA_PREFIX = f"{schema}." if schema else ""
 import tempfile
