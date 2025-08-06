@@ -63,6 +63,15 @@ deactivate
 
 ---
 
+## Configuração do bash
+
+``` bash
+nano ~/.bashrc
+source ~/.bashrc
+
+```
+---
+
 ## 🟩 Instalar Dependências Python (Backend)
 
 ```bash
