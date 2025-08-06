@@ -294,13 +294,13 @@ async def importar_xml(
                 else parse_xml_producao(root, caminho_xml)
             )
 
-    if pacotes is None:
-        return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml, .csv) foi enviado."}
+        if pacotes is None:
+            return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml, .csv) foi enviado."}
 
-    try:
-        salvar_lote_db(lote, pacotes)
-    except ValueError:
-        return {"erro": "Lote não encontrado"}
+        try:
+            salvar_lote_db(lote, pacotes, tmpdirname)
+        except ValueError:
+            return {"erro": "Lote não encontrado"}
 
     return {"pacotes": pacotes}
 
