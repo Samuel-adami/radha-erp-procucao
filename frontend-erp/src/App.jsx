@@ -25,7 +25,9 @@ import { UserContext } from "./UserContext";
 // Componente de Layout: A "moldura" do ERP para um usuário logado
 function Layout({ usuario, onLogout }) {
   const possuiPermissao = (modulo) => usuario?.permissoes?.includes(modulo);
-  const isAdmin = usuario?.cargo === 'admin';
+  const isAdmin = ["admin", "administrador"].includes(
+    usuario?.cargo?.toLowerCase?.()
+  );
 
   const matchCadastros = useMatch("/cadastros/*");
   const matchMarketing = useMatch("/marketing-ia/*");
