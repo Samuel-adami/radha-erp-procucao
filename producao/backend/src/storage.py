@@ -62,6 +62,17 @@ def upload_file(local_path: str, object_name: str) -> None:
             client.upload_fileobj(f, BUCKET, _full_key(object_name))
 
 
+def upload_bytes(data: bytes, object_name: str) -> None:
+    """Envia o conteúdo de ``data`` diretamente para ``object_name`` no bucket.
+
+    A função ignora silenciosamente caso o cliente não esteja configurado,
+    permitindo que ambientes de desenvolvimento sem credenciais funcionem
+    normalmente.
+    """
+    if client:
+        client.put_object(Bucket=BUCKET, Key=_full_key(object_name), Body=data)
+
+
 def download_stream(object_name: str, fallback_path: str):
     if client:
         bio = io.BytesIO()
