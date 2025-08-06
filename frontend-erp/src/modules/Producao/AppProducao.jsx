@@ -63,12 +63,12 @@ const HomeProducao = () => {
     }
   };
 
-  const baixarLote = async (nome) => {
-    const url = `/download-lote/${encodeURIComponent(nome)}`;
+  const baixarLote = async (id, nome) => {
+    const url = `/download-lote/${id}`;
     try {
-      await downloadComAuth(url, `Lote_${nome}.zip`);
+      await downloadComAuth(url);
     } catch (err) {
-      alert('Falha ao baixar lote');
+      alert(`Falha ao baixar lote ${nome}: ${err.message}`);
     }
   };
 
@@ -82,7 +82,7 @@ const HomeProducao = () => {
             <span>{l.nome}</span>
             <div className="space-x-2">
               <Button onClick={() => navigate(`lote/${l.nome}`)}>Editar</Button>
-              <Button onClick={() => baixarLote(l.nome)}>Baixar</Button>
+              <Button onClick={() => baixarLote(l.id, l.nome)}>Baixar</Button>
               <Button variant="destructive" onClick={() => excluirLote(l.nome)}>Excluir</Button>
             </div>
           </li>

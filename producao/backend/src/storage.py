@@ -131,7 +131,17 @@ def object_exists(object_name: str) -> bool | None:
             full_key,
             ", ".join(missing_vars) if missing_vars else "nenhuma",
         )
-        return None
+    return None
+
+def get_object_size(object_name: str) -> int | None:
+    """Retorna o tamanho (em bytes) do objeto, ou None se não disponível."""
+    if client:
+        try:
+            resp = client.head_object(Bucket=BUCKET, Key=_full_key(object_name))
+            return resp.get("ContentLength")
+        except Exception:
+            return None
+    return None
 
     try:
         client.head_object(Bucket=BUCKET, Key=full_key)

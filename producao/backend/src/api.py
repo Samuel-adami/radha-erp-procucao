@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks, Form
+from fastapi import FastAPI, File, UploadFile, Request, BackgroundTasks, Form, HTTPException
 from fastapi.responses import StreamingResponse
 from storage import (
     upload_file,
@@ -7,6 +7,7 @@ from storage import (
     download_file,
     object_exists,
     get_public_url,
+    get_object_size,
 )
 import logging
 import xml.etree.ElementTree as ET
@@ -1022,23 +1023,18 @@ async def listar_nestings():
     return {"nestings": dados}
 
 
-@app.get("/download-lote/{lote}")
-async def download_lote(lote: str, background_tasks: BackgroundTasks):
+@app.get("/download-lote/{lote_id}")
+async def download_lote(lote_id: int, background_tasks: BackgroundTasks):
     """
-    Realiza o download do arquivo zip pré-gerado para o lote especificado.
-
-    O zip é obtido diretamente do objeto armazenado no bucket.
+    Realiza o download do arquivo zip pré-gerado para o lote identificado pelo ID.
     """
-    # Busca o nome do objeto do lote no banco de dados
+    # Busca a chave do objeto do lote no banco de dados
     try:
         with get_db_connection() as conn:
             row = (
                 conn.exec_driver_sql(
-                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key IN ({PLACEHOLDER}, {PLACEHOLDER})",
-                    (
-                        f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",
-                        f"lotes/Lote_{lote}.zip",
-                    ),
+                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE id={PLACEHOLDER}",
+                    (lote_id,),
                 )
                 .mappings()
                 .fetchone()
@@ -1047,26 +1043,25 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     except Exception:
         object_name = None
 
-    # Se não houver registro no banco, assume chave padrão
-    if not object_name:
-        object_name = f"lotes/Lote_{lote}.zip"
-
-    # Verifica existência do objeto no storage
-    if object_exists(object_name) is False:
-        from fastapi import HTTPException
-
+    if not object_name or object_exists(object_name) is False:
         raise HTTPException(status_code=404, detail="Lote não encontrado")
 
-    # Cria arquivo temporário para download
+    # Prepara streaming no arquivo temporário e define remoção pós-resposta
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
     background_tasks.add_task(os.remove, tmp.name)
 
-    # Faz streaming do conteúdo do objeto
+    # Monta headers de download com nome de arquivo e tamanho
+    filename = Path(object_name).name
+    headers: dict[str, str] = {"Content-Disposition": f"attachment; filename={filename}"}
+    size = get_object_size(object_name)
+    if size is not None:
+        headers["Content-Length"] = str(size)
+
     return StreamingResponse(
         download_stream(object_name, tmp.name),
         media_type="application/zip",
-        headers={"Content-Disposition": f"attachment; filename=Lote_{lote}.zip"},
+        headers=headers,
     )
 
 
@@ -1884,9 +1879,44 @@ async def excluir_lote_ocorrencia(oc_id: int):
                 conn.commit()
                 return {"status": "ok"}
     except Exception as e:
-        return {"erro": str(e)}
-    return {"status": "ok", "mensagem": "Lote não encontrado"}
+        logging.error("Erro ao excluir lote de ocorrência %d: %s", oc_id, e)
+        raise HTTPException(status_code=500, detail="Erro ao excluir lote de ocorrência")
 
+@app.get("/download-lote-ocorrencia/{oc_id}")
+async def download_lote_ocorrencia(oc_id: int, background_tasks: BackgroundTasks):
+    """Download do arquivo ZIP do lote de ocorrência especificado."""
+    try:
+        with get_db_connection() as conn:
+            row = (
+                conn.exec_driver_sql(
+                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes_ocorrencias WHERE id={PLACEHOLDER}",
+                    (oc_id,),
+                )
+                .mappings()
+                .fetchone()
+            )
+            object_name = row.get("obj_key") if row else None
+    except Exception:
+        object_name = None
+
+    if not object_name or object_exists(object_name) is False:
+        raise HTTPException(status_code=404, detail="Lote de ocorrência não encontrado")
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
+    tmp.close()
+    background_tasks.add_task(os.remove, tmp.name)
+
+    filename = Path(object_name).name
+    headers: dict[str, str] = {"Content-Disposition": f"attachment; filename={filename}"}
+    size = get_object_size(object_name)
+    if size is not None:
+        headers["Content-Length"] = str(size)
+
+    return StreamingResponse(
+        download_stream(object_name, tmp.name),
+        media_type="application/zip",
+        headers=headers,
+    )
 
 @app.get("/apontamentos")
 async def obter_apontamentos(lote: str, pacote: str):

@@ -5,7 +5,6 @@ export async function fetchComAuth(url, options = {}) {
   // o que pode causar telas desatualizadas. O chamador pode sobrescrever se desejar.
   const { raw, cache = "no-store", ...fetchOpts } = options;
   const token = localStorage.getItem("token");
-  console.log("Requisição iniciada:", url, "com token:", token);
 
   const headers = {
     ...(fetchOpts.headers || {}),
@@ -59,7 +58,6 @@ export async function fetchComAuth(url, options = {}) {
       ...fetchOpts,
       headers,
     });
-    console.log("Resposta recebida:", finalUrl, "→ status:", response.status);
   } catch (networkError) {
     console.error('Erro de rede ao chamar', finalUrl, networkError);
     window.dispatchEvent(new CustomEvent('log', { detail: `Erro de rede: ${networkError.message}` }));
@@ -113,7 +111,13 @@ export async function downloadComAuth(url, filename) {
   const dlUrl = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = dlUrl;
-  a.download = filename || '';
+  let suggested = filename;
+  if (!suggested) {
+    const cd = response.headers.get('Content-Disposition');
+    const m = cd && cd.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+    if (m) suggested = decodeURIComponent(m[1]);
+  }
+  a.download = suggested || '';
   document.body.appendChild(a);
   a.click();
   a.remove();
