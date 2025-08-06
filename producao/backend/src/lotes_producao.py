@@ -12,7 +12,6 @@ router = APIRouter()
 SCHEMA_PREFIX = f"{schema}." if schema else ""
 
 
-
 def salvar_lote_db(ident: Union[str, int], pacotes: list) -> int:
     """Cria ou atualiza um lote de produção e retorna seu ``id``.
 
@@ -51,13 +50,6 @@ def salvar_lote_db(ident: Union[str, int], pacotes: list) -> int:
             lote_id = result.scalar_one()
         conn.commit()
     return lote_id
-
-
-        lote_id = result.scalar_one()
-        conn.commit()
-        return lote_id
-
-
 
 @router.post("/lotes-producao")
 async def salvar_lote_producao(lote: dict):
