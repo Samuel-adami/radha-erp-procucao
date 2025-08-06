@@ -106,12 +106,14 @@ export async function fetchComAuth(url, options = {}) {
 }
 
 export async function downloadComAuth(url, filename) {
-  const response = await fetchComAuth(url, { raw: true });
+  const response = await fetchComAuth(url, { raw: true, method: 'GET', cache: 'no-store' });
   const blob = await response.blob();
   const dlUrl = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = dlUrl;
   a.download = filename || '';
+  document.body.appendChild(a);
   a.click();
-  window.URL.revokeObjectURL(dlUrl);
+  a.remove();
+  setTimeout(() => window.URL.revokeObjectURL(dlUrl), 1000);
 }
