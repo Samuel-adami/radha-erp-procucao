@@ -14,3 +14,4 @@ sqlalchemy
 psycopg2-binary
 numpy
 boto3
+Whoosh
