@@ -230,9 +230,13 @@ def coletar_chapas(pasta_lote: str) -> list[str]:
 
 @app.post("/importar-xml")
 async def importar_xml(
-    nome: str = Form(...), files: list[UploadFile] = File(...)
+    lote: str = Form(..., alias="nome"), files: list[UploadFile] = File(...)
 ):
-    """Importa arquivos de produção e persiste o lote informado."""
+    """Importa arquivos de produção e persiste o lote informado.
+
+    O parâmetro ``lote`` pode ser o ``id`` ou o ``nome`` do lote, permitindo
+    importar pacotes para registros já existentes.
+    """
 
     logging.info("🚀 Iniciando importação de arquivos...")
     pacotes = None
@@ -293,7 +297,11 @@ async def importar_xml(
     if pacotes is None:
         return {"erro": "Nenhum arquivo principal (.dxt, .txt, .xml, .csv) foi enviado."}
 
-    salvar_lote_db(nome, pacotes)
+    try:
+        salvar_lote_db(lote, pacotes)
+    except ValueError:
+        return {"erro": "Lote não encontrado"}
+
     return {"pacotes": pacotes}
 
 
