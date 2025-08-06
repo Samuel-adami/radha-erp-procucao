@@ -27,9 +27,11 @@ def salvar_lote_db(nome: str, pacotes: list) -> int:
             """,
             (nome, pacotes_json),
         )
+
         lote_id = result.scalar_one()
         conn.commit()
         return lote_id
+
 
 
 @router.post("/lotes-producao")
