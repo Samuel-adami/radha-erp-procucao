@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "limit": 25,
+    "next": "/integracao/api/v2/unidade/?format=json&limit=25&offset=25",
+    "offset": 0,
+    "previous": null,
+    "total_count": 32
+  },
+  "objects": [
+    {
+      "datahora_cancelamento": null,
+      "id": 12,
+      "nome": "Barra",
+      "sigla": "Br"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 22,
+      "nome": "Base",
+      "sigla": "base"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 18,
+      "nome": "Bisnaga",
+      "sigla": "bis"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 15,
+      "nome": "Borda",
+      "sigla": "Borda"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 10,
+      "nome": "Caixa",
+      "sigla": "Cx"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 27,
+      "nome": "Cartela",
+      "sigla": "ca"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 11,
+      "nome": "Cento",
+      "sigla": "CT"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 7,
+      "nome": "Chapa",
+      "sigla": "ch"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 13,
+      "nome": "Ciclo",
+      "sigla": "Ciclo"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 30,
+      "nome": "Gotas",
+      "sigla": "gt"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 25,
+      "nome": "Gramas",
+      "sigla": "g"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 17,
+      "nome": "Hora",
+      "sigla": "h"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 20,
+      "nome": "Hora/Homem",
+      "sigla": "h/h"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 21,
+      "nome": "Hora/Máquina",
+      "sigla": "h/m"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 5,
+      "nome": "Kilo",
+      "sigla": "kg"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 31,
+      "nome": "Kit",
+      "sigla": "Kit"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 19,
+      "nome": "Lata",
+      "sigla": "lt"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 6,
+      "nome": "Litro",
+      "sigla": "l"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 2,
+      "nome": "Metro",
+      "sigla": "m"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 4,
+      "nome": "Metro Cúbico",
+      "sigla": "m3"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 3,
+      "nome": "Metro Quadrado",
+      "sigla": "m2"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 23,
+      "nome": "Mililitro",
+      "sigla": "ml"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 16,
+      "nome": "Minuto",
+      "sigla": "min"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 32,
+      "nome": "Par",
+      "sigla": "par"
+    },
+    {
+      "datahora_cancelamento": null,
+      "id": 1,
+      "nome": "Peça",
+      "sigla": "pc"
+    }
+  ]
+}

@@ -1024,12 +1024,17 @@ async def listar_nestings():
 
 @app.get("/download-lote/{lote}")
 async def download_lote(lote: str, background_tasks: BackgroundTasks):
-    """Compacta e faz o download do lote especificado."""
+    """
+    Realiza o download do arquivo zip pré-gerado para o lote especificado.
+
+    O zip é obtido diretamente do objeto armazenado no bucket.
+    """
+    # Busca o nome do objeto do lote no banco de dados
     try:
         with get_db_connection() as conn:
             row = (
                 conn.exec_driver_sql(
-                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key IN (%s, %s)",
+                    f"SELECT obj_key FROM {SCHEMA_PREFIX}lotes WHERE obj_key IN ({PLACEHOLDER}, {PLACEHOLDER})",
                     (
                         f"{OBJECT_PREFIX}lotes/Lote_{lote}.zip",
                         f"lotes/Lote_{lote}.zip",
@@ -1042,26 +1047,24 @@ async def download_lote(lote: str, background_tasks: BackgroundTasks):
     except Exception:
         object_name = None
 
-    pasta = SAIDA_DIR / f"Lote_{lote}"
+    # Se não houver registro no banco, assume chave padrão
     if not object_name:
         object_name = f"lotes/Lote_{lote}.zip"
+
+    # Verifica existência do objeto no storage
+    if object_exists(object_name) is False:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Lote não encontrado")
+
+    # Cria arquivo temporário para download
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
     tmp.close()
-    base_name = tmp.name[:-4]
-    zip_path = base_name + ".zip"
-    if pasta.is_dir():
+    background_tasks.add_task(os.remove, tmp.name)
 
-        shutil.make_archive(
-            base_name, "zip", root_dir=pasta.parent, base_dir=pasta.name
-        )
-
-        upload_file(zip_path, object_name)
-    elif object_exists(object_name) is False:
-        os.remove(zip_path)
-        return {"erro": "Lote não encontrado"}
-    background_tasks.add_task(os.remove, zip_path)
+    # Faz streaming do conteúdo do objeto
     return StreamingResponse(
-        download_stream(object_name, zip_path),
+        download_stream(object_name, tmp.name),
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename=Lote_{lote}.zip"},
     )

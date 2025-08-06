@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ titulo }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+  <style>
+    @media print {
+      .no-print {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 p-6">
+  <div class="max-w-4xl mx-auto bg-white shadow rounded-lg overflow-hidden">
+    <div class="p-6 bg-gray-100 border-b flex items-center justify-between">
+      <div class="flex items-center space-x-4">
+
+        {% if logo_url %}
+        <img src="{{ logo_url }}" alt="Logo" class="h-16">
+        {% endif %}
+
+        <h1 class="text-2xl font-semibold text-gray-800">{{ titulo }}</h1>
+      </div>
+      <div class="space-x-2 no-print">
+        <button onclick="window.print()" class="px-4 py-2 bg-green-600 text-white rounded">Imprimir</button>
+      </div>
+    </div>
+    <div class="p-6 space-y-6 text-sm">
+      <div class="grid grid-cols-2 gap-4">
+        <div><span class="font-medium">Cliente:</span> {{ atendimento.cliente }}</div>
+        <div><span class="font-medium">Código Atendimento:</span> {{ atendimento.codigo }}</div>
+        <div><span class="font-medium">Vendedor:</span> {{ vendedor }}</div>
+        <div><span class="font-medium">Telefone:</span> {{ atendimento.telefone }}</div>
+        <div><span class="font-medium">Email:</span> {{ atendimento.email }}</div>
+      </div>
+
+      <div>
+        <h2 class="text-lg font-semibold mb-2">Ambientes</h2>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50 text-gray-600 uppercase">
+            <tr>
+              <th class="px-4 py-2 text-left">Ambiente</th>
+              <th class="px-4 py-2 text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for a in ambientes %}
+            <tr>
+              <td class="px-4 py-2">{{ a.nome }}</td>
+              <td class="px-4 py-2 text-right">R$ {{ "{:,.2f}".format(a.valor) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="font-semibold">
+              <td class="px-4 py-2 text-right">Total</td>
+              <td class="px-4 py-2 text-right">R$ {{ "{:,.2f}".format(total) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <h2 class="text-lg font-semibold mb-2">Parcelas</h2>
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50 text-gray-600 uppercase">
+            <tr>
+              <th class="px-4 py-2 text-center">Número</th>
+              <th class="px-4 py-2 text-center">Data</th>
+              <th class="px-4 py-2 text-right">Valor</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for p in parcelas %}
+            <tr>
+              <td class="px-4 py-2 text-center">{{ p.numero }}</td>
+              <td class="px-4 py-2 text-center">{{ p.data }}</td>
+              <td class="px-4 py-2 text-right">R$ {{ "{:,.2f}".format(p.valor) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <span class="font-medium">Validade do Orçamento:</span> {{ validade }}
+      </div>
+
+      <div>
+        {{ info_text }}
+      </div>
+
+      <div class="grid grid-cols-2 gap-8 mt-8">
+        <div class="text-center">
+          <canvas id="signature-client" class="border w-full h-32"></canvas>
+          <p class="mt-2">Assinatura do Cliente</p>
+        </div>
+        <div class="text-center">
+          <canvas id="signature-seller" class="border w-full h-32"></canvas>
+          <p class="mt-2">Assinatura do Vendedor</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const padClient = new SignaturePad(document.getElementById('signature-client'));
+    const padSeller = new SignaturePad(document.getElementById('signature-seller'));
+  </script>
+</body>
+</html>

@@ -5,22 +5,17 @@ from botocore.exceptions import ClientError
 from dotenv import load_dotenv, find_dotenv
 import logging
 
-# Carrega variáveis de ambiente do arquivo .env, se disponível. Dessa forma,
-# usuários podem personalizar as credenciais sem alterar o código-fonte. Caso
-# alguma variável não esteja definida, usa-se valores padrão compatíveis com o
-# ambiente de desenvolvimento.
 load_dotenv(find_dotenv())
 
 ENDPOINT = os.getenv("OBJECT_STORAGE_ENDPOINT", "https://nyc3.digitaloceanspaces.com")
 ACCESS_KEY = os.getenv("OBJECT_STORAGE_ACCESS_KEY")
 SECRET_KEY = os.getenv("OBJECT_STORAGE_SECRET_KEY")
 BUCKET = os.getenv("OBJECT_STORAGE_BUCKET", "radha-arquivos")
-PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "producao/")
+PREFIX = os.getenv("OBJECT_STORAGE_PREFIX", "comercial/")
 PUBLIC_ENDPOINT = os.getenv(
     "OBJECT_STORAGE_PUBLIC_ENDPOINT",
     "https://radha-arquivos.nyc3.digitaloceanspaces.com",
 )
-
 REGION = os.getenv("OBJECT_STORAGE_REGION", "nyc3")
 
 client = None
@@ -36,7 +31,6 @@ if ENDPOINT and ACCESS_KEY and SECRET_KEY and BUCKET:
 
 
 def storage_config_summary() -> str:
-    """Return a short string describing the configured storage."""
     ak = "set" if ACCESS_KEY else "missing"
     sk = "set" if SECRET_KEY else "missing"
     return (
@@ -47,12 +41,10 @@ def storage_config_summary() -> str:
 
 def _full_key(name: str) -> str:
     if name.startswith(PREFIX):
-        return name  # já tem o prefixo, não adiciona novamente
+        return name
     if name.startswith(f"/{PREFIX}"):
         return name.lstrip("/")
-    # Garante que não duplica prefixo nem barra
     return f"{PREFIX.rstrip('/')}/{name.lstrip('/')}"
-
 
 
 def upload_file(local_path: str, object_name: str) -> None:
@@ -61,25 +53,12 @@ def upload_file(local_path: str, object_name: str) -> None:
             client.upload_fileobj(f, BUCKET, _full_key(object_name))
 
 
-def upload_bytes(data: bytes, object_name: str) -> None:
-    """Envia o conteúdo de ``data`` diretamente para ``object_name`` no bucket.
-
-    A função ignora silenciosamente caso o cliente não esteja configurado,
-    permitindo que ambientes de desenvolvimento sem credenciais funcionem
-    normalmente.
-    """
-    if client:
-        client.put_object(Bucket=BUCKET, Key=_full_key(object_name), Body=data)
-
-
 def download_stream(object_name: str, fallback_path: str):
-    """Fetch ``object_name`` from storage and return a readable stream.
+    """Baixa ``object_name`` e retorna um stream legível.
 
-    Para evitar o consumo excessivo de memória em arquivos grandes, o
-    conteúdo é baixado para ``fallback_path`` e lido diretamente do disco.
-    Caso o cliente S3 não esteja configurado ou o download falhe, o caminho
-    local é utilizado como está.
-    """
+    O arquivo é gravado em ``fallback_path`` para evitar carregar todo o
+    conteúdo em memória. Se o download falhar ou o cliente S3 não estiver
+    configurado, o caminho local é utilizado como está."""
 
     if client:
         try:
@@ -103,17 +82,11 @@ def download_file(object_name: str, local_path: str) -> None:
 
 
 def object_exists(object_name: str) -> bool | None:
-    """Check if ``object_name`` exists in the bucket.
-
-    Returns ``True`` when the object is confirmed in the bucket,
-    ``False`` when the storage reports a 404/NoSuchKey,
-    and ``None`` for other errors (network issues or permission problems).
-    """
     full_key = _full_key(object_name)
     prefix_info = f"prefix='{PREFIX}'" if PREFIX else "prefix=''"
 
     if not client:
-        missing_vars = [
+        missing = [
             name
             for name in (
                 "OBJECT_STORAGE_ENDPOINT",
@@ -129,7 +102,7 @@ def object_exists(object_name: str) -> bool | None:
             BUCKET,
             prefix_info,
             full_key,
-            ", ".join(missing_vars) if missing_vars else "nenhuma",
+            ", ".join(missing) if missing else "nenhuma",
         )
         return None
 
@@ -165,7 +138,5 @@ def object_exists(object_name: str) -> bool | None:
         return None
 
 
-
 def get_public_url(object_name: str) -> str:
-    """Retorna a URL pública para ``object_name`` no bucket."""
     return f"{PUBLIC_ENDPOINT}/{_full_key(object_name)}"

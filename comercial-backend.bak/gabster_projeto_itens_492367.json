@@ -1,0 +1,17 @@
+{
+  "ambiente": null,
+  "cd_cliente": 75872,
+  "cd_loja": 1626,
+  "cd_usuario_cadastro": 86248,
+  "cd_usuario_modificacao": 86248,
+  "datahora_cadastro": "2025-07-23T18:04:38",
+  "datahora_cancelamento": null,
+  "datahora_modificacao": "2025-07-23T18:04:38",
+  "descricao": "Cozinha para Samuel testar ",
+  "id": 492367,
+  "identificador_arquivo_skp": "",
+  "nome": "Cozinha teste Samuel",
+  "nome_arquivo_skp": "",
+  "observacao": "Balcão",
+  "projeto_ref": null
+}
