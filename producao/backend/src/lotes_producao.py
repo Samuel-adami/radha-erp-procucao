@@ -27,7 +27,11 @@ def salvar_lote_db(nome: str, pacotes: list) -> int:
             """,
             (nome, pacotes_json),
         )
-        return result.scalar_one()
+
+        lote_id = result.scalar_one()
+        conn.commit()
+        return lote_id
+
 
 
 @router.post("/lotes-producao")
@@ -86,5 +90,6 @@ async def excluir_lote_producao(ident: str):
             f"DELETE FROM {SCHEMA_PREFIX}lotes_producao WHERE {campo}={PLACEHOLDER}",
             (valor,),
         )
+        conn.commit()
     return {"status": "deleted"}
 
