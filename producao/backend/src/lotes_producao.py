@@ -51,7 +51,6 @@ def salvar_lote_db(ident: Union[str, int], pacotes: list) -> int:
         conn.commit()
     return lote_id
 
-
 @router.post("/lotes-producao")
 async def salvar_lote_producao(lote: dict):
     """Cria ou atualiza um lote com seus pacotes."""
@@ -61,10 +60,12 @@ async def salvar_lote_producao(lote: dict):
     if ident is None:
         raise HTTPException(status_code=400, detail="ID ou nome do lote é obrigatório")
 
+
     try:
         lote_id = salvar_lote_db(ident, pacotes)
     except ValueError:
         raise HTTPException(status_code=404, detail="Lote não encontrado")
+
 
     return {"id": lote_id}
 
