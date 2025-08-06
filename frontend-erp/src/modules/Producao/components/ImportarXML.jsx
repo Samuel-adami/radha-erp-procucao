@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { fetchComAuth } from "../../../utils/fetchComAuth"; // Usando o utilitário corrigido
 
-const ImportarXML = ({ onImportarPacote }) => {
+const ImportarXML = ({ onImportarPacote, nomeLote }) => {
   const [carregando, setCarregando] = useState(false);
   const [arquivosSelecionados, setArquivosSelecionados] = useState(0);
 
@@ -14,6 +14,7 @@ const ImportarXML = ({ onImportarPacote }) => {
     if (!files.length) return;
 
     const formData = new FormData();
+    formData.append("nome", nomeLote);
     for (let i = 0; i < files.length; i++) {
       // O nome "files" deve corresponder ao que o backend espera
       formData.append("files", files[i]);
