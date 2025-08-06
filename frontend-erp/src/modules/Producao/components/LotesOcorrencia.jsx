@@ -69,14 +69,6 @@ const LotesOcorrencia = () => {
   }, []);
 
   useEffect(() => {
-    const id = location.state?.ocId;
-    if (id) {
-      editarLoteLocal(id);
-      navigate('.', { replace: true, state: {} });
-    }
-  }, [location.state, editarLoteLocal, navigate]);
-
-  useEffect(() => {
     if (!loteSel) {
       setPacotesDisponiveis([]);
       setPacoteSel("");
@@ -129,6 +121,14 @@ const LotesOcorrencia = () => {
     if (!l) return;
     navigate(`pacote/${id}`);
   }, [lotesLocais, navigate]);
+
+  useEffect(() => {
+    const id = location.state?.ocId;
+    if (id) {
+      editarLoteLocal(id);
+      navigate('.', { replace: true, state: {} });
+    }
+  }, [location.state, editarLoteLocal, navigate]);
 
   const excluirLoteLocal = (id) => {
     if (!window.confirm("Excluir este lote local?")) return;
