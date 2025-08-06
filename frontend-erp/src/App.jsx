@@ -17,6 +17,7 @@ import Cadastros from "./modules/Cadastros";
 import Comercial from "./modules/Comercial";
 import Finance from "./modules/Finance";
 import Formularios from "./modules/Formularios";
+import UniversidadeRadha from "./modules/UniversidadeRadha";
 import Login from "./pages/Login";
 import { fetchComAuth } from "./utils/fetchComAuth";
 import { UserContext } from "./UserContext";
@@ -32,6 +33,7 @@ function Layout({ usuario, onLogout }) {
   const matchFinance = useMatch("/finance/*");
   const matchFormularios = useMatch("/formularios/*");
   const matchPlanosProducao = useMatch("/planos-producao/*");
+  const matchUniversidade = useMatch("/universidade-radha/*");
 
   return (
     <div className="min-h-screen flex">
@@ -93,6 +95,14 @@ function Layout({ usuario, onLogout }) {
               className={`px-2 py-1 rounded ${matchFormularios ? "bg-blue-700" : "hover:bg-blue-700"}`}
             >
               Formulários
+            </Link>
+          )}
+          {possuiPermissao("universidade-radha") && (
+            <Link
+              to="/universidade-radha"
+              className={`px-2 py-1 rounded ${matchUniversidade ? "bg-blue-700" : "hover:bg-blue-700"}`}
+            >
+              Universidade Radha
             </Link>
           )}
         </nav>
@@ -219,6 +229,7 @@ function App() {
           <Route path="comercial/*" element={<Comercial />} />
           <Route path="finance/*" element={<Finance />} />
           <Route path="formularios/*" element={<Formularios />} />
+          <Route path="universidade-radha/*" element={<UniversidadeRadha />} />
         </Route>
 
         <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
