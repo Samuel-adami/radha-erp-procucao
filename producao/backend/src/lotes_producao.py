@@ -5,6 +5,7 @@ import json
 from typing import Union
 
 from database import get_db_connection, PLACEHOLDER, schema
+from storage import upload_bytes
 
 
 router = APIRouter()
@@ -49,6 +50,14 @@ def salvar_lote_db(ident: Union[str, int], pacotes: list) -> int:
             )
             lote_id = result.scalar_one()
         conn.commit()
+
+    # Tenta persistir uma cópia dos pacotes no bucket S3 para redundância.
+    try:
+        upload_bytes(pacotes_json.encode("utf-8"), f"lotes_producao/{lote_id}.json")
+    except Exception:
+        # Falhas de upload não devem impedir o fluxo principal.
+        pass
+
     return lote_id
 
 @router.post("/lotes-producao")

@@ -99,7 +99,18 @@ const LoteProducao = () => {
 
   useEffect(() => {
     fetchComAuth(`/lotes-producao/${encodeURIComponent(nome)}`)
-      .then((d) => setPacotes(Array.isArray(d?.pacotes) ? d.pacotes : []))
+      .then((d) => {
+        const lista = Array.isArray(d?.pacotes) ? d.pacotes : [];
+        setPacotes(lista);
+        const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+        const idx = lotes.findIndex((l) => l.nome === nome);
+        if (idx >= 0) {
+          lotes[idx].pacotes = lista;
+        } else {
+          lotes.push({ nome, pacotes: lista });
+        }
+        localStorage.setItem("lotesProducao", JSON.stringify(lotes));
+      })
       .catch(() => {});
   }, [nome]);
 
@@ -124,6 +135,16 @@ const LoteProducao = () => {
 
     const atualizados = [...pacotes, ...pacotesComIds];
     setPacotes(atualizados);
+
+    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+    const idx = lotes.findIndex((l) => l.nome === nome);
+    if (idx >= 0) {
+      lotes[idx].pacotes = atualizados;
+    } else {
+      lotes.push({ nome, pacotes: atualizados });
+    }
+    localStorage.setItem("lotesProducao", JSON.stringify(lotes));
+
     await fetchComAuth("/lotes-producao", {
       method: "POST",
       body: JSON.stringify({ nome, pacotes: atualizados })
@@ -134,6 +155,16 @@ const LoteProducao = () => {
     if (!window.confirm(`Tem certeza que deseja excluir este pacote?`)) return;
     const novos = pacotes.filter((_, i) => i !== index);
     setPacotes(novos);
+
+    const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+    const idx = lotes.findIndex((l) => l.nome === nome);
+    if (idx >= 0) {
+      lotes[idx].pacotes = novos;
+    } else {
+      lotes.push({ nome, pacotes: novos });
+    }
+    localStorage.setItem("lotesProducao", JSON.stringify(lotes));
+
     await fetchComAuth("/lotes-producao", {
       method: "POST",
       body: JSON.stringify({ nome, pacotes: novos })
