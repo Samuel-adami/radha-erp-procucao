@@ -25,7 +25,7 @@ dist-ssr/
 *.sln
 *.sw?
 
-
+# Geral 
 producao/backend/src/saida/
 arquivos_samuel/
 static/
@@ -52,6 +52,5 @@ adicionar_alias_radhaai.sh
 dev_assistant.sh
 gpt_dev_assistant_interativo.py
 __pycache__/
-
 scripts/
-docs/
+Docs/

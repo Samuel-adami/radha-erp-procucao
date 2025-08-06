@@ -266,7 +266,7 @@ function TarefaItem({ tarefa, atendimentoId, onChange, projetos, bloqueada }) {
                         )
                       }
                     >
-                      Ver Orçamento
+                      Listagem
                     </Button>
                   )}
                 </div>
