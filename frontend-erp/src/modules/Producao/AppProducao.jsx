@@ -159,7 +159,7 @@ const LoteProducao = () => {
         <Button variant="outline" onClick={() => navigate("/producao")}>Voltar para Início da Produção</Button>
       </div>
 
-      <ImportarXML onImportarPacote={(p) => salvarPacotes([p])} />
+      <ImportarXML nomeLote={nome} onImportarPacote={(p) => salvarPacotes([p])} />
 
       <ul className="space-y-2 mt-4">
         {pacotes.map((p, i) => (
