@@ -25,6 +25,7 @@ import { UserContext } from "./UserContext";
 // Componente de Layout: A "moldura" do ERP para um usuário logado
 function Layout({ usuario, onLogout }) {
   const possuiPermissao = (modulo) => usuario?.permissoes?.includes(modulo);
+  const isAdmin = usuario?.cargo === 'admin';
 
   const matchCadastros = useMatch("/cadastros/*");
   const matchMarketing = useMatch("/marketing-ia/*");
@@ -41,7 +42,7 @@ function Layout({ usuario, onLogout }) {
         <h1 className="text-2xl font-bold">Radha ERP</h1>
         <p className="text-sm mb-4">Usuário: {usuario?.nome}</p>
         <nav className="flex flex-col space-y-2 flex-grow">
-          {possuiPermissao("cadastros") && (
+          {isAdmin && (
             <Link
               to="/cadastros"
               className={`px-2 py-1 rounded ${matchCadastros ? "bg-blue-700" : "hover:bg-blue-700"}`}
@@ -97,14 +98,12 @@ function Layout({ usuario, onLogout }) {
               Formulários
             </Link>
           )}
-          {possuiPermissao("universidade-radha") && (
-            <Link
-              to="/universidade-radha"
-              className={`px-2 py-1 rounded ${matchUniversidade ? "bg-blue-700" : "hover:bg-blue-700"}`}
-            >
-              Universidade Radha
-            </Link>
-          )}
+          <Link
+            to="/universidade-radha"
+            className={`px-2 py-1 rounded ${matchUniversidade ? "bg-blue-700" : "hover:bg-blue-700"}`}
+          >
+            Treinamentos
+          </Link>
         </nav>
         <button
           onClick={onLogout}
@@ -191,6 +190,13 @@ function App() {
     navigate("/");
   };
 
+  const AdminRoute = ({ children }) => {
+    if (usuarioLogado?.cargo !== 'admin') {
+      return <Navigate to="/" replace />;
+    }
+    return children;
+  };
+
   useEffect(() => {
     const handler = (e) => {
       const msg = e.detail;
@@ -222,7 +228,7 @@ function App() {
           }
         >
           <Route index element={<p className="text-center text-lg mt-10">Bem-vindo ao ERP Radha. Selecione um módulo no menu.</p>} />
-          <Route path="cadastros/*" element={<Cadastros />} />
+          <Route path="cadastros/*" element={<AdminRoute><Cadastros /></AdminRoute>} />
           <Route path="marketing-ia/*" element={<MarketingDigitalIA />} />
           <Route path="producao/*" element={<Producao />} />
           <Route path="planos-producao/*" element={<PlanosProducao />} />
