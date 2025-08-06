@@ -25,7 +25,7 @@ function Negociacao() {
   const [editIdx, setEditIdx] = useState(-1);
   const [parcelas, setParcelas] = useState([]);
   const [totalVenda, setTotalVenda] = useState(0);
-  const [atendimento, setAtendimento] = useState(null);
+  const [_atendimento, setAtendimento] = useState(null);
 
   useEffect(() => {
     const carregar = async () => {
