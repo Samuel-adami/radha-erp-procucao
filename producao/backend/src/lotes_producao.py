@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, HTTPException
 import json
+from typing import Union
 
 from database import get_db_connection, PLACEHOLDER, schema
 
@@ -11,22 +12,46 @@ router = APIRouter()
 SCHEMA_PREFIX = f"{schema}." if schema else ""
 
 
-def salvar_lote_db(nome: str, pacotes: list) -> int:
-    """Cria ou atualiza um lote de produção no banco e retorna seu ``id``."""
+
+def salvar_lote_db(ident: Union[str, int], pacotes: list) -> int:
+    """Cria ou atualiza um lote de produção e retorna seu ``id``.
+
+    ``ident`` pode ser o ``id`` do lote ou o ``nome``. Quando um ``id`` é
+    informado, o lote correspondente é atualizado; caso contrário, o lote é
+    criado/atualizado pelo nome.
+    """
 
     pacotes_json = json.dumps(pacotes)
     with get_db_connection() as conn:
-        result = conn.exec_driver_sql(
-            f"""
-            INSERT INTO {SCHEMA_PREFIX}lotes_producao (nome, pacotes_json)
-            VALUES ({PLACEHOLDER}, {PLACEHOLDER})
-            ON CONFLICT (nome)
-            DO UPDATE SET pacotes_json = EXCLUDED.pacotes_json,
-                          atualizado_em = NOW()
-            RETURNING id
-            """,
-            (nome, pacotes_json),
-        )
+        if isinstance(ident, int) or str(ident).isdigit():
+            result = conn.exec_driver_sql(
+                f"""
+                UPDATE {SCHEMA_PREFIX}lotes_producao
+                SET pacotes_json={PLACEHOLDER}, atualizado_em=NOW()
+                WHERE id={PLACEHOLDER}
+                RETURNING id
+                """,
+                (pacotes_json, int(ident)),
+            )
+            lote_id = result.scalar_one_or_none()
+            if lote_id is None:
+                raise ValueError("Lote não encontrado")
+        else:
+            result = conn.exec_driver_sql(
+                f"""
+                INSERT INTO {SCHEMA_PREFIX}lotes_producao (nome, pacotes_json)
+                VALUES ({PLACEHOLDER}, {PLACEHOLDER})
+                ON CONFLICT (nome)
+                DO UPDATE SET pacotes_json = EXCLUDED.pacotes_json,
+                              atualizado_em = NOW()
+                RETURNING id
+                """,
+                (ident, pacotes_json),
+            )
+            lote_id = result.scalar_one()
+        conn.commit()
+    return lote_id
+
 
         lote_id = result.scalar_one()
         conn.commit()
@@ -38,12 +63,18 @@ def salvar_lote_db(nome: str, pacotes: list) -> int:
 async def salvar_lote_producao(lote: dict):
     """Cria ou atualiza um lote com seus pacotes."""
 
-    nome = lote.get("nome")
+    ident = lote.get("id") or lote.get("nome")
     pacotes = lote.get("pacotes", [])
-    if not nome:
-        raise HTTPException(status_code=400, detail="Nome do lote é obrigatório")
+    if ident is None:
+        raise HTTPException(status_code=400, detail="ID ou nome do lote é obrigatório")
 
-    lote_id = salvar_lote_db(nome, pacotes)
+
+    try:
+        lote_id = salvar_lote_db(ident, pacotes)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Lote não encontrado")
+
+
     return {"id": lote_id}
 
 
