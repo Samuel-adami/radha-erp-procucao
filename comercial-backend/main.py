@@ -588,7 +588,7 @@ async def negociacao_html(request: Request, atendimento_id: int, tarefa_id: int)
     info_text = "Informações importantes do orçamento. Atualize este texto conforme necessário."
 
     # Embed logo image as base64 to ensure it loads correctly in the HTML
-    logo_path = os.path.join(static_dir, "LOGO-RADHA---NORMAL.png")
+    logo_path = os.path.join(static_dir, "Logo.png")
     if os.path.exists(logo_path):
         with open(logo_path, "rb") as f:
             logo_data = base64.b64encode(f.read()).decode("ascii")
