@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "./ui/button";
 import { useNavigate, useLocation } from "react-router-dom";
-import { fetchComAuth } from "../../../utils/fetchComAuth";
+import { fetchComAuth, downloadComAuth } from "../../../utils/fetchComAuth";
 import CadastroMotivos from "./CadastroMotivos";
 
 const espelharOperacoesY = (ops = [], largura) => {
@@ -180,8 +180,11 @@ const LotesOcorrencia = () => {
                     OC {String(l.oc_numero).padStart(8, "0")} - {l.lote} - {l.pacote}
                   </span>
                   <div className="space-x-2">
-                    {l.arquivo_url && (
-                      <Button size="sm" onClick={() => window.open(l.arquivo_url, '_blank')}>
+                    {l.id && (
+                      <Button
+                        size="sm"
+                        onClick={() => downloadComAuth(`/download-lote-ocorrencia/${l.id}`)}
+                      >
                         Baixar
                       </Button>
                     )}
