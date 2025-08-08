@@ -32,15 +32,20 @@ function GerenciarConteudos() {
     fd.append('data', data);
     fd.append('arquivo', arquivo);
     try {
-      await fetchComAuth('/universidade-radha/documentos', {
+      const resp = await fetchComAuth('/universidade-radha/documentos', {
         method: 'POST',
         body: fd,
       });
+      // Atualiza a lista imediatamente com o documento recém-enviado
+      setDocumentos((prev) => [
+        ...prev,
+        { id: resp.id, titulo, autor, data },
+      ]);
       setTitulo('');
       setAutor('');
       setData('');
       setArquivo(null);
-      await carregarDocumentos();
+      e.target.reset && e.target.reset();
     } catch (e) {
       console.error(e);
     }

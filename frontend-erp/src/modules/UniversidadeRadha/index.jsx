@@ -7,12 +7,12 @@ import Treinamentos from './Treinamentos';
 import GerenciarConteudos from './GerenciarConteudos';
 
 
-// Layout simples para o módulo de Treinamentos
+// Layout simples para o módulo Universidade Radha
 function UniversidadeRadhaLayout() {
   return (
     <div className="p-4 bg-white rounded shadow-md">
       <h2 className="text-xl font-bold mb-4 text-blue-700">
-        Módulo: Treinamentos
+        Universidade Radha
       </h2>
       <nav className="mb-4 space-x-4">
         <Link to="" className="text-blue-600 hover:underline">
@@ -36,7 +36,7 @@ function UniversidadeRadhaLayout() {
 }
 
 function UniversidadeRadhaHome() {
-  return <div>Bem-vindo aos Treinamentos!</div>;
+  return <div>Bem-vindo à Universidade Radha!</div>;
 }
 
 // Componente principal do módulo
