@@ -551,12 +551,14 @@ async def enviar_documento(
 
     nome_arquivo = f"{uuid.uuid4()}{ext}"
     caminho = UPLOAD_DIR / nome_arquivo
+
     with caminho.open("wb") as f:
         while True:
             chunk = await arquivo.read(1024 * 1024)
             if not chunk:
                 break
             f.write(chunk)
+
 
     session = get_session()
     try:
@@ -597,6 +599,7 @@ async def obter_documento_arquivo(doc_id: int, usuario=Depends(verificar_autenti
     session = get_session()
     try:
         doc = session.query(DocumentoTreinamento).filter(DocumentoTreinamento.id == doc_id).first()
+
         if not doc:
             raise HTTPException(status_code=404, detail="Arquivo não encontrado")
         caminho = Path(doc.caminho)
@@ -605,6 +608,7 @@ async def obter_documento_arquivo(doc_id: int, usuario=Depends(verificar_autenti
         if not caminho.exists():
             raise HTTPException(status_code=404, detail="Arquivo não encontrado")
         media_type = "application/pdf" if caminho.suffix == ".pdf" else "text/html"
+
         return FileResponse(str(caminho), media_type=media_type)
     finally:
         session.close()
@@ -617,9 +621,11 @@ async def excluir_documento(doc_id: int, usuario=Depends(verificar_autenticacao(
         doc = session.query(DocumentoTreinamento).filter(DocumentoTreinamento.id == doc_id).first()
         if not doc:
             raise HTTPException(status_code=404, detail="Documento não encontrado")
+
         caminho = Path(doc.caminho)
         if not caminho.is_absolute():
             caminho = UPLOAD_DIR / caminho
+
         if caminho.exists():
             os.remove(caminho)
         session.delete(doc)
