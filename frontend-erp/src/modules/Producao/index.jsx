@@ -3,7 +3,7 @@ import React from 'react';
 import { Routes, Route, Link, Outlet, useResolvedPath, useMatch } from 'react-router-dom';
 import { useUsuario } from '../../UserContext';
 // Importa os componentes renomeados do AppProducao.jsx
-import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, CadastroChapas as CC, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia } from './AppProducao';
+import { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, CadastroChapas as CC, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia, Conferencia } from './AppProducao';
 const CadastroChapas = CC;
 
 function ProducaoLayout() {
@@ -17,6 +17,7 @@ function ProducaoLayout() {
   const matchEstoque = useMatch({ path: `${resolved.pathname}/chapas/estoque`, end: true });
   const matchOcorr = useMatch({ path: `${resolved.pathname}/ocorrencias`, end: false });
   const matchRelatorio = useMatch({ path: `${resolved.pathname}/relatorios/ocorrencias`, end: false });
+  const matchConferencia = useMatch({ path: `${resolved.pathname}/conferencia`, end: true });
   const usuario = useUsuario();
   const possuiPermissao = p => usuario?.permissoes?.includes(p);
 
@@ -80,6 +81,14 @@ function ProducaoLayout() {
             Relatórios
           </Link>
         )}
+        {possuiPermissao('producao/conferencia') && (
+          <Link
+            to="conferencia"
+            className={`px-3 py-1 rounded ${matchConferencia ? 'bg-blue-200 text-blue-800' : 'text-blue-600 hover:bg-blue-100'}`}
+          >
+            Conferência
+          </Link>
+        )}
         {/* Adicionar mais links de navegação interna do módulo, se necessário */}
       </nav>
       <Outlet /> {/* Renderiza as rotas aninhadas aqui */}
@@ -105,6 +114,7 @@ function Producao() {
         <Route path="ocorrencias/pacote/:id" element={<PacoteOcorrencia />} />
         <Route path="ocorrencias/motivos" element={<CadastroMotivos />} />
         <Route path="relatorios/ocorrencias" element={<RelatorioOcorrencias />} />
+        <Route path="conferencia" element={<Conferencia />} />
       </Route>
     </Routes>
   );
