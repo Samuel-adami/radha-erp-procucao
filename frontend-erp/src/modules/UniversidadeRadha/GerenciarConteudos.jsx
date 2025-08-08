@@ -70,10 +70,12 @@ function GerenciarConteudos() {
     try {
       if (doc.url) {
         setDocumentos((prev) => prev.filter((d) => d.id !== doc.id));
+        window.dispatchEvent(new Event('documentosAtualizados'));
         return;
       }
       await fetchComAuth(`/universidade-radha/documentos/${doc.id}`, { method: 'DELETE' });
       await carregarDocumentos();
+      window.dispatchEvent(new Event('documentosAtualizados'));
     } catch (e) {
       console.error(e);
     }
