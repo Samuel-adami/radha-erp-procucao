@@ -7,6 +7,7 @@ from storage import (
     download_file,
     object_exists,
     get_public_url,
+    PREFIX as OBJECT_PREFIX,
 )
 import logging
 import xml.etree.ElementTree as ET
@@ -95,10 +96,8 @@ async def _startup() -> None:
 # Diretório base para arquivos de saída
 BASE_DIR = Path(__file__).resolve().parent
 SAIDA_DIR = BASE_DIR / "saida"
-# Prefixo utilizado para armazenar arquivos no bucket S3. O valor era obtido
-# de variáveis de ambiente, mas agora é definido diretamente para evitar
-# problemas quando o .env não é carregado.
-OBJECT_PREFIX = "producao/"
+# Prefixo utilizado para armazenar arquivos no bucket S3 (definido em
+# ``storage.PREFIX`` e importado como ``OBJECT_PREFIX``).
 
 # Intervalo em segundos antes de considerar que um lote ausente no bucket
 # pode ser removido do banco de dados. Isso evita que lotes recém-criados
