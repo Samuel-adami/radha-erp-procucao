@@ -6,6 +6,7 @@ from starlette.responses import JSONResponse, Response, FileResponse
 import httpx
 import os
 import uuid
+from pathlib import Path
 from database import get_session, init_db
 from models import Empresa, Cliente, Fornecedor, DocumentoTreinamento
 from services import auth_service
@@ -532,8 +533,8 @@ async def excluir_fornecedor(fornecedor_id: int):
 # Universidade Radha - Documentos
 # -------------------------------
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "documentos_treinamento")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR = (Path(__file__).resolve().parent / "uploads" / "documentos_treinamento")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @app.post("/universidade-radha/documentos")
@@ -549,14 +550,14 @@ async def enviar_documento(
         raise HTTPException(status_code=400, detail="Formato não suportado")
 
     nome_arquivo = f"{uuid.uuid4()}{ext}"
-    caminho = os.path.join(UPLOAD_DIR, nome_arquivo)
+    caminho = UPLOAD_DIR / nome_arquivo
     with open(caminho, "wb") as f:
         f.write(await arquivo.read())
 
     session = get_session()
     try:
         doc = DocumentoTreinamento(
-            titulo=titulo, autor=autor, data=data, caminho=caminho
+            titulo=titulo, autor=autor, data=data, caminho=nome_arquivo
         )
         session.add(doc)
         session.commit()
@@ -591,10 +592,11 @@ async def obter_documento_arquivo(doc_id: int, usuario=Depends(verificar_autenti
     session = get_session()
     try:
         doc = session.query(DocumentoTreinamento).filter(DocumentoTreinamento.id == doc_id).first()
-        if not doc or not os.path.exists(doc.caminho):
+        caminho = UPLOAD_DIR / doc.caminho if doc else None
+        if not doc or not caminho.exists():
             raise HTTPException(status_code=404, detail="Arquivo não encontrado")
         media_type = "application/pdf" if doc.caminho.endswith(".pdf") else "text/html"
-        return FileResponse(doc.caminho, media_type=media_type)
+        return FileResponse(str(caminho), media_type=media_type)
     finally:
         session.close()
 
@@ -606,8 +608,9 @@ async def excluir_documento(doc_id: int, usuario=Depends(verificar_autenticacao(
         doc = session.query(DocumentoTreinamento).filter(DocumentoTreinamento.id == doc_id).first()
         if not doc:
             raise HTTPException(status_code=404, detail="Documento não encontrado")
-        if os.path.exists(doc.caminho):
-            os.remove(doc.caminho)
+        caminho = UPLOAD_DIR / doc.caminho
+        if caminho.exists():
+            os.remove(caminho)
         session.delete(doc)
         session.commit()
         return {"ok": True}
