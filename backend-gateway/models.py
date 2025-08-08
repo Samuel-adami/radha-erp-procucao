@@ -93,3 +93,17 @@ class DocumentoTreinamento(Base):
     autor = Column(String)
     data = Column(String)
     caminho = Column(String)
+
+
+class LoteOcorrencia(Base):
+    """Armazena lotes de ocorrências e metadados dos arquivos gerados."""
+
+    __tablename__ = "lotes_ocorrencias"
+
+    id = Column(Integer, primary_key=True)
+    lote = Column(String)
+    pacote = Column(String)
+    oc_numero = Column(Integer)
+    dados = Column(String)  # JSON com peças e outras informações estruturadas
+    arquivo_key = Column(String)
+

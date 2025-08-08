@@ -2,15 +2,26 @@ from fastapi import FastAPI, Request, Depends, UploadFile, File, Form, HTTPExcep
 from fastapi.middleware.cors import CORSMiddleware
 
 from starlette.responses import JSONResponse, Response, FileResponse
+from pydantic import BaseModel
 
 import httpx
 import os
 import uuid
+import json
 from pathlib import Path
+from sqlalchemy.orm import Session
+from sqlalchemy import func
 from database import get_session, init_db
-from models import Empresa, Cliente, Fornecedor, DocumentoTreinamento
+from models import (
+    Empresa,
+    Cliente,
+    Fornecedor,
+    DocumentoTreinamento,
+    LoteOcorrencia,
+)
 from services import auth_service
 from security import verificar_autenticacao
+from storage import upload_fileobj, delete_file, get_public_url
 
 # CORRIGIDO: Adicionado redirect_slashes=False
 app = FastAPI(title="Radha ERP Gateway API", version="1.0", redirect_slashes=False)
@@ -60,6 +71,121 @@ def create_response(response: httpx.Response):
 @app.get("/")
 async def read_root():
     return {"message": "Radha ERP Gateway API is running!"}
+
+
+class LoteOcorrenciaIn(BaseModel):
+    lote: str
+    pacote: str
+    pecas: list[dict] = []
+
+
+def proximo_oc_numero(session: Session) -> int:
+    return (session.query(func.max(LoteOcorrencia.oc_numero)).scalar() or 0) + 1
+
+
+@app.get("/lotes-ocorrencias", dependencies=[Depends(verificar_autenticacao(["admin", "operador"]))])
+def listar_lotes_ocorrencias(session: Session = Depends(get_session)):
+    lotes = session.query(LoteOcorrencia).order_by(LoteOcorrencia.id).all()
+    resp = []
+    for l in lotes:
+        data = json.loads(l.dados or "{}")
+        resp.append(
+            {
+                "id": l.id,
+                "lote": l.lote,
+                "pacote": l.pacote,
+                "oc_numero": l.oc_numero,
+                "pecas": data.get("pecas", []),
+                "arquivo_url": get_public_url(l.arquivo_key) if l.arquivo_key else None,
+            }
+        )
+    return {"lotes": resp}
+
+
+@app.get("/lotes-ocorrencias/{oc_id}", dependencies=[Depends(verificar_autenticacao(["admin", "operador"]))])
+def obter_lote_ocorrencia(oc_id: int, session: Session = Depends(get_session)):
+    l = session.get(LoteOcorrencia, oc_id)
+    if not l:
+        raise HTTPException(status_code=404, detail="Lote de ocorrência não encontrado")
+    data = json.loads(l.dados or "{}")
+    return {
+        "id": l.id,
+        "lote": l.lote,
+        "pacote": l.pacote,
+        "oc_numero": l.oc_numero,
+        "pecas": data.get("pecas", []),
+        "arquivo_url": get_public_url(l.arquivo_key) if l.arquivo_key else None,
+    }
+
+
+@app.post("/lotes-ocorrencias", dependencies=[Depends(verificar_autenticacao(["admin", "operador"]))])
+async def criar_lote_ocorrencia(request: Request, session: Session = Depends(get_session)):
+    content_type = request.headers.get("content-type", "")
+    file = None
+    if content_type.startswith("application/json"):
+        dados = await request.json()
+    else:
+        form = await request.form()
+        dados = json.loads(form.get("payload", "{}"))
+        file = form.get("file")
+    oc_num = proximo_oc_numero(session)
+    key = None
+    if file:
+        key = upload_fileobj(file.file, file.filename)
+    oc = LoteOcorrencia(
+        lote=dados.get("lote"),
+        pacote=dados.get("pacote"),
+        oc_numero=oc_num,
+        dados=json.dumps(dados),
+        arquivo_key=key,
+    )
+    session.add(oc)
+    session.commit()
+    return {
+        "id": oc.id,
+        "oc_numero": oc.oc_numero,
+        "arquivo_url": get_public_url(key) if key else None,
+    }
+
+
+@app.put("/lotes-ocorrencias/{oc_id}", dependencies=[Depends(verificar_autenticacao(["admin", "operador"]))])
+async def atualizar_lote_ocorrencia(
+    oc_id: int, request: Request, session: Session = Depends(get_session)
+):
+    l = session.get(LoteOcorrencia, oc_id)
+    if not l:
+        raise HTTPException(status_code=404, detail="Lote de ocorrência não encontrado")
+    content_type = request.headers.get("content-type", "")
+    file = None
+    if content_type.startswith("application/json"):
+        dados = await request.json()
+    else:
+        form = await request.form()
+        dados = json.loads(form.get("payload", "{}"))
+        file = form.get("file")
+    l.lote = dados.get("lote", l.lote)
+    l.pacote = dados.get("pacote", l.pacote)
+    l.dados = json.dumps(dados)
+    if file:
+        if l.arquivo_key:
+            delete_file(l.arquivo_key)
+        l.arquivo_key = upload_fileobj(file.file, file.filename)
+    session.commit()
+    return {"status": "ok"}
+
+
+@app.delete("/lotes-ocorrencias/{oc_id}", dependencies=[Depends(verificar_autenticacao(["admin", "operador"]))])
+def excluir_lote_ocorrencia(oc_id: int, session: Session = Depends(get_session)):
+    l = session.get(LoteOcorrencia, oc_id)
+    if not l:
+        raise HTTPException(status_code=404, detail="Lote de ocorrência não encontrado")
+    if l.arquivo_key:
+        delete_file(l.arquivo_key)
+    session.delete(l)
+    session.commit()
+    return {"status": "ok"}
+
+# TODO: avaliar uso de websockets ou polling para sincronizar alterações de lotes em tempo real
 
 # Rota específica para integrações RD Station dentro do módulo de Marketing.
 # Esta rota precisa ter prioridade sobre a rota genérica de marketing para
