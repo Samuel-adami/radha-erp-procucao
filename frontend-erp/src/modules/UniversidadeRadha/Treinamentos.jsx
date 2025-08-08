@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import * as pdfjsLib from "pdfjs-dist";
+import { fetchComAuth } from "../../utils/fetchComAuth";
+import defaultDocs from "./defaultDocs";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
-const docsList = [
-  { title: "Guia PDF", url: "/treinamentos/guia.pdf", type: "pdf" },
-  { title: "Introdução HTML", url: "/treinamentos/introducao.html", type: "html" },
-];
 
 function Treinamentos() {
   const [docs, setDocs] = useState([]);
@@ -15,30 +12,58 @@ function Treinamentos() {
 
   useEffect(() => {
     const loadDocs = async () => {
+      const resp = await fetchComAuth('/universidade-radha/documentos');
+      const dinamicos = resp?.documentos || [];
+      const lista = [...defaultDocs, ...dinamicos];
       const processed = await Promise.all(
-        docsList.map(async (doc) => {
+        lista.map(async (doc) => {
           let content = "";
+          let url = doc.url;
+          let tipo = doc.tipo;
           try {
-            if (doc.type === "pdf") {
-              const pdf = await pdfjsLib.getDocument(doc.url).promise;
-              let text = "";
-              for (let i = 1; i <= pdf.numPages; i++) {
-                const page = await pdf.getPage(i);
-                const txt = await page.getTextContent();
-                text += txt.items.map((item) => item.str).join(" ");
+            if (!url) {
+              const arquivo = await fetchComAuth(`/universidade-radha/documentos/${doc.id}/arquivo`, { raw: true });
+              const blob = await arquivo.blob();
+              url = window.URL.createObjectURL(blob);
+              const ct = arquivo.headers.get('content-type') || '';
+              tipo = ct.includes('pdf') ? 'pdf' : 'html';
+              if (tipo === 'pdf') {
+                const pdf = await pdfjsLib.getDocument({ data: await blob.arrayBuffer() }).promise;
+                let text = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                  const page = await pdf.getPage(i);
+                  const txt = await page.getTextContent();
+                  text += txt.items.map((item) => item.str).join(' ');
+                }
+                content = text;
+              } else {
+                const html = await blob.text();
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                content = tmp.textContent || '';
               }
-              content = text;
             } else {
-              const res = await fetch(doc.url);
-              const html = await res.text();
-              const tmp = document.createElement("div");
-              tmp.innerHTML = html;
-              content = tmp.textContent || "";
+              if (tipo === 'pdf') {
+                const pdf = await pdfjsLib.getDocument(url).promise;
+                let text = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                  const page = await pdf.getPage(i);
+                  const txt = await page.getTextContent();
+                  text += txt.items.map((item) => item.str).join(' ');
+                }
+                content = text;
+              } else {
+                const res = await fetch(url);
+                const html = await res.text();
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                content = tmp.textContent || '';
+              }
             }
           } catch (e) {
-            console.error("Falha ao processar documento", doc.url, e);
+            console.error('Falha ao processar documento', doc.id || doc.url, e);
           }
-          return { ...doc, content: content.toLowerCase() };
+          return { ...doc, url, tipo, content: content.toLowerCase() };
         })
       );
       setDocs(processed);
@@ -48,7 +73,7 @@ function Treinamentos() {
 
   const filtered = docs.filter((doc) => {
     const q = query.toLowerCase();
-    return doc.title.toLowerCase().includes(q) || doc.content.includes(q);
+    return doc.titulo.toLowerCase().includes(q) || doc.content.includes(q);
   });
 
   return (
@@ -65,10 +90,10 @@ function Treinamentos() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {filtered.map((doc) => (
           <div
-            key={doc.url}
+            key={doc.id}
             className="p-4 border rounded shadow-sm bg-white"
           >
-            <h3 className="font-semibold mb-2">{doc.title}</h3>
+            <h3 className="font-semibold mb-2">{doc.titulo}</h3>
             <button
               className="text-blue-600 hover:underline mr-2"
               onClick={() => setSelected(doc)}
@@ -89,7 +114,7 @@ function Treinamentos() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white p-4 rounded shadow-lg w-11/12 h-5/6">
             <div className="flex justify-between mb-2">
-              <h4 className="font-bold">{selected.title}</h4>
+              <h4 className="font-bold">{selected.titulo}</h4>
               <button
                 onClick={() => setSelected(null)}
                 className="text-red-600"
@@ -100,7 +125,7 @@ function Treinamentos() {
             <iframe
               src={selected.url}
               className="w-full h-full"
-              title={selected.title}
+              title={selected.titulo}
             />
           </div>
         </div>

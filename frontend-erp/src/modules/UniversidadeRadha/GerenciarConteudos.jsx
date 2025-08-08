@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComAuth } from '../../utils/fetchComAuth';
+import defaultDocs from './defaultDocs';
 
 function GerenciarConteudos() {
   const [titulo, setTitulo] = useState('');
@@ -11,7 +12,8 @@ function GerenciarConteudos() {
   const carregarDocumentos = async () => {
     try {
       const resp = await fetchComAuth('/universidade-radha/documentos');
-      setDocumentos(resp.documentos || []);
+      const dinamicos = resp?.documentos || [];
+      setDocumentos([...defaultDocs, ...dinamicos]);
     } catch (e) {
       console.error(e);
     }
@@ -38,7 +40,7 @@ function GerenciarConteudos() {
       setAutor('');
       setData('');
       setArquivo(null);
-      carregarDocumentos();
+      await carregarDocumentos();
     } catch (e) {
       console.error(e);
     }
@@ -46,6 +48,10 @@ function GerenciarConteudos() {
 
   const visualizar = async (doc) => {
     try {
+      if (doc.url) {
+        window.open(doc.url, '_blank');
+        return;
+      }
       const resp = await fetchComAuth(`/universidade-radha/documentos/${doc.id}/arquivo`, { raw: true });
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
@@ -58,8 +64,12 @@ function GerenciarConteudos() {
   const excluir = async (doc) => {
     if (!window.confirm('Deseja realmente excluir este documento?')) return;
     try {
+      if (doc.url) {
+        setDocumentos((prev) => prev.filter((d) => d.id !== doc.id));
+        return;
+      }
       await fetchComAuth(`/universidade-radha/documentos/${doc.id}`, { method: 'DELETE' });
-      carregarDocumentos();
+      await carregarDocumentos();
     } catch (e) {
       console.error(e);
     }
