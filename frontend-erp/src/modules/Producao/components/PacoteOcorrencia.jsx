@@ -38,6 +38,25 @@ const PacoteOcorrencia = () => {
     localStorage.setItem("lotesOcorrenciaLocal", JSON.stringify(dados));
   };
 
+  const excluirPeca = (pecaId) => {
+    if (!window.confirm(`Excluir peça ID ${pecaId}?`)) return;
+    const lotes = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
+    const idx = lotes.findIndex((l) => l.id === parseInt(id));
+    if (idx < 0) return;
+    const loteAlvo = lotes[idx];
+    loteAlvo.pacoteData.pecas = (loteAlvo.pacoteData.pecas || []).filter((p) => p.id !== pecaId);
+    lotes[idx] = loteAlvo;
+    salvarLotesLocais(lotes);
+    localStorage.removeItem("ocedit_op_" + pecaId);
+    localStorage.removeItem("ocedit_dados_" + pecaId);
+    localStorage.removeItem("editado_peca_" + pecaId);
+    setPecasPacote(loteAlvo.pacoteData.pecas);
+    const { [pecaId]: _, ...restSel } = selecionadas;
+    const { [pecaId]: __, ...restMot } = motivosPeca;
+    setSelecionadas(restSel);
+    setMotivosPeca(restMot);
+  };
+
   const excluirLoteLocal = (perguntar = true) => {
     if (perguntar && !window.confirm("Excluir este lote local?")) return;
     const lotes = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
@@ -133,7 +152,7 @@ const PacoteOcorrencia = () => {
                   }
                 />
                 <span className="flex-grow">
-                  ID {String(p.id).padStart(6, "0")} - {p.nome}
+                  ID {String(p.id).padStart(6, "0")} ({p.codigo_peca}) - {p.nome} - {p.comprimento} x {p.largura}mm
                 </span>
                 <select
                   className="border p-1"
@@ -158,6 +177,9 @@ const PacoteOcorrencia = () => {
                   }}
                 >
                   Editar
+                </Button>
+                <Button variant="destructive" onClick={() => excluirPeca(p.id)}>
+                  Excluir
                 </Button>
               </div>
             </li>
