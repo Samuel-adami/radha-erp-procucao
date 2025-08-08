@@ -1888,6 +1888,52 @@ async def excluir_lote_ocorrencia(oc_id: int):
     return {"status": "ok", "mensagem": "Lote não encontrado"}
 
 
+@app.get("/apontamentos")
+async def obter_apontamentos(lote: str, pacote: str):
+    """Retorna os volumes apontados para um lote e pacote."""
+    try:
+        with get_db_connection() as conn:
+            row = (
+                conn.exec_driver_sql(
+                    f"SELECT dados FROM {SCHEMA_PREFIX}apontamentos WHERE lote={PLACEHOLDER} AND pacote={PLACEHOLDER}",
+                    (lote, pacote),
+                )
+                .fetchone()
+            )
+            if row and row[0]:
+                return {"volumes": json.loads(row[0])}
+    except Exception as e:
+        logging.error("Erro ao buscar apontamentos: %s", e)
+    return {"volumes": []}
+
+
+@app.post("/apontamentos")
+async def salvar_apontamentos(request: Request):
+    """Persiste volumes apontados para um lote e pacote."""
+    dados = await request.json()
+    lote = dados.get("lote")
+    pacote = dados.get("pacote")
+    volumes = dados.get("volumes", [])
+    if not lote or pacote is None:
+        return {"erro": "lote e pacote obrigatorios"}
+    try:
+        with get_db_connection() as conn:
+            sql = (
+                f"INSERT INTO {SCHEMA_PREFIX}apontamentos (lote, pacote, dados, criado_em) "
+                f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}) "
+                "ON CONFLICT(lote, pacote) DO UPDATE SET dados=excluded.dados, criado_em=excluded.criado_em"
+            )
+            conn.exec_driver_sql(
+                sql,
+                (lote, pacote, json.dumps(volumes), datetime.now().isoformat()),
+            )
+            conn.commit()
+    except Exception as e:
+        logging.error("Erro ao salvar apontamentos: %s", e)
+        return {"erro": str(e)}
+    return {"status": "ok"}
+
+
 @app.get("/motivos-ocorrencias")
 async def listar_motivos():
     try:

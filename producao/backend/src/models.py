@@ -1,5 +1,5 @@
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Column, Integer, String, Float, Text, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Float, Text, TIMESTAMP, UniqueConstraint
 from sqlalchemy.sql import func
 
 Base = declarative_base()
@@ -68,6 +68,21 @@ class OcorrenciaPeca(Base):
     peca_id = Column(Integer)
     descricao_peca = Column(String)
     motivo_id = Column(String)
+
+
+class ApontamentoVolume(Base):
+    """Volumes apontados para cada lote e pacote."""
+
+    __tablename__ = "apontamentos"
+
+    id = Column(Integer, primary_key=True)
+    lote = Column(String)
+    pacote = Column(String)
+    dados = Column(Text)
+    criado_em = Column(String)
+    __table_args__ = (
+        UniqueConstraint("lote", "pacote", name="uq_apont_lote_pacote"),
+    )
 
 
 class MotivoOcorrencia(Base):
