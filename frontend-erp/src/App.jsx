@@ -25,9 +25,6 @@ import { UserContext } from "./UserContext";
 // Componente de Layout: A "moldura" do ERP para um usuário logado
 function Layout({ usuario, onLogout }) {
   const possuiPermissao = (modulo) => usuario?.permissoes?.includes(modulo);
-  const isAdmin = ["admin", "administrador"].includes(
-    usuario?.cargo?.toLowerCase?.()
-  );
 
   const matchCadastros = useMatch("/cadastros/*");
   const matchMarketing = useMatch("/marketing-ia/*");
@@ -44,7 +41,7 @@ function Layout({ usuario, onLogout }) {
         <h1 className="text-2xl font-bold">Radha ERP</h1>
         <p className="text-sm mb-4">Usuário: {usuario?.nome}</p>
         <nav className="flex flex-col space-y-2 flex-grow">
-          {isAdmin && (
+          {possuiPermissao("cadastros") && (
             <Link
               to="/cadastros"
               className={`px-2 py-1 rounded ${matchCadastros ? "bg-blue-700" : "hover:bg-blue-700"}`}
@@ -192,8 +189,8 @@ function App() {
     navigate("/");
   };
 
-  const AdminRoute = ({ children }) => {
-    if (usuarioLogado?.cargo !== 'admin') {
+  const PermissaoRoute = ({ permissao, children }) => {
+    if (!usuarioLogado?.permissoes?.includes(permissao)) {
       return <Navigate to="/" replace />;
     }
     return children;
@@ -230,7 +227,14 @@ function App() {
           }
         >
           <Route index element={<p className="text-center text-lg mt-10">Bem-vindo ao ERP Radha. Selecione um módulo no menu.</p>} />
-          <Route path="cadastros/*" element={<AdminRoute><Cadastros /></AdminRoute>} />
+          <Route
+            path="cadastros/*"
+            element={
+              <PermissaoRoute permissao="cadastros">
+                <Cadastros />
+              </PermissaoRoute>
+            }
+          />
           <Route path="marketing-ia/*" element={<MarketingDigitalIA />} />
           <Route path="producao/*" element={<Producao />} />
           <Route path="planos-producao/*" element={<PlanosProducao />} />
