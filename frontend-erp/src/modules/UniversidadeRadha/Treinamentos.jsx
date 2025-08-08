@@ -69,6 +69,9 @@ function Treinamentos() {
       setDocs(processed);
     };
     loadDocs();
+    const handler = () => loadDocs();
+    window.addEventListener('documentosAtualizados', handler);
+    return () => window.removeEventListener('documentosAtualizados', handler);
   }, []);
 
   const filtered = docs.filter((doc) => {
