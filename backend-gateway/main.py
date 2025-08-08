@@ -712,6 +712,8 @@ async def listar_documentos(usuario=Depends(verificar_autenticacao())):
                     "autor": d.autor,
                     "data": d.data,
                     "caminho": d.caminho,
+                    "url": f"/universidade-radha/documentos/{d.id}/arquivo",
+                    "tipo": "pdf" if d.caminho.lower().endswith(".pdf") else "html",
                 }
                 for d in docs
             ]
