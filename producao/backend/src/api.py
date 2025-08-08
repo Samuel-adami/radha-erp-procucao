@@ -23,7 +23,6 @@ from sqlalchemy import text
 from database import (
     get_db_connection,
     init_db,
-    exec_ignore,
     insert_with_id,
     PLACEHOLDER,
     schema,
@@ -1798,13 +1797,9 @@ async def gerar_lote_ocorrencia(request: Request):
             f.write("     </Part>\n")
         f.write("   </PartData>\n</ListInformation>\n")
 
-    key_lote = f"lotes/{pasta_saida.name}.zip"
     key_oc = f"ocorrencias/{pasta_saida.name}.zip"
     try:
         with get_db_connection() as conn:
-            sql_lote = f"INSERT INTO {SCHEMA_PREFIX}lotes (obj_key, criado_em) VALUES ({PLACEHOLDER}, {PLACEHOLDER})"
-            exec_ignore(conn, sql_lote, (key_lote, datetime.now().isoformat()))
-
             sql_oc = (
                 f"INSERT INTO {SCHEMA_PREFIX}lotes_ocorrencias (lote, pacote, oc_numero, obj_key, criado_em) "
                 f"VALUES ({PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER}, {PLACEHOLDER})"
