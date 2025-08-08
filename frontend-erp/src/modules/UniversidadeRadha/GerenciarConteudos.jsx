@@ -32,11 +32,13 @@ function GerenciarConteudos() {
     fd.append('data', data);
     fd.append('arquivo', arquivo);
     try {
-      await fetchComAuth('/universidade-radha/documentos', {
+      const resp = await fetchComAuth('/universidade-radha/documentos', {
         method: 'POST',
         body: fd,
       });
+
       await carregarDocumentos();
+
       setTitulo('');
       setAutor('');
       setData('');

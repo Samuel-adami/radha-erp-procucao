@@ -34,38 +34,40 @@ const LotesOcorrencia = () => {
   const location = useLocation();
 
   useEffect(() => {
-    fetchComAuth("/lotes-ocorrencias")
-      .then((d) => {
-        let lista = [];
-        if (Array.isArray(d)) {
-          lista = d;
-        } else if (d && Array.isArray(d.lotes)) {
-          lista = d.lotes;
-        }
-        const lotesProd = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+    const carregar = async () => {
+      try {
+        const [respOc, respL] = await Promise.all([
+          fetchComAuth("/lotes-ocorrencias"),
+          fetchComAuth("/listar-lotes"),
+        ]);
+        const listaProd = (respL?.lotes || []).map((p) => ({
+          pasta: p,
+          nome: p.split(/[/\\\\]/).pop(),
+        }));
+        setLotesProducao(listaProd);
         const ocNums = new Set(
-          lotesProd
+          listaProd
             .map((lp) => {
               const m = String(lp.nome || "").match(/OC(\d+)/);
               return m ? parseInt(m[1]) : null;
             })
             .filter((n) => n !== null)
         );
+        let lista = [];
+        if (Array.isArray(respOc)) {
+          lista = respOc;
+        } else if (respOc && Array.isArray(respOc.lotes)) {
+          lista = respOc.lotes;
+        }
         lista = lista.filter((l) => !ocNums.has(parseInt(l.oc_numero)));
         setLotes(lista);
-      })
-      .catch(() => setLotes([]));
-    fetchComAuth("/listar-lotes")
-      .then((d) => {
-        const lista = (d?.lotes || []).map((p) => ({
-          pasta: p,
-          nome: p.split(/[/\\\\]/).pop(),
-        }));
-        setLotesProducao(lista);
-      })
-      .catch(() => {});
-    const loc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
-    setLotesLocais(loc);
+      } catch (e) {
+        setLotes([]);
+      }
+      const loc = JSON.parse(localStorage.getItem("lotesOcorrenciaLocal") || "[]");
+      setLotesLocais(loc);
+    };
+    carregar();
   }, []);
 
   useEffect(() => {

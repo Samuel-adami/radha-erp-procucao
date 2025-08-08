@@ -1,25 +1,56 @@
 import React, { useState, useEffect } from "react";
 import JsBarcode from "jsbarcode";
 import FiltroPacote from "./FiltroPacote";
+import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 const ApontamentoVolume = () => {
+  const [lotes, setLotes] = useState([]);
   const [lote, setLote] = useState("");
   const [pacoteIndex, setPacoteIndex] = useState("");
   const [volumes, setVolumes] = useState([]);
   const [codigo, setCodigo] = useState("");
-
-  const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-  const pacotes = lote ? (lotes.find(l => l.nome === lote)?.pacotes || []) : [];
+  const [pacotes, setPacotes] = useState([]);
   const pacote = pacotes[parseInt(pacoteIndex)] || null;
 
   useEffect(() => {
-    if (pacote) {
-      setVolumes(pacote.volumes || []);
-    } else {
-      setVolumes([]);
+    fetchComAuth("/listar-lotes")
+      .then((d) => {
+        const lista = (d?.lotes || []).map((p) => ({
+          pasta: p,
+          nome: p.split(/[/\\\\]/).pop(),
+        }));
+        setLotes(lista);
+      })
+      .catch(() => setLotes([]));
+  }, []);
+
+  useEffect(() => {
+    if (!lote) {
+      setPacotes([]);
+      return;
     }
+    const obj = lotes.find((l) => l.nome === lote);
+    if (!obj) return;
+    fetchComAuth(`/carregar-lote-final?pasta=${encodeURIComponent(obj.pasta)}`)
+      .then((d) => setPacotes(d?.pacotes || []))
+      .catch(() => setPacotes([]));
+  }, [lote, lotes]);
+
+  useEffect(() => {
+    if (pacoteIndex === "" || !lote) {
+      setVolumes([]);
+      setCodigo("");
+      return;
+    }
+    const pacoteAtual = pacotes[parseInt(pacoteIndex)];
+    const nomePacote = pacoteAtual?.nome_pacote || `Pacote ${parseInt(pacoteIndex) + 1}`;
+    fetchComAuth(
+      `/apontamentos?lote=${encodeURIComponent(lote)}&pacote=${encodeURIComponent(nomePacote)}`
+    )
+      .then((d) => setVolumes(d?.volumes || []))
+      .catch(() => setVolumes([]));
     setCodigo("");
-  }, [pacote, pacoteIndex, lote]);
+  }, [pacoteIndex, lote, pacotes]);
 
   const registrarCodigo = (e) => {
     e.preventDefault();

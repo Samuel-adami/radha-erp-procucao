@@ -2,41 +2,70 @@ import React, { useState, useEffect } from "react";
 import JsBarcode from "jsbarcode";
 import { Button } from "./ui/button";
 import FiltroPacote from "./FiltroPacote";
+import { fetchComAuth } from "../../../utils/fetchComAuth";
 
 const CODE_FECHA_VOLUME = "999999";
 
 const Apontamento = () => {
-  const lotes = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
+  const [lotes, setLotes] = useState([]);
   const [lote, setLote] = useState("");
   const [pacoteIndex, setPacoteIndex] = useState("");
   const [codigo, setCodigo] = useState("");
   const [pendentes, setPendentes] = useState([]);
   const [volumes, setVolumes] = useState([]);
-
-  const pacotes = lote ? (lotes.find(l => l.nome === lote)?.pacotes || []) : [];
+  const [pacotes, setPacotes] = useState([]);
   const pacote = pacotes[parseInt(pacoteIndex)] || null;
   const itensPacote = pacote ? [...(pacote.pecas || []), ...(pacote.ferragens || [])] : [];
 
   useEffect(() => {
-    if (pacote) {
-      setVolumes(pacote.volumes || []);
-    } else {
-      setVolumes([]);
+    fetchComAuth("/listar-lotes")
+      .then((d) => {
+        const lista = (d?.lotes || []).map((p) => ({
+          pasta: p,
+          nome: p.split(/[/\\\\]/).pop(),
+        }));
+        setLotes(lista);
+      })
+      .catch(() => setLotes([]));
+  }, []);
+
+  useEffect(() => {
+    if (!lote) {
+      setPacotes([]);
+      return;
     }
+    const obj = lotes.find((l) => l.nome === lote);
+    if (!obj) return;
+    fetchComAuth(`/carregar-lote-final?pasta=${encodeURIComponent(obj.pasta)}`)
+      .then((d) => setPacotes(d?.pacotes || []))
+      .catch(() => setPacotes([]));
+  }, [lote, lotes]);
+
+  useEffect(() => {
+    if (pacoteIndex === "" || !lote) {
+      setVolumes([]);
+      setPendentes([]);
+      setCodigo("");
+      return;
+    }
+    const pacoteAtual = pacotes[parseInt(pacoteIndex)];
+    const nomePacote = pacoteAtual?.nome_pacote || `Pacote ${parseInt(pacoteIndex) + 1}`;
+    fetchComAuth(
+      `/apontamentos?lote=${encodeURIComponent(lote)}&pacote=${encodeURIComponent(nomePacote)}`
+    )
+      .then((d) => setVolumes(d?.volumes || []))
+      .catch(() => setVolumes([]));
     setPendentes([]);
     setCodigo("");
-  }, [pacote, pacoteIndex, lote]);
+  }, [pacoteIndex, lote, pacotes]);
 
   const salvarVolumes = (novos) => {
-    const atual = JSON.parse(localStorage.getItem("lotesProducao") || "[]");
-    const idxLote = atual.findIndex(l => l.nome === lote);
-    if (idxLote >= 0) {
-      if (!atual[idxLote].pacotes[parseInt(pacoteIndex)].volumes) {
-        atual[idxLote].pacotes[parseInt(pacoteIndex)].volumes = [];
-      }
-      atual[idxLote].pacotes[parseInt(pacoteIndex)].volumes = novos;
-      localStorage.setItem("lotesProducao", JSON.stringify(atual));
-    }
+    const pacoteAtual = pacotes[parseInt(pacoteIndex)];
+    const nomePacote = pacoteAtual?.nome_pacote || `Pacote ${parseInt(pacoteIndex) + 1}`;
+    fetchComAuth("/apontamentos", {
+      method: "POST",
+      body: JSON.stringify({ lote, pacote: nomePacote, volumes: novos }),
+    }).catch(() => {});
   };
 
   const gerarCodigoBarra = (num) => {
