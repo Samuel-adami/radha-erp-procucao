@@ -224,6 +224,9 @@ ALTER TABLE nome_da_tabela ADD COLUMN nova_coluna VARCHAR(50);
 # Excluir Coluna de uma Tabela
  ALTER TABLE nome_da_tabela DROP COLUMN nome_coluna;
 
+# Excluir dados de uma tabela
+ DELETE FROM nome_do_schema.nome_da_tabela;
+
 # Listar Todas as Tabelas do Schema Atual
  \dt
 
