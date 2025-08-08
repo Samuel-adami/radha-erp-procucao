@@ -18,6 +18,7 @@ import PacoteOcorrencia from "./components/PacoteOcorrencia";
 import Nesting from "./components/Nesting";
 import VisualizacaoNesting from "./components/nesting-view/VisualizacaoNesting";
 import ConfigMaquina from "./components/ConfigMaquina";
+import Conferencia from "./components/Conferencia";
 import "./Producao.css";
 
 // Start IDs fresh to avoid loading stale production data on application load
@@ -784,4 +785,4 @@ const espelharPuxadorCurvo = (ops = [], medida, eixo = 'Y') => {
 };
 
 // Reexporta os componentes para uso no index.jsx do módulo
-export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, ImportarXML, VisualizacaoPeca, CadastroChapas, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia };
+export { HomeProducao, LoteProducao, EditarPecaProducao, Pacote, Apontamento, ApontamentoVolume, EditarFerragem, Nesting, VisualizacaoNesting, ConfigMaquina, ImportarXML, VisualizacaoPeca, CadastroChapas, EstoqueChapas, LotesOcorrencia, CadastroMotivos, RelatorioOcorrencias, EditarLoteOcorrencia, PacoteOcorrencia, Conferencia };
