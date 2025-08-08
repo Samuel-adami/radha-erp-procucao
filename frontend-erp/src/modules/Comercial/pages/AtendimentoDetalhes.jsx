@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Button } from '../../Producao/components/ui/button';
+import { Button } from '../components/ui/button';
+import Conferencia from '../components/Conferencia';
 import { fetchComAuth } from '../../../utils/fetchComAuth';
 
 const currency = v =>
@@ -482,6 +483,7 @@ function AtendimentoDetalhes() {
   const { id } = useParams();
   const [atendimento, setAtendimento] = useState(null);
   const [tarefas, setTarefas] = useState([]);
+  const comercialConcluido = tarefas.length > 0 && tarefas.every(t => t.concluida);
 
   const carregarTarefas = useCallback(async () => {
     const t = await fetchComAuth(`/comercial/atendimentos/${id}/tarefas`);
@@ -552,6 +554,11 @@ function AtendimentoDetalhes() {
           ))}
         </ul>
       </div>
+      {comercialConcluido && (
+        <div>
+          <Conferencia />
+        </div>
+      )}
       <Button className="bg-white text-black" onClick={() => window.history.back()}>
         Voltar
       </Button>
