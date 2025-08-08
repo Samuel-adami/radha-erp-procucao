@@ -13,15 +13,26 @@ const ApontamentoVolume = () => {
   const pacote = pacotes[parseInt(pacoteIndex)] || null;
 
   useEffect(() => {
-    fetchComAuth("/listar-lotes")
-      .then((d) => {
-        const lista = (d?.lotes || []).map((p) => ({
+    const carregar = async () => {
+      try {
+        const [respL, respOc] = await Promise.all([
+          fetchComAuth("/listar-lotes"),
+          fetchComAuth("/lotes-ocorrencias"),
+        ]);
+        const listaProd = (respL?.lotes || []).map((p) => ({
           pasta: p,
           nome: p.split(/[/\\\\]/).pop(),
         }));
-        setLotes(lista);
-      })
-      .catch(() => setLotes([]));
+        const listaOc = (Array.isArray(respOc) ? respOc : respOc?.lotes || []).map((o) => ({
+          pasta: o.obj_key,
+          nome: o.obj_key.split(/[/\\\\]/).pop(),
+        }));
+        setLotes([...listaProd, ...listaOc]);
+      } catch {
+        setLotes([]);
+      }
+    };
+    carregar();
   }, []);
 
   useEffect(() => {
