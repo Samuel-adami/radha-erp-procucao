@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import * as pdfjsLib from "pdfjs-dist";
 import { fetchComAuth } from "../../utils/fetchComAuth";
-import defaultDocs from "./defaultDocs";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -14,7 +13,7 @@ function Treinamentos() {
     const loadDocs = async () => {
       const resp = await fetchComAuth('/universidade-radha/documentos');
       const dinamicos = resp?.documentos || [];
-      const lista = [...defaultDocs, ...dinamicos];
+      const lista = dinamicos;
       const processed = await Promise.all(
         lista.map(async (doc) => {
           let content = "";

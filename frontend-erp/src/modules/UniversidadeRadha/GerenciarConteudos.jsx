@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { fetchComAuth } from '../../utils/fetchComAuth';
-import defaultDocs from './defaultDocs';
 
 function GerenciarConteudos() {
   const [titulo, setTitulo] = useState('');
@@ -13,7 +12,7 @@ function GerenciarConteudos() {
     try {
       const resp = await fetchComAuth('/universidade-radha/documentos');
       const dinamicos = resp?.documentos || [];
-      setDocumentos([...defaultDocs, ...dinamicos]);
+      setDocumentos(dinamicos);
     } catch (e) {
       console.error(e);
     }
