@@ -36,11 +36,12 @@ function GerenciarConteudos() {
         method: 'POST',
         body: fd,
       });
+      await carregarDocumentos();
       setTitulo('');
       setAutor('');
       setData('');
       setArquivo(null);
-      await carregarDocumentos();
+      e.target.reset && e.target.reset();
     } catch (e) {
       console.error(e);
     }
@@ -48,11 +49,11 @@ function GerenciarConteudos() {
 
   const visualizar = async (doc) => {
     try {
-      if (doc.url) {
+      if (typeof doc.id === 'string') {
         window.open(doc.url, '_blank');
         return;
       }
-      const resp = await fetchComAuth(`/universidade-radha/documentos/${doc.id}/arquivo`, { raw: true });
+      const resp = await fetchComAuth(doc.url || `/universidade-radha/documentos/${doc.id}/arquivo`, { raw: true });
       const blob = await resp.blob();
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank');
@@ -64,7 +65,7 @@ function GerenciarConteudos() {
   const excluir = async (doc) => {
     if (!window.confirm('Deseja realmente excluir este documento?')) return;
     try {
-      if (doc.url) {
+      if (typeof doc.id === 'string') {
         setDocumentos((prev) => prev.filter((d) => d.id !== doc.id));
         return;
       }

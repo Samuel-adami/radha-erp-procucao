@@ -101,7 +101,7 @@ function Layout({ usuario, onLogout }) {
             to="/universidade-radha"
             className={`px-2 py-1 rounded ${matchUniversidade ? "bg-blue-700" : "hover:bg-blue-700"}`}
           >
-            Treinamentos
+            Universidade Radha
           </Link>
         </nav>
         <button

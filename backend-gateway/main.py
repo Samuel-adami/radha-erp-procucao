@@ -6,6 +6,7 @@ from starlette.responses import JSONResponse, Response, FileResponse
 import httpx
 import os
 import uuid
+from pathlib import Path
 from database import get_session, init_db
 from models import Empresa, Cliente, Fornecedor, DocumentoTreinamento
 from services import auth_service
@@ -532,8 +533,8 @@ async def excluir_fornecedor(fornecedor_id: int):
 # Universidade Radha - Documentos
 # -------------------------------
 
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads", "documentos_treinamento")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR = Path(__file__).resolve().parent / "uploads" / "documentos_treinamento"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @app.post("/universidade-radha/documentos")
@@ -578,6 +579,7 @@ async def listar_documentos(usuario=Depends(verificar_autenticacao())):
                     "titulo": d.titulo,
                     "autor": d.autor,
                     "data": d.data,
+                    "url": f"/universidade-radha/documentos/{d.id}/arquivo",
                 }
                 for d in docs
             ]

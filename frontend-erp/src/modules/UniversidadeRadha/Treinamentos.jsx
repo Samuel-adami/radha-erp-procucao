@@ -21,8 +21,8 @@ function Treinamentos() {
           let url = doc.url;
           let tipo = doc.tipo;
           try {
-            if (!url) {
-              const arquivo = await fetchComAuth(`/universidade-radha/documentos/${doc.id}/arquivo`, { raw: true });
+            if (typeof doc.id === 'number') {
+              const arquivo = await fetchComAuth(doc.url || `/universidade-radha/documentos/${doc.id}/arquivo`, { raw: true });
               const blob = await arquivo.blob();
               url = window.URL.createObjectURL(blob);
               const ct = arquivo.headers.get('content-type') || '';
